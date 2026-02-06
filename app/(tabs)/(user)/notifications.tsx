@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing } from "@/constants/theme";
 
-export default function PetsScreen() {
+export default function NotificationsScreen() {
   const { colors } = useTheme();
 
   const styles = StyleSheet.create({
@@ -30,10 +30,8 @@ export default function PetsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <Text style={styles.title}>Mis Mascotas</Text>
-      <Text style={styles.subtitle}>
-        Aquí verás la lista de tus mascotas registradas
-      </Text>
+      <Text style={styles.title}>Notificaciones</Text>
+      <Text style={styles.subtitle}>Aquí verás todas tus notificaciones</Text>
     </SafeAreaView>
   );
 }

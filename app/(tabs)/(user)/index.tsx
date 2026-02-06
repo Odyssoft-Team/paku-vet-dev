@@ -1,68 +1,133 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Screen } from '@/components/layout/Screen';
-import { Button } from '@/components/common/Button';
-import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/hooks/useTheme';
-import { Typography, Spacing } from '@/constants/theme';
+import React, { useState } from "react";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { useTheme } from "@/hooks/useTheme";
+import { useAuthStore } from "@/store/authStore";
+import { Typography, Spacing } from "@/constants/theme";
+import { HomeHeader } from "@/components/home/HomeHeader";
+import { BannerCard } from "@/components/home/BannerCard";
+import { RegisterPetCard } from "@/components/home/RegisterPetCard";
+import { ServiceCard } from "@/components/home/ServiceCard";
+import { OfferCard } from "@/components/home/OfferCard";
+import { AddressDrawer } from "@/components/home/AddressDrawer";
 
-export default function UserDashboard() {
-  const { user, logout } = useAuth();
-  const { colors, toggleColorScheme, isDark } = useTheme();
+export default function UserHomeScreen() {
+  const router = useRouter();
+  const { colors } = useTheme();
+  const user = useAuthStore((state) => state.user);
+
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState("1");
+
+  // Mock de direcciones - Esto vendrá de tu API
+  const addresses = [
+    {
+      id: "1",
+      address: "Jr. Parque del bosque 500",
+      isDefault: selectedAddressId === "1",
+    },
+    {
+      id: "2",
+      address: "Av. Principal 123, San Isidro",
+      isDefault: selectedAddressId === "2",
+    },
+  ];
+
+  const selectedAddress = addresses.find(
+    (addr) => addr.id === selectedAddressId,
+  );
+
+  const handleSelectAddress = (id: string) => {
+    setSelectedAddressId(id);
+  };
+
+  const handleAddNewAddress = () => {
+    router.push("/(auth)/select-location");
+  };
+
+  const handleRegisterPet = () => {
+    // Navegar al formulario de registro de mascota
+    console.log("Register pet");
+  };
+
+  const handleServicePress = () => {
+    // Navegar a detalle de servicio
+    console.log("Service pressed");
+  };
 
   const styles = StyleSheet.create({
     container: {
       flex: 1,
+      backgroundColor: colors.background,
     },
-    title: {
-      fontSize: Typography.fontSize.xxl,
+    content: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: Spacing.lg,
+    },
+    sectionTitle: {
+      fontSize: Typography.fontSize.lg,
       fontWeight: Typography.fontWeight.bold,
-      color: colors.text,
+      color: colors.primary,
       marginBottom: Spacing.md,
     },
-    subtitle: {
-      fontSize: Typography.fontSize.md,
-      color: colors.textSecondary,
+    sectionMargin: {
       marginBottom: Spacing.xl,
-    },
-    roleTag: {
-      backgroundColor: colors.info,
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.sm,
-      borderRadius: 20,
-      alignSelf: 'flex-start',
-      marginBottom: Spacing.lg,
-    },
-    roleText: {
-      color: '#FFFFFF',
-      fontSize: Typography.fontSize.sm,
-      fontWeight: Typography.fontWeight.semibold,
     },
   });
 
   return (
-    <Screen>
-      <View style={styles.container}>
-        <Text style={styles.title}>Mi Espacio</Text>
-        <Text style={styles.subtitle}>Bienvenido, {user?.name}</Text>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* Header fijo */}
+      <HomeHeader
+        userName={user?.first_name || "Usuario"}
+        address={selectedAddress?.address || "Selecciona una dirección"}
+        onAddressPress={() => setDrawerVisible(true)}
+      />
 
-        <View style={styles.roleTag}>
-          <Text style={styles.roleText}>CLIENTE</Text>
+      {/* Contenido scrolleable */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Banner principal */}
+        <BannerCard
+          title="Grooming sin estrés"
+          subtitle="Elige el PAKU Spa ideal para tu mascota."
+        />
+
+        {/* Registrar mascota */}
+        <View style={styles.sectionMargin}>
+          <RegisterPetCard onPress={handleRegisterPet} />
         </View>
 
-        <Button
-          title={isDark ? 'Modo Claro' : 'Modo Oscuro'}
-          onPress={toggleColorScheme}
-          variant="outline"
-          style={{ marginBottom: Spacing.md }}
-        />
+        {/* Servicios */}
+        <View style={styles.sectionMargin}>
+          <Text style={styles.sectionTitle}>Nuestros servicios</Text>
+          <ServiceCard
+            title="PAKU Spa"
+            subtitle="Grooming inteligente."
+            onPress={handleServicePress}
+          />
+        </View>
 
-        <Button
-          title="Cerrar Sesión"
-          onPress={logout}
-          variant="outline"
-        />
-      </View>
-    </Screen>
+        {/* Ofertas */}
+        <View style={styles.sectionMargin}>
+          <OfferCard discount="20% OFF" description="en tu primer PAKU Spa" />
+        </View>
+      </ScrollView>
+
+      {/* Drawer de direcciones */}
+      <AddressDrawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+        addresses={addresses}
+        onSelectAddress={handleSelectAddress}
+        onAddNew={handleAddNewAddress}
+      />
+    </SafeAreaView>
   );
 }
