@@ -35,9 +35,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ isLoading: true, error: null });
 
-      // Login y obtener tokens
+      console.log("Calling login API...");
       const loginResponse = await authService.login(credentials);
-
       console.log("login response::", loginResponse);
 
       // Guardar tokens
@@ -50,12 +49,14 @@ export const useAuthStore = create<AuthState>((set) => ({
         loginResponse.refresh_token,
       );
 
-      // Obtener datos del usuario
+      console.log("Fetching user data...");
       const user = await authService.getCurrentUser();
+      console.log("User data:", user);
 
       // Guardar usuario
       await storage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, user);
 
+      console.log("Setting auth state...");
       set({
         user,
         tokens: {
@@ -66,7 +67,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       });
+
+      console.log("Auth state updated successfully");
     } catch (error: any) {
+      console.error("Login error in store:", error);
       const errorMessage =
         error.response?.data?.detail ||
         error.response?.data?.message ||

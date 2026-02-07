@@ -7,6 +7,8 @@ import { CONFIG } from "@/constants/config";
 import { storage } from "@/utils/storage";
 import { LoginResponse } from "@/types/auth.types";
 
+console.log("API Base URL:", CONFIG.API_URL); // Log para verificar
+
 const apiClient: AxiosInstance = axios.create({
   baseURL: CONFIG.API_URL,
   timeout: CONFIG.API_TIMEOUT,
@@ -59,8 +61,13 @@ apiClient.interceptors.request.use(
 
 // Interceptor de response
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log("Response received:", response.status); // Log
+    return response;
+  },
   async (error: AxiosError) => {
+    console.error("Response error:", error.message); // Log
+    console.error("Error details:", error.response?.data); // Log
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };

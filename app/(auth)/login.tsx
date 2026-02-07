@@ -27,6 +27,8 @@ import { SocialButton } from "@/components/auth/SocialButton";
 import { AuthBackground } from "@/components/auth/AuthBackground";
 
 export default function LoginScreen() {
+  console.log("Environment API URL:", process.env.EXPO_PUBLIC_API_URL);
+
   const router = useRouter();
   const { login, error, clearError } = useAuth();
   const { colors } = useTheme();
@@ -49,14 +51,15 @@ export default function LoginScreen() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    console.log(data);
-
     try {
       setIsLoading(true);
       clearError();
+
       await login(data);
-    } catch (err) {
-      console.log("Login error:", err);
+
+      // El _layout.tsx se encargará de la redirección automáticamente
+    } catch (err: any) {
+      console.error("Login error:", err);
     } finally {
       setIsLoading(false);
     }

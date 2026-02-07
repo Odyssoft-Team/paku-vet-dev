@@ -1,51 +1,31 @@
-import { useAuthStore } from '@/store/authStore';
-import { LoginCredentials, RegisterData } from '@/types/auth.types';
+import { useAuthStore } from "@/store/authStore";
 
-/**
- * Hook personalizado para manejar la autenticación
- */
 export const useAuth = () => {
   const {
     user,
+    tokens,
     isAuthenticated,
     isLoading,
     error,
     login,
     register,
     logout,
+    loadStoredAuth,
+    setUser,
     clearError,
   } = useAuthStore();
 
-  const handleLogin = async (credentials: LoginCredentials) => {
-    try {
-      await login(credentials);
-    } catch (error) {
-      // Error ya manejado en el store
-      throw error;
-    }
-  };
-
-  const handleRegister = async (data: RegisterData) => {
-    try {
-      await register(data);
-    } catch (error) {
-      // Error ya manejado en el store
-      throw error;
-    }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-  };
-
   return {
     user,
+    tokens,
     isAuthenticated,
     isLoading,
     error,
-    login: handleLogin,
-    register: handleRegister,
-    logout: handleLogout,
+    login,
+    register,
+    logout,
+    loadStoredAuth,
+    setUser,
     clearError,
   };
 };

@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
@@ -16,6 +19,8 @@ export default function UserHomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
+
+  const insets = useSafeAreaInsets();
 
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState("1");
@@ -60,13 +65,15 @@ export default function UserHomeScreen() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      // marginTop: insets.top,
+      marginBottom: insets.bottom,
     },
     content: {
       flex: 1,
     },
-    scrollContent: {
-      padding: Spacing.lg,
-    },
+    // scrollContent: {
+    //   padding: Spacing.lg,
+    // },
     sectionTitle: {
       fontSize: Typography.fontSize.lg,
       fontWeight: Typography.fontWeight.bold,
@@ -90,7 +97,7 @@ export default function UserHomeScreen() {
       {/* Contenido scrolleable */}
       <ScrollView
         style={styles.content}
-        contentContainerStyle={styles.scrollContent}
+        // contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Banner principal */}

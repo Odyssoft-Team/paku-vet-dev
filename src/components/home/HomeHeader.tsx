@@ -34,12 +34,11 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     addressButton: {
       flexDirection: "row",
       alignItems: "center",
-      gap: Spacing.xs,
+      gap: Spacing.xl,
     },
     address: {
       fontSize: Typography.fontSize.sm,
       color: "#FFFFFF",
-      flex: 1,
     },
     iconContainer: {
       padding: Spacing.xs,
@@ -48,13 +47,15 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.greeting}>
-        Hola, <Text style={styles.userName}>{userName}</Text>
-      </Text>
       <TouchableOpacity style={styles.addressButton} onPress={onAddressPress}>
-        <Text style={styles.address} numberOfLines={1}>
-          {address}
-        </Text>
+        <View>
+          <Text style={styles.greeting}>
+            Hola, <Text style={styles.userName}>{userName}</Text>
+          </Text>
+          <Text style={styles.address} numberOfLines={1}>
+            {address}
+          </Text>
+        </View>
         <View style={styles.iconContainer}>
           <Icon name="arrow-down" size={16} color="#FFFFFF" />
         </View>

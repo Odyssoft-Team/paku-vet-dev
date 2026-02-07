@@ -1,8 +1,9 @@
 import React from "react";
-import { View, Text, ImageBackground, StyleSheet } from "react-native";
+import { View, ImageBackground, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
+import { Text } from "../common/Text";
 
 interface BannerCardProps {
   title: string;
@@ -19,8 +20,9 @@ export const BannerCard: React.FC<BannerCardProps> = ({
 
   const styles = StyleSheet.create({
     container: {
-      height: 200,
-      borderRadius: BorderRadius.xl,
+      height: 350,
+      borderBottomEndRadius: BorderRadius.xxl,
+      borderBottomStartRadius: BorderRadius.xxl,
       overflow: "hidden",
       marginBottom: Spacing.lg,
     },
@@ -30,10 +32,10 @@ export const BannerCard: React.FC<BannerCardProps> = ({
       justifyContent: "flex-end",
     },
     title: {
-      fontSize: Typography.fontSize.xxl,
-      fontWeight: Typography.fontWeight.bold,
+      fontSize: Typography.fontSize.xxxxl,
       color: "#FFFFFF",
       marginBottom: Spacing.xs,
+      lineHeight: 42,
     },
     subtitle: {
       fontSize: Typography.fontSize.md,
@@ -45,20 +47,23 @@ export const BannerCard: React.FC<BannerCardProps> = ({
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={{
-          uri:
-            imageUrl ||
-            "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=800",
-        }}
+        source={require("@assets/images/home/home-paku.png")}
         style={{ flex: 1 }}
         resizeMode="cover"
       >
         <LinearGradient
-          colors={["rgba(29, 42, 216, 0.6)", "rgba(29, 42, 216, 0.9)"]}
+          colors={[
+            "rgba(0, 33, 64, 0)", // Transparente arriba
+            "rgba(0, 33, 64, 0.85)", // Medio transparente
+          ]}
           style={styles.gradient}
         >
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
+          <Text variant="black" style={styles.title}>
+            {title}
+          </Text>
+          <Text variant="regular" style={styles.subtitle}>
+            {subtitle}
+          </Text>
         </LinearGradient>
       </ImageBackground>
     </View>

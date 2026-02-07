@@ -7,5 +7,16 @@
         "locationAlwaysAndWhenInUsePermission": "Permitir que $(PRODUCT_NAME) use tu ubicación."
       }
     ]
-  ]
+  ],
+  "expo": {
+    "android": {
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "INTERNET"
+      ]
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
 }

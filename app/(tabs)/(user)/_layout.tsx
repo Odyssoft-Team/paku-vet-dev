@@ -1,9 +1,11 @@
 import { Tabs } from "expo-router";
 import { useTheme } from "@/hooks/useTheme";
 import { Icon } from "@/components/common/Icon";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function UserLayout() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -11,20 +13,12 @@ export default function UserLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
-        // tabBarStyle: {
-        //   backgroundColor: colors.surface,
-        //   borderTopColor: colors.border,
-        //   borderTopWidth: 1,
-        //   height: 60,
-        //   paddingBottom: 8,
-        //   paddingTop: 8,
-        // },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 60, // Altura de la tab bar
-          paddingBottom: 8, // Padding inferior
+          height: 60 + insets.bottom, // Altura de la tab bar
+          paddingBottom: insets.bottom, // Padding inferior
           paddingTop: 8, // Padding superior
           elevation: 8, // Sombra en Android
           shadowColor: "#000", // Sombra en iOS
@@ -35,6 +29,10 @@ export default function UserLayout() {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "600",
+          marginBottom: 4,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
         },
       }}
     >
