@@ -12,11 +12,18 @@
     "android": {
       "usesCleartextTraffic": true,
       "permissions": [
+        "INTERNET",
         "INTERNET"
-      ]
+      ],
+      "package": "com.aldoparradev.pakuvet"
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6a71eecb-b961-400b-a9e8-d62cb86256f1"
+      }
+    }
   }
 }

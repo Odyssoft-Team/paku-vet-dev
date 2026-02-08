@@ -1,7 +1,6 @@
 import React from "react";
 import {
   View,
-  Text,
   Modal,
   TouchableOpacity,
   StyleSheet,
@@ -12,6 +11,7 @@ import { Icon } from "@/components/common/Icon";
 import { Button } from "@/components/common/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { Text } from "../common/Text";
 
 interface Address {
   id: string;
@@ -48,31 +48,30 @@ export const AddressDrawer: React.FC<AddressDrawerProps> = ({
       borderTopRightRadius: BorderRadius.xl,
       paddingTop: Spacing.md,
       paddingBottom: Spacing.xl,
-      maxHeight: "70%",
+      maxHeight: "100%",
     },
-    handle: {
-      width: 40,
-      height: 4,
-      backgroundColor: colors.border,
-      borderRadius: 2,
-      alignSelf: "center",
-      marginBottom: Spacing.md,
-    },
+    // handle: {
+    //   width: 40,
+    //   height: 4,
+    //   backgroundColor: colors.border,
+    //   borderRadius: 2,
+    //   alignSelf: "center",
+    //   marginBottom: Spacing.md,
+    // },
     header: {
       paddingHorizontal: Spacing.lg,
       paddingBottom: Spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      // borderBottomWidth: 1,
+      // borderBottomColor: colors.border,
     },
     title: {
       fontSize: Typography.fontSize.lg,
-      fontWeight: Typography.fontWeight.bold,
       color: colors.primary,
       textAlign: "center",
     },
     addressList: {
       paddingHorizontal: Spacing.lg,
-      paddingTop: Spacing.md,
+      // paddingTop: Spacing.md,
     },
     addressItem: {
       flexDirection: "row",
@@ -100,16 +99,18 @@ export const AddressDrawer: React.FC<AddressDrawerProps> = ({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable onPress={(e) => e.stopPropagation()}>
           <View style={styles.drawer}>
-            <View style={styles.handle} />
+            {/* <View style={styles.handle} /> */}
 
             <View style={styles.header}>
-              <Text style={styles.title}>Elige tu dirección</Text>
+              <Text variant="bold" style={styles.title}>
+                Elige tu dirección
+              </Text>
             </View>
 
             <FlatList
@@ -131,7 +132,9 @@ export const AddressDrawer: React.FC<AddressDrawerProps> = ({
                       item.isDefault ? colors.primary : colors.textSecondary
                     }
                   />
-                  <Text style={styles.addressText}>{item.address}</Text>
+                  <Text variant="regular" style={styles.addressText}>
+                    {item.address}
+                  </Text>
                   {item.isDefault && (
                     <Icon
                       name="check"

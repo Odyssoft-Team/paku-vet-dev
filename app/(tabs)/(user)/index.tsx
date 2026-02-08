@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet, ScrollView } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -14,6 +14,7 @@ import { RegisterPetCard } from "@/components/home/RegisterPetCard";
 import { ServiceCard } from "@/components/home/ServiceCard";
 import { OfferCard } from "@/components/home/OfferCard";
 import { AddressDrawer } from "@/components/home/AddressDrawer";
+import { Text } from "@/components/common/Text";
 
 export default function UserHomeScreen() {
   const router = useRouter();
@@ -61,27 +62,26 @@ export default function UserHomeScreen() {
     console.log("Service pressed");
   };
 
+  const handleOfferPress = () => {
+    // Navegar a detalle de oferta
+    console.log("Offer pressed");
+  };
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      // marginTop: insets.top,
-      marginBottom: insets.bottom,
     },
     content: {
       flex: 1,
     },
-    // scrollContent: {
-    //   padding: Spacing.lg,
-    // },
     sectionTitle: {
-      fontSize: Typography.fontSize.lg,
-      fontWeight: Typography.fontWeight.bold,
+      fontSize: Typography.fontSize.md,
       color: colors.primary,
-      marginBottom: Spacing.md,
     },
     sectionMargin: {
       marginBottom: Spacing.xl,
+      paddingHorizontal: Spacing.md,
     },
   });
 
@@ -95,11 +95,7 @@ export default function UserHomeScreen() {
       />
 
       {/* Contenido scrolleable */}
-      <ScrollView
-        style={styles.content}
-        // contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Banner principal */}
         <BannerCard
           title="Grooming sin estrés"
@@ -113,7 +109,9 @@ export default function UserHomeScreen() {
 
         {/* Servicios */}
         <View style={styles.sectionMargin}>
-          <Text style={styles.sectionTitle}>Nuestros servicios</Text>
+          <Text variant="bold" style={styles.sectionTitle}>
+            Nuestros servicios
+          </Text>
           <ServiceCard
             title="PAKU Spa"
             subtitle="Grooming inteligente."
@@ -123,7 +121,11 @@ export default function UserHomeScreen() {
 
         {/* Ofertas */}
         <View style={styles.sectionMargin}>
-          <OfferCard discount="20% OFF" description="en tu primer PAKU Spa" />
+          <OfferCard
+            discount="20% OFF"
+            description="en tu primer PAKU Spa"
+            onPress={handleOfferPress}
+          />
         </View>
       </ScrollView>
 

@@ -1,8 +1,9 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { Icon } from "@/components/common/Icon";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing } from "@/constants/theme";
+import { Text } from "../common/Text";
 
 interface HomeHeaderProps {
   userName: string;
@@ -26,10 +27,6 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     greeting: {
       fontSize: Typography.fontSize.md,
       color: "#FFFFFF",
-      marginBottom: Spacing.xs,
-    },
-    userName: {
-      fontWeight: Typography.fontWeight.bold,
     },
     addressButton: {
       flexDirection: "row",
@@ -49,10 +46,10 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     <View style={styles.container}>
       <TouchableOpacity style={styles.addressButton} onPress={onAddressPress}>
         <View>
-          <Text style={styles.greeting}>
-            Hola, <Text style={styles.userName}>{userName}</Text>
+          <Text variant="regular" style={styles.greeting}>
+            Hola, <Text variant="medium">{userName}</Text>
           </Text>
-          <Text style={styles.address} numberOfLines={1}>
+          <Text variant="regular" style={styles.address} numberOfLines={1}>
             {address}
           </Text>
         </View>

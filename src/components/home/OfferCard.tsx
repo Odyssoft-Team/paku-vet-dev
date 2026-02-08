@@ -1,64 +1,77 @@
 import React from "react";
-import { View, Text, ImageBackground, StyleSheet } from "react-native";
+import {
+  View,
+  ImageBackground,
+  StyleSheet,
+  TouchableOpacity,
+  Pressable,
+} from "react-native";
 import { useTheme } from "@/hooks/useTheme";
-import { Typography, Spacing, BorderRadius } from "@/constants/theme";
+import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { Text } from "../common/Text";
 
 interface OfferCardProps {
   discount: string;
   description: string;
   imageUrl?: string;
+  onPress: () => void;
 }
 
 export const OfferCard: React.FC<OfferCardProps> = ({
   discount,
   description,
   imageUrl,
+  onPress,
 }) => {
   const { colors } = useTheme();
 
   const styles = StyleSheet.create({
     container: {
-      height: 120,
+      height: 140,
       borderRadius: BorderRadius.lg,
       overflow: "hidden",
-      flexDirection: "row",
+      ...Shadows.md,
     },
-    contentContainer: {
+    content: {
       flex: 1,
-      backgroundColor: colors.secondary,
-      padding: Spacing.md,
+      // backgroundColor: colors.primary,
+      padding: Spacing.lg,
       justifyContent: "center",
     },
-    discount: {
-      fontSize: Typography.fontSize.xl,
-      fontWeight: Typography.fontWeight.bold,
-      color: colors.primary,
-      marginBottom: Spacing.xs,
+    title: {
+      fontSize: Typography.fontSize.xxxl,
+      color: "#FFFFFF",
     },
-    description: {
+    title2: {
+      fontSize: Typography.fontSize.lg,
+      color: "#FFFFFF",
+    },
+    subtitle: {
       fontSize: Typography.fontSize.sm,
-      color: colors.primary,
-    },
-    imageContainer: {
-      width: 120,
+      color: "#FFFFFF",
+      marginTop: Spacing.sm,
     },
   });
 
   return (
-    <View style={styles.container}>
-      <View style={styles.contentContainer}>
-        <Text style={styles.discount}>{discount}</Text>
-        <Text style={styles.description}>{description}</Text>
-      </View>
+    <Pressable style={styles.container} onPress={onPress}>
       <ImageBackground
-        source={{
-          uri:
-            imageUrl ||
-            "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400",
-        }}
-        style={styles.imageContainer}
+        source={require("@assets/images/home/Cupon-Paku.png")}
+        style={{ flex: 1 }}
         resizeMode="cover"
-      />
-    </View>
+      >
+        <View style={styles.content}>
+          <Text variant="black" style={styles.title}>
+            20% OFF {"\n"}
+            <Text variant="semibold" style={styles.title2}>
+              en tu primer PAKU Spa
+            </Text>
+          </Text>
+          <Text variant="regular" style={styles.subtitle}>
+            Se aplica con el código PAKU-DIC.
+          </Text>
+        </View>
+      </ImageBackground>
+    </Pressable>
   );
 };
