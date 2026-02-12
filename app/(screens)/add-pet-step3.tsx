@@ -8,7 +8,10 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/common/Input";
@@ -26,6 +29,8 @@ export default function AddPetStep3Screen() {
   const router = useRouter();
   const { colors } = useTheme();
   const formData = useAddPetStore();
+
+  const insets = useSafeAreaInsets();
 
   const {
     control,
@@ -56,6 +61,7 @@ export default function AddPetStep3Screen() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      marginBottom: insets.bottom,
     },
     header: {
       flexDirection: "row",
@@ -70,7 +76,7 @@ export default function AddPetStep3Screen() {
     },
     headerTitle: {
       flex: 1,
-      fontSize: Typography.fontSize.lg,
+      fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.bold,
       color: "#FFFFFF",
       textAlign: "center",
@@ -91,13 +97,12 @@ export default function AddPetStep3Screen() {
       fontSize: Typography.fontSize.lg,
       fontFamily: Typography.fontFamily.bold,
       color: colors.primary,
-      marginBottom: Spacing.xs,
     },
     sectionSubtitle: {
       fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.textSecondary,
-      marginBottom: Spacing.lg,
+      // fontFamily: Typography.fontFamily.regular,
+      color: colors.primary,
+      marginBottom: Spacing.xs,
     },
     fixedButton: {
       position: "absolute",
@@ -130,7 +135,8 @@ export default function AddPetStep3Screen() {
       {/* Formulario */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -140,7 +146,7 @@ export default function AddPetStep3Screen() {
           <Text style={styles.sectionTitle}>
             Esto nos ayuda a cuidarlo mejor
           </Text>
-          <Text style={styles.sectionSubtitle}>
+          <Text variant="medium" style={styles.sectionSubtitle}>
             ¿Cómo se comporta durante el baño?
           </Text>
 
@@ -152,8 +158,8 @@ export default function AddPetStep3Screen() {
               <OptionSelector
                 options={[
                   { value: "calm", label: "Tranquilo/a" },
-                  { value: "nervous", label: "Medioso/a" },
-                  { value: "aggressive", label: "Ansioso/a" },
+                  { value: "fearful", label: "Miedoso/a" },
+                  { value: "anxious", label: "Ansioso/a" },
                 ]}
                 value={value}
                 onSelect={onChange}
@@ -220,6 +226,7 @@ export default function AddPetStep3Screen() {
                 returnKeyType="done"
                 multiline
                 numberOfLines={3}
+                colorLabel={colors.primary}
               />
             )}
           />

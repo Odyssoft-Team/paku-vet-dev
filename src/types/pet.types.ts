@@ -3,8 +3,8 @@ export type PetSex = "male" | "female";
 export type PetSize = "small" | "medium" | "large";
 export type PetActivityLevel = "low" | "medium" | "high";
 export type PetCoatType = "short" | "medium" | "long";
-export type PetBathBehavior = "calm" | "nervous" | "aggressive";
-export type AntiparasiticInterval = "monthly" | "quarterly" | "biannual";
+export type PetBathBehavior = "calm" | "fearful" | "anxious";
+export type AntiparasiticInterval = "monthly" | "trimestral" | "biannual";
 
 export interface Pet {
   id: string;

@@ -20,12 +20,12 @@ export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
 
   const styles = StyleSheet.create({
     card: {
-      width: 140,
-      height: 140,
+      width: 130,
+      height: 130,
       borderRadius: BorderRadius.lg,
       overflow: "hidden",
       marginRight: Spacing.sm,
-      ...Shadows.md,
+      // ...Shadows.md,
     },
     imageBackground: {
       width: "100%",
@@ -37,15 +37,18 @@ export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
       bottom: 0,
       left: 0,
       right: 0,
-      height: "50%",
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      height: "100%",
+      backgroundColor: "rgba(0, 0, 0, 0.4)",
+      zIndex: 1,
     },
     nameContainer: {
       padding: Spacing.sm,
       zIndex: 1,
+      justifyContent: "center",
+      alignItems: "center",
     },
     petName: {
-      fontSize: Typography.fontSize.md,
+      fontSize: Typography.fontSize.lg,
       fontFamily: Typography.fontFamily.bold,
       color: "#FFFFFF",
       textShadowColor: "rgba(0, 0, 0, 0.75)",
@@ -55,7 +58,7 @@ export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
     placeholder: {
       width: "100%",
       height: "100%",
-      backgroundColor: colors.primary + "20",
+      // backgroundColor: colors.primary,
       justifyContent: "center",
       alignItems: "center",
     },
@@ -79,15 +82,16 @@ export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
           </View>
         </ImageBackground>
       ) : (
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderText}>
-            {pet.species === "dog" ? "🐕" : "🐈"}
-          </Text>
+        <ImageBackground
+          source={require("@assets/images/profile/profile-pet.png")}
+          style={styles.imageBackground}
+          resizeMode="cover"
+        >
           <View style={styles.gradient} />
           <View style={styles.nameContainer}>
             <Text style={styles.petName}>{pet.name}</Text>
           </View>
-        </View>
+        </ImageBackground>
       )}
     </TouchableOpacity>
   );

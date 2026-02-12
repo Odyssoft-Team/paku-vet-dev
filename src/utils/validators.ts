@@ -82,7 +82,7 @@ export type PetStep2FormData = z.infer<typeof petStep2Schema>;
 // REGISTRO DE MASCOTA - PASO 3: Comportamiento
 // ============================================
 export const petStep3Schema = z.object({
-  bath_behavior: z.enum(["calm", "nervous", "aggressive"], {
+  bath_behavior: z.enum(["calm", "fearful", "anxious"], {
     errorMap: () => ({ message: "Selecciona el comportamiento" }),
   }),
   tolerates_drying: z.boolean(),
@@ -101,7 +101,7 @@ export const petStep4Schema = z.object({
   receive_reminders: z.boolean(),
   antiparasitic: z.boolean(),
   antiparasitic_interval: z
-    .enum(["monthly", "quarterly", "biannual"])
+    .enum(["monthly", "trimestral", "biannual"])
     .optional(),
   special_shampoo: z.boolean(),
 });

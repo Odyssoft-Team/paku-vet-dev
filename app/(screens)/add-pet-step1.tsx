@@ -96,7 +96,7 @@ export default function AddPetStep1Screen() {
     },
     headerTitle: {
       flex: 1,
-      fontSize: Typography.fontSize.lg,
+      fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.bold,
       color: "#FFFFFF",
       textAlign: "center",
@@ -149,7 +149,7 @@ export default function AddPetStep1Screen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Icon name="arrow-back" size={24} color="#FFFFFF" />
+          <Icon name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Registro de mascota</Text>
         <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
@@ -160,16 +160,14 @@ export default function AddPetStep1Screen() {
       {/* Formulario */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.sectionTitle}>Conozcamos a tu mascota</Text>
-          <Text style={styles.sectionSubtitle}>Nombre de tu mascota</Text>
-
           {/* Foto */}
           <View style={styles.avatarContainer}>
             <AvatarPicker
@@ -180,6 +178,8 @@ export default function AddPetStep1Screen() {
               }}
             />
           </View>
+
+          <Text style={styles.sectionTitle}>Conozcamos a tu mascota</Text>
 
           {/* Nombre */}
           <Controller
@@ -194,6 +194,7 @@ export default function AddPetStep1Screen() {
                 onBlur={onBlur}
                 error={errors.name?.message}
                 returnKeyType="next"
+                colorLabel={colors.primary}
               />
             )}
           />
@@ -229,6 +230,7 @@ export default function AddPetStep1Screen() {
                 onBlur={onBlur}
                 error={errors.breed?.message}
                 returnKeyType="next"
+                colorLabel={colors.primary}
               />
             )}
           />

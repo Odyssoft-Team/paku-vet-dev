@@ -8,7 +8,10 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/common/Input";
@@ -27,6 +30,7 @@ export default function AddPetStep2Screen() {
   const router = useRouter();
   const { colors } = useTheme();
   const formData = useAddPetStore();
+  const insets = useSafeAreaInsets();
 
   const {
     control,
@@ -57,6 +61,7 @@ export default function AddPetStep2Screen() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      marginBottom: insets.bottom,
     },
     header: {
       flexDirection: "row",
@@ -71,7 +76,7 @@ export default function AddPetStep2Screen() {
     },
     headerTitle: {
       flex: 1,
-      fontSize: Typography.fontSize.lg,
+      fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.bold,
       color: "#FFFFFF",
       textAlign: "center",
@@ -89,16 +94,14 @@ export default function AddPetStep2Screen() {
       paddingBottom: 100,
     },
     sectionTitle: {
-      fontSize: Typography.fontSize.lg,
+      fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.bold,
       color: colors.primary,
-      marginBottom: Spacing.xs,
     },
     sectionSubtitle: {
       fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.textSecondary,
-      marginBottom: Spacing.lg,
+      color: colors.primary,
+      marginBottom: Spacing.xs,
     },
     fixedButton: {
       position: "absolute",
@@ -120,7 +123,7 @@ export default function AddPetStep2Screen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Icon name="arrow-back" size={24} color="#FFFFFF" />
+          <Icon name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Registro de mascota</Text>
         <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
@@ -131,7 +134,8 @@ export default function AddPetStep2Screen() {
       {/* Formulario */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -139,7 +143,9 @@ export default function AddPetStep2Screen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.sectionTitle}>Datos para un mejor cuidado</Text>
-          <Text style={styles.sectionSubtitle}>Tamaño</Text>
+          <Text variant="bold" style={styles.sectionSubtitle}>
+            Tamaño
+          </Text>
 
           {/* Tamaño */}
           <Controller
@@ -177,6 +183,7 @@ export default function AddPetStep2Screen() {
                 onBlur={onBlur}
                 keyboardType="decimal-pad"
                 returnKeyType="next"
+                colorLabel={colors.primary}
               />
             )}
           />
@@ -204,7 +211,6 @@ export default function AddPetStep2Screen() {
           <Text style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>
             Adaptamos el servicio a su necesidad real
           </Text>
-          <Text style={styles.sectionSubtitle}>Tipo de pelaje</Text>
 
           {/* Tipo de pelaje */}
           <Controller

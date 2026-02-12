@@ -18,7 +18,7 @@ interface AddPetFormData {
   skin_sensitivity: boolean;
 
   // Paso 3
-  bath_behavior: "calm" | "nervous" | "aggressive" | "";
+  bath_behavior: "calm" | "fearful" | "anxious" | "";
   tolerates_drying: boolean;
   tolerates_nail_clipping: boolean;
   vaccines_up_to_date: boolean;
@@ -28,7 +28,7 @@ interface AddPetFormData {
   grooming_frequency?: string;
   receive_reminders: boolean;
   antiparasitic: boolean;
-  antiparasitic_interval?: "monthly" | "quarterly" | "biannual";
+  antiparasitic_interval?: "monthly" | "trimestral" | "biannual";
   special_shampoo: boolean;
 
   // Actions

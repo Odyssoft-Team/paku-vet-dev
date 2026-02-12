@@ -23,7 +23,7 @@ export const PetsList: React.FC<PetsListProps> = ({
 
   const styles = StyleSheet.create({
     container: {
-      marginBottom: Spacing.md,
+      // marginBottom: Spacing.sm,
     },
     header: {
       flexDirection: "row",
@@ -40,8 +40,8 @@ export const PetsList: React.FC<PetsListProps> = ({
       paddingRight: Spacing.md,
     },
     addButton: {
-      width: 140,
-      height: 140,
+      width: 130,
+      height: 130,
       borderRadius: BorderRadius.lg,
       backgroundColor: colors.secondary + "20",
       borderWidth: 2,

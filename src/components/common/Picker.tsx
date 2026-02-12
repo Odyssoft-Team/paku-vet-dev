@@ -20,6 +20,7 @@ interface PickerOption {
 
 interface PickerProps {
   label: string;
+  labelColor?: string;
   value: string;
   options: PickerOption[];
   placeholder?: string;
@@ -30,6 +31,7 @@ interface PickerProps {
 
 export const Picker: React.FC<PickerProps> = ({
   label,
+  labelColor,
   value,
   options,
   placeholder = "Seleccionar...",
@@ -60,7 +62,7 @@ export const Picker: React.FC<PickerProps> = ({
     label: {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.medium,
-      color: colors.primary,
+      color: labelColor || colors.primary,
       marginBottom: Spacing.xs,
     },
     pickerButton: {

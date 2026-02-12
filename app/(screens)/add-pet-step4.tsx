@@ -9,7 +9,10 @@ import {
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/common/Button";
@@ -31,6 +34,8 @@ export default function AddPetStep4Screen() {
   const formData = useAddPetStore();
   const { createPet } = usePetStore();
   const [saving, setSaving] = useState(false);
+
+  const insets = useSafeAreaInsets();
 
   const {
     control,
@@ -75,10 +80,7 @@ export default function AddPetStep4Screen() {
         skin_sensitivity: formData.skin_sensitivity,
 
         // Paso 3
-        bath_behavior: formData.bath_behavior as
-          | "calm"
-          | "nervous"
-          | "aggressive",
+        bath_behavior: formData.bath_behavior as "calm" | "fearful" | "anxious",
         tolerates_drying: formData.tolerates_drying,
         tolerates_nail_clipping: formData.tolerates_nail_clipping,
         vaccines_up_to_date: formData.vaccines_up_to_date,
@@ -105,7 +107,7 @@ export default function AddPetStep4Screen() {
         {
           text: "OK",
           onPress: () => {
-            router.replace("/(tabs)/(user)/pets");
+            router.replace("/(tabs)/(user)");
           },
         },
       ]);
@@ -129,6 +131,7 @@ export default function AddPetStep4Screen() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      marginBottom: insets.bottom,
     },
     header: {
       flexDirection: "row",
@@ -143,7 +146,7 @@ export default function AddPetStep4Screen() {
     },
     headerTitle: {
       flex: 1,
-      fontSize: Typography.fontSize.lg,
+      fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.bold,
       color: "#FFFFFF",
       textAlign: "center",
@@ -164,20 +167,10 @@ export default function AddPetStep4Screen() {
       fontSize: Typography.fontSize.lg,
       fontFamily: Typography.fontFamily.bold,
       color: colors.primary,
-      marginBottom: Spacing.xs,
     },
     sectionSubtitle: {
       fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.textSecondary,
-      marginBottom: Spacing.lg,
-    },
-    progressBar: {
-      height: 4,
-      backgroundColor: colors.border,
-      borderRadius: 2,
-      marginBottom: Spacing.xl,
-      overflow: "hidden",
+      color: colors.primary,
     },
     progressFill: {
       height: "100%",
@@ -204,7 +197,7 @@ export default function AddPetStep4Screen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Icon name="arrow-back" size={24} color="#FFFFFF" />
+          <Icon name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Registro de mascota</Text>
         <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
@@ -215,7 +208,8 @@ export default function AddPetStep4Screen() {
       {/* Formulario */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -223,14 +217,9 @@ export default function AddPetStep4Screen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.sectionTitle}>Datos para un mejor cuidado</Text>
-          <Text style={styles.sectionSubtitle}>
+          {/* <Text variant="medium" style={styles.sectionSubtitle}>
             ¿Cada cuánto recibe grooming?
-          </Text>
-
-          {/* Barra de progreso */}
-          <View style={styles.progressBar}>
-            <View style={styles.progressFill} />
-          </View>
+          </Text> */}
 
           {/* Frecuencia de grooming */}
           <Controller
@@ -238,7 +227,7 @@ export default function AddPetStep4Screen() {
             name="grooming_frequency"
             render={({ field: { onChange, value } }) => (
               <Picker
-                label="Selecciona recordatorio"
+                label="¿Cada cuánto recibe grooming?"
                 value={value || ""}
                 options={[
                   { id: "every_15_days", name: "Cada 15 días" },
@@ -247,6 +236,7 @@ export default function AddPetStep4Screen() {
                 ]}
                 placeholder="Selecciona recordatorio"
                 onSelect={onChange}
+                labelColor={colors.primary}
               />
             )}
           />
@@ -291,12 +281,12 @@ export default function AddPetStep4Screen() {
                   label="¿Cada cuánto lo aplicas?"
                   options={[
                     { value: "monthly", label: "Mensual" },
-                    { value: "quarterly", label: "Trimestral" },
-                    { value: "biannual", label: "Semestral" },
+                    { value: "trimestral", label: "Trimestral" },
+                    // { value: "semestral", label: "Semestral" },
                   ]}
                   value={value || ""}
                   onSelect={onChange}
-                  columns={3}
+                  columns={2}
                 />
               )}
             />

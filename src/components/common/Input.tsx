@@ -14,6 +14,7 @@ import { Text } from "./Text";
 
 interface InputProps extends TextInputProps {
   label?: string;
+  colorLabel?: string;
   error?: string;
   leftIcon?: IconName;
   rightIcon?: IconName;
@@ -26,6 +27,7 @@ export const Input = forwardRef<TextInput, InputProps>(
   (
     {
       label,
+      colorLabel,
       error,
       leftIcon,
       rightIcon,
@@ -59,7 +61,7 @@ export const Input = forwardRef<TextInput, InputProps>(
         fontSize: Typography.fontSize.sm,
         fontFamily: Typography.fontFamily.medium,
         fontWeight: Typography.fontWeight.medium,
-        color: colors.text,
+        color: colorLabel || colors.text,
         marginBottom: Spacing.xs,
       },
       inputContainer: {
