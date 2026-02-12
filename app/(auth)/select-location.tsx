@@ -155,22 +155,16 @@ export default function SelectLocationScreen() {
     try {
       setLoadingAddress(true);
 
-      // Usar Nominatim con delay para respetar políticas
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
 
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&accept-language=es`,
-        {
-          headers: {
-            "User-Agent": "PakuVet/1.0",
-          },
-        },
-      );
-
-      const data = await response.json();
-
-      if (data && data.display_name) {
-        return data.display_name;
+      if (result.length > 0) {
+        const address = result[0];
+        return `${address.street || ""} ${address.streetNumber || ""}, ${
+          address.city || address.region || ""
+        }, ${address.country || ""}`;
       }
 
       return "Dirección no disponible";

@@ -33,9 +33,12 @@ export const addressService = {
    */
   async updateAddress(id: string, data: UpdateAddressData): Promise<Address> {
     const response = await apiClient.put<Address>(
-      API_ENDPOINTS.ADDRESSES.UPDATE(id),
-      data,
+      API_ENDPOINTS.ADDRESSES.UPDATE_DEFAULT(id),
+      // data,
     );
+    console.log("GAAAA:::", response.data);
+    console.log("DATAAAAA:::", data);
+
     return response.data;
   },
 

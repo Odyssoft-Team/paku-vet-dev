@@ -122,6 +122,8 @@ export default function RegisterScreen() {
         profile_photo_url: profileImage || undefined,
       };
 
+      console.log("register data:::", registerData);
+
       await register(registerData);
 
       clearLocation();

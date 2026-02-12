@@ -24,35 +24,31 @@ import {
   AddAddressStep1FormData,
 } from "@/utils/validators";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
-import { useLocationStore } from "@/store/locationStore";
 import { useGeoStore } from "@/store/geoStore";
+import { useAddAddressStore } from "@/store/addAddressStore";
 import { Text } from "@/components/common";
-// import { Picker } from "@react-native-picker/picker";
 
 export default function AddAddressScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const clearLocation = useLocationStore((state) => state.clearLocation);
-
-  const {
-    districts,
-    isLoading: loadingDistricts,
-    fetchDistricts,
-  } = useGeoStore();
-
   const insets = useSafeAreaInsets();
+
+  // Stores
+  const { districts, fetchDistricts } = useGeoStore();
+  const formData = useAddAddressStore();
 
   const {
     control,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm<AddAddressStep1FormData>({
     resolver: zodResolver(addAddressStep1Schema),
     defaultValues: {
-      district_id: "",
-      address_line: "",
-      building_number: "",
-      apartment_number: "",
+      district_id: formData.district_id || "",
+      address_line: formData.address_line || "",
+      building_number: formData.building_number || "",
+      apartment_number: formData.apartment_number || "",
     },
   });
 
@@ -63,30 +59,46 @@ export default function AddAddressScreen() {
     }
   }, []);
 
-  const onContinue = (data: AddAddressStep1FormData) => {
-    // Limpiar ubicación previa
-    clearLocation();
+  // Restaurar datos del store si existen
+  useEffect(() => {
+    if (formData.district_id) {
+      setValue("district_id", formData.district_id);
+      setValue("address_line", formData.address_line);
+      setValue("building_number", formData.building_number);
+      setValue("apartment_number", formData.apartment_number);
+    }
+  }, []);
 
-    // Encontrar el distrito seleccionado para obtener su nombre completo
+  const onContinue = (data: AddAddressStep1FormData) => {
+    // Guardar datos en el store
+    formData.setStep1Data({
+      district_id: data.district_id,
+      address_line: data.address_line,
+      building_number: data.building_number || "",
+      apartment_number: data.apartment_number || "",
+    });
+
+    // Encontrar el distrito seleccionado
     const selectedDistrict = districts.find((d) => d.id === data.district_id);
 
-    // Construir la dirección completa para el mapa
+    // Construir query de búsqueda
     const fullAddress = `${data.address_line} ${data.building_number}${
       data.apartment_number ? `, ${data.apartment_number}` : ""
     }, ${selectedDistrict?.name || ""}, Lima, Perú`;
 
-    // Guardar los datos del formulario temporalmente
-    // Puedes usar AsyncStorage o el locationStore para esto
+    // Navegar al mapa
     router.push({
       pathname: "/(screens)/confirm-address-location",
       params: {
-        district_id: data.district_id,
-        address_line: data.address_line,
-        building_number: data.building_number,
-        apartment_number: data.apartment_number || "",
         search_query: fullAddress,
       },
     });
+  };
+
+  const handleGoBack = () => {
+    // Limpiar el formulario al cancelar
+    formData.clearForm();
+    router.push("/(tabs)/(user)");
   };
 
   const styles = StyleSheet.create({
@@ -155,10 +167,7 @@ export default function AddAddressScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Icon name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Agregar dirección</Text>
@@ -229,7 +238,7 @@ export default function AddAddressScreen() {
             name="building_number"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                label="Número"
+                label="Número (opcional)"
                 placeholder="Ingresa el número de la calle"
                 value={value}
                 onChangeText={onChange}

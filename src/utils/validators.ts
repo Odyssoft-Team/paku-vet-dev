@@ -36,7 +36,7 @@ export const addAddressStep1Schema = z.object({
   address_line: z
     .string()
     .min(3, "La dirección debe tener al menos 3 caracteres"),
-  building_number: z.string().min(1, "El número es requerido"),
+  building_number: z.string().optional(),
   apartment_number: z.string().optional(),
 });
 

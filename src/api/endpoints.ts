@@ -19,11 +19,21 @@ export const API_ENDPOINTS = {
     DETAIL: (id: string) => `/addresses/${id}`,
     UPDATE: (id: string) => `/addresses/${id}`,
     DELETE: (id: string) => `/addresses/${id}`,
+    UPDATE_DEFAULT: (id: string) => `/addresses/${id}/default`,
   },
 
   // Geografía
   GEO: {
     DISTRICTS: "/geo/districts",
+  },
+
+  // Mascotas
+  PETS: {
+    LIST: "/pets",
+    CREATE: "/pets",
+    DETAIL: (id: string) => `/pets/${id}`,
+    UPDATE: (id: string) => `/pets/${id}`,
+    DELETE: (id: string) => `/pets/${id}`,
   },
 
   // Administrador

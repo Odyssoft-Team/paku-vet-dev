@@ -16,11 +16,11 @@ const providerConfig = {
   },
   facebook: {
     label: "Continuar con Facebook",
-    icon: "f",
+    icon: "F",
   },
   apple: {
     label: "Continuar con Apple",
-    icon: "",
+    icon: "A",
   },
 };
 

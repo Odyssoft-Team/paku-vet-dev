@@ -13,7 +13,7 @@ export const useTokenRefresh = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated || !tokens?.accessToken) {
+    if (!isAuthenticated || !tokens?.access_token) {
       // Limpiar intervalo si no está autenticado
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -50,11 +50,11 @@ export const useTokenRefresh = () => {
           // Actualizar tokens en storage
           await storage.setItem(
             CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
-            response.tokens.accessToken,
+            response.access_token,
           );
           await storage.setItem(
             CONFIG.STORAGE_KEYS.REFRESH_TOKEN,
-            response.tokens.refreshToken,
+            response.refresh_token,
           );
 
           console.log("Token refreshed successfully");

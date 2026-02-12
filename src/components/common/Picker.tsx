@@ -4,13 +4,14 @@ import {
   Text,
   TouchableOpacity,
   Modal,
-  FlatList,
   StyleSheet,
   Pressable,
+  Platform,
 } from "react-native";
+import { Picker as RNPicker } from "@react-native-picker/picker";
 import { Icon } from "./Icon";
 import { useTheme } from "@/hooks/useTheme";
-import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { Typography, Spacing, BorderRadius } from "@/constants/theme";
 
 interface PickerOption {
   id: string;
@@ -38,8 +39,19 @@ export const Picker: React.FC<PickerProps> = ({
 }) => {
   const { colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
+  const [tempValue, setTempValue] = useState(value);
 
   const selectedOption = options.find((opt) => opt.id === value);
+
+  const handleConfirm = () => {
+    onSelect(tempValue);
+    setModalVisible(false);
+  };
+
+  const handleCancel = () => {
+    setTempValue(value);
+    setModalVisible(false);
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -61,6 +73,7 @@ export const Picker: React.FC<PickerProps> = ({
       backgroundColor: disabled ? colors.border + "40" : colors.surface,
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.md,
+      minHeight: 48,
     },
     pickerText: {
       flex: 1,
@@ -74,61 +87,96 @@ export const Picker: React.FC<PickerProps> = ({
       color: colors.error,
       marginTop: Spacing.xs,
     },
-    // Modal styles
+    // Modal styles para iOS
     overlay: {
       flex: 1,
       backgroundColor: "rgba(0, 0, 0, 0.5)",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: Spacing.lg,
+      justifyContent: "flex-end",
     },
-    modalContainer: {
+    modalContent: {
       backgroundColor: colors.surface,
-      borderRadius: BorderRadius.xl,
-      width: 300,
-      maxHeight: "100%",
-      ...Shadows.lg,
+      borderTopLeftRadius: BorderRadius.xl,
+      borderTopRightRadius: BorderRadius.xl,
     },
     modalHeader: {
-      padding: Spacing.lg,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: Spacing.md,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
     modalTitle: {
-      fontSize: Typography.fontSize.lg,
-      fontFamily: Typography.fontFamily.bold,
-      color: colors.primary,
-      textAlign: "center",
-    },
-    optionsList: {
-      maxHeight: 400,
-    },
-    optionItem: {
-      padding: Spacing.md,
-      paddingHorizontal: Spacing.lg,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    selectedOption: {
-      backgroundColor: colors.primary + "10",
-    },
-    optionText: {
       fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.regular,
+      fontFamily: Typography.fontFamily.semibold,
       color: colors.text,
     },
-    selectedOptionText: {
+    modalButton: {
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.xs,
+    },
+    modalButtonText: {
+      fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.semibold,
       color: colors.primary,
     },
+    pickerContainer: {
+      backgroundColor: colors.surface,
+    },
+    // Android picker (inline)
+    androidPickerContainer: {
+      borderWidth: 1,
+      borderColor: error ? colors.error : colors.border,
+      borderRadius: BorderRadius.md,
+      backgroundColor: disabled ? colors.border + "40" : colors.surface,
+      overflow: "hidden",
+      paddingLeft: Spacing.sm,
+    },
+    androidPicker: {
+      color: colors.text,
+    },
   });
 
+  // En Android, usar el picker directamente (sin modal)
+  if (Platform.OS === "android") {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.label}>{label}</Text>
+        <View style={styles.androidPickerContainer}>
+          <RNPicker
+            selectedValue={value}
+            onValueChange={(itemValue) => onSelect(itemValue as string)}
+            enabled={!disabled}
+            style={styles.androidPicker}
+            dropdownIconColor={colors.primary}
+          >
+            {options.map((option) => (
+              <RNPicker.Item
+                key={option.id}
+                label={option.name}
+                value={option.id}
+                color={colors.text}
+              />
+            ))}
+          </RNPicker>
+        </View>
+        {error && <Text style={styles.errorText}>{error}</Text>}
+      </View>
+    );
+  }
+
+  // En iOS, usar modal con picker tipo rueda
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <TouchableOpacity
         style={styles.pickerButton}
-        onPress={() => !disabled && setModalVisible(true)}
+        onPress={() => {
+          if (!disabled) {
+            setTempValue(value);
+            setModalVisible(true);
+          }
+        }}
         disabled={disabled}
       >
         <Text style={styles.pickerText}>
@@ -142,49 +190,59 @@ export const Picker: React.FC<PickerProps> = ({
       </TouchableOpacity>
       {error && <Text style={styles.errorText}>{error}</Text>}
 
-      {/* Modal de opciones */}
+      {/* Modal para iOS */}
       <Modal
         visible={modalVisible}
         transparent
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
+        animationType="slide"
+        onRequestClose={handleCancel}
       >
-        <Pressable
-          style={styles.overlay}
-          onPress={() => setModalVisible(false)}
-        >
+        <Pressable style={styles.overlay} onPress={handleCancel}>
           <Pressable onPress={(e) => e.stopPropagation()}>
-            <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={handleCancel}
+                >
+                  <Text style={styles.modalButtonText}>Cancelar</Text>
+                </TouchableOpacity>
                 <Text style={styles.modalTitle}>{label}</Text>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={handleConfirm}
+                >
+                  <Text style={styles.modalButtonText}>Listo</Text>
+                </TouchableOpacity>
               </View>
 
-              <FlatList
-                data={options}
-                keyExtractor={(item) => item.id}
-                style={styles.optionsList}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.optionItem,
-                      item.id === value && styles.selectedOption,
-                    ]}
-                    onPress={() => {
-                      onSelect(item.id);
-                      setModalVisible(false);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.optionText,
-                        item.id === value && styles.selectedOptionText,
-                      ]}
-                    >
-                      {item.name}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
+              <View style={styles.pickerContainer}>
+                <RNPicker
+                  selectedValue={tempValue}
+                  onValueChange={(itemValue) =>
+                    setTempValue(itemValue as string)
+                  }
+                  style={{ backgroundColor: colors.surface }}
+                  itemStyle={{
+                    color: colors.text,
+                    fontFamily: Typography.fontFamily.regular,
+                  }}
+                >
+                  <RNPicker.Item
+                    label={placeholder}
+                    value=""
+                    color={colors.placeholder}
+                  />
+                  {options.map((option) => (
+                    <RNPicker.Item
+                      key={option.id}
+                      label={option.name}
+                      value={option.id}
+                      color={colors.text}
+                    />
+                  ))}
+                </RNPicker>
+              </View>
             </View>
           </Pressable>
         </Pressable>

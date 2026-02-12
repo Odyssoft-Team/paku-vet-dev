@@ -66,7 +66,8 @@ export default function LoginFormScreen() {
     clearError();
     reset();
     Keyboard.dismiss();
-    router.back();
+    // router.back();
+    router.push("/(auth)/login");
   };
 
   const styles = StyleSheet.create({
@@ -127,7 +128,7 @@ export default function LoginFormScreen() {
       textAlign: "center",
       marginBottom: Spacing.md,
       backgroundColor: colors.error,
-      padding: Spacing.md,
+      padding: Spacing.sm,
       borderRadius: BorderRadius.md,
     },
     loginButton: {
@@ -181,7 +182,13 @@ export default function LoginFormScreen() {
                 </View>
 
                 <View style={styles.formContainer}>
-                  {error && <Text style={styles.errorText}>{error}</Text>}
+                  {error && (
+                    <Text style={styles.errorText}>
+                      {error === "Invalid credentials"
+                        ? "Correo o contraseña incorrectos"
+                        : "Error al iniciar sesión"}
+                    </Text>
+                  )}
 
                   <Controller
                     control={control}

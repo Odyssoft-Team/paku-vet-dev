@@ -7,16 +7,21 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import MapView, { Marker, UrlTile } from "react-native-maps";
-import * as Location from "expo-location";
 import { Icon } from "@/components/common/Icon";
 import { Button } from "@/components/common/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useAddressStore } from "@/store/addressStore";
+import { useAddAddressStore } from "@/store/addAddressStore";
+import { useGeoStore } from "@/store/geoStore";
 import { CreateAddressData } from "@/types/address.types";
+import { getDistrictCoordinates } from "@/constants/districtCoordinates";
 
 interface SelectedLocation {
   latitude: number;
@@ -26,10 +31,14 @@ interface SelectedLocation {
 
 export default function ConfirmAddressLocationScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
   const { colors, isDark } = useTheme();
   const mapRef = useRef<MapView>(null);
+  const insets = useSafeAreaInsets();
+
+  // Stores
   const { createAddress } = useAddressStore();
+  const formData = useAddAddressStore();
+  const { districts } = useGeoStore();
 
   const [location, setLocation] = useState<SelectedLocation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,57 +53,62 @@ export default function ConfirmAddressLocationScreen() {
   };
 
   useEffect(() => {
-    searchInitialLocation();
+    initializeLocation();
   }, []);
 
-  const searchInitialLocation = async () => {
+  const initializeLocation = () => {
     try {
-      const searchQuery = params.search_query as string;
+      // Verificar que tenemos datos del formulario
+      if (!formData.district_id) {
+        console.log("No hay distrito seleccionado");
+        useDefaultLocation();
+        setLoading(false);
+        return;
+      }
 
-      if (searchQuery) {
-        // Buscar la dirección usando Nominatim
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            searchQuery,
-          )}&limit=1&addressdetails=1&accept-language=es`,
-          {
-            headers: {
-              "User-Agent": "PakuVet/1.0",
-            },
-          },
-        );
+      // Buscar el distrito
+      const selectedDistrict = districts.find(
+        (d) => d.id === formData.district_id,
+      );
+      console.log("Distrito seleccionado:", selectedDistrict);
 
-        const data = await response.json();
+      // Intentar obtener coordenadas del distrito
+      const coords = getDistrictCoordinates(selectedDistrict?.name as string);
 
-        if (data && data.length > 0) {
-          const result = data[0];
-          const latitude = parseFloat(result.lat);
-          const longitude = parseFloat(result.lon);
+      if (coords) {
+        console.log("Coordenadas del distrito:", coords);
 
-          setLocation({
-            latitude,
-            longitude,
-            address: result.display_name,
-          });
+        const address = `${formData.address_line} ${formData.building_number}${
+          formData.apartment_number ? `, ${formData.apartment_number}` : ""
+        }, ${selectedDistrict?.name || "Lima"}, Lima, Perú`;
 
+        setLocation({
+          latitude: coords.lat,
+          longitude: coords.lng,
+          address: address,
+        });
+
+        // Guardar coordenadas en el store
+        formData.setStep2Data(coords.lat, coords.lng);
+
+        // Animar el mapa a la ubicación
+        setTimeout(() => {
           mapRef.current?.animateToRegion(
             {
-              latitude,
-              longitude,
+              latitude: coords.lat,
+              longitude: coords.lng,
               latitudeDelta: 0.005,
               longitudeDelta: 0.005,
             },
             1000,
           );
-        } else {
-          // Si no encuentra, usar ubicación por defecto
-          useDefaultLocation();
-        }
+        }, 500);
       } else {
+        console.log("No se encontraron coordenadas para el distrito");
         useDefaultLocation();
       }
     } catch (error) {
-      console.log("Error searching location:", error);
+      console.error("Error inicializando ubicación:", error);
       useDefaultLocation();
     } finally {
       setLoading(false);
@@ -102,37 +116,33 @@ export default function ConfirmAddressLocationScreen() {
   };
 
   const useDefaultLocation = () => {
+    const lat = defaultLocation.latitude;
+    const lng = defaultLocation.longitude;
+
+    console.log("Usando ubicación por defecto:", { lat, lng });
+
     setLocation({
-      latitude: defaultLocation.latitude,
-      longitude: defaultLocation.longitude,
-      address: "Lima, Perú",
+      latitude: lat,
+      longitude: lng,
+      address: `${formData.address_line || ""} ${formData.building_number || ""}, Lima, Perú`,
     });
+
+    formData.setStep2Data(lat, lng);
   };
 
   const getAddressFromCoordinates = async (
     latitude: number,
     longitude: number,
   ): Promise<string> => {
-    try {
-      setLoadingAddress(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    // No usar geocoding inverso para evitar rate limits
+    // Construir dirección desde los datos del formulario
+    const selectedDistrict = districts.find(
+      (d) => d.id === formData.district_id,
+    );
 
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&accept-language=es`,
-        {
-          headers: {
-            "User-Agent": "PakuVet/1.0",
-          },
-        },
-      );
-
-      const data = await response.json();
-      return data?.display_name || "Dirección no disponible";
-    } catch (error) {
-      return "Dirección no disponible";
-    } finally {
-      setLoadingAddress(false);
-    }
+    return `${formData.address_line} ${formData.building_number}${
+      formData.apartment_number ? `, ${formData.apartment_number}` : ""
+    }, ${selectedDistrict?.name || "Lima"}, Lima, Perú`;
   };
 
   const handleMapPress = async (event: any) => {
@@ -140,6 +150,7 @@ export default function ConfirmAddressLocationScreen() {
     const address = await getAddressFromCoordinates(latitude, longitude);
 
     setLocation({ latitude, longitude, address });
+    formData.setStep2Data(latitude, longitude);
   };
 
   const handleMarkerDragEnd = async (event: any) => {
@@ -147,10 +158,11 @@ export default function ConfirmAddressLocationScreen() {
     const address = await getAddressFromCoordinates(latitude, longitude);
 
     setLocation({ latitude, longitude, address });
+    formData.setStep2Data(latitude, longitude);
   };
 
   const handleSaveAddress = async () => {
-    if (!location) {
+    if (!location || !formData.lat || !formData.lng) {
       Alert.alert("Error", "Por favor selecciona una ubicación en el mapa");
       return;
     }
@@ -159,27 +171,35 @@ export default function ConfirmAddressLocationScreen() {
       setSaving(true);
 
       const addressData: CreateAddressData = {
-        district_id: params.district_id as string,
-        address_line: params.address_line as string,
-        building_number: params.building_number as string,
-        apartment_number: (params.apartment_number as string) || undefined,
-        lat: location.latitude,
-        lng: location.longitude,
+        district_id: formData.district_id,
+        address_line: formData.address_line,
+        building_number: formData.building_number,
+        apartment_number: formData.apartment_number || undefined,
+        lat: formData.lat,
+        lng: formData.lng,
         is_default: false,
+        reference: "",
+        label: formData.address_line,
+        type: "",
       };
 
+      console.log("Guardando dirección:", addressData);
+
       await createAddress(addressData);
+
+      // Limpiar el formulario después de guardar
+      formData.clearForm();
 
       Alert.alert("Éxito", "Dirección agregada correctamente", [
         {
           text: "OK",
           onPress: () => {
-            // Volver al home
             router.replace("/(tabs)/(user)");
           },
         },
       ]);
     } catch (error) {
+      console.error("Error al guardar dirección:", error);
       Alert.alert("Error", "No se pudo guardar la dirección");
     } finally {
       setSaving(false);
@@ -190,6 +210,7 @@ export default function ConfirmAddressLocationScreen() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      marginBottom: insets.bottom,
     },
     header: {
       flexDirection: "row",
@@ -258,11 +279,6 @@ export default function ConfirmAddressLocationScreen() {
       color: colors.text,
       lineHeight: 20,
     },
-    addressLoading: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.sm,
-    },
     fixedButton: {
       position: "absolute",
       bottom: 0,
@@ -289,7 +305,7 @@ export default function ConfirmAddressLocationScreen() {
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Cargando mapa...</Text>
+          <Text style={styles.loadingText}>Preparando mapa...</Text>
         </View>
       </SafeAreaView>
     );
@@ -305,7 +321,7 @@ export default function ConfirmAddressLocationScreen() {
         >
           <Icon name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Agregar dirección</Text>
+        <Text style={styles.headerTitle}>Confirmar ubicación</Text>
       </View>
 
       {/* Mapa */}
@@ -354,21 +370,14 @@ export default function ConfirmAddressLocationScreen() {
         {/* Hint */}
         <View style={styles.infoHint}>
           <Text style={styles.infoHintText}>
-            Confirma tu dirección exacta arrastrando el marcador en el mapa.
+            Arrastra el marcador a la ubicación exacta de tu dirección.
           </Text>
         </View>
 
         {/* Tarjeta de dirección */}
         {location && (
           <View style={styles.addressCard}>
-            {loadingAddress ? (
-              <View style={styles.addressLoading}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={styles.addressText}>Obteniendo dirección...</Text>
-              </View>
-            ) : (
-              <Text style={styles.addressText}>{location.address}</Text>
-            )}
+            <Text style={styles.addressText}>{location.address}</Text>
           </View>
         )}
       </View>

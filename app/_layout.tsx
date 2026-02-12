@@ -54,7 +54,7 @@ export default function RootLayout() {
     const inAuthGroup = segments[0] === "(auth)";
 
     // NO redirigir si hay un error (el usuario está intentando loguearse)
-    if (error) {
+    if (error && !inAuthGroup && !isAuthenticated) {
       return;
     }
 
@@ -78,8 +78,8 @@ export default function RootLayout() {
     }
   }, [isAuthenticated, isLoading, segments, user, appIsReady]);
 
-  if (!appIsReady || isLoading) {
-    return <Loading message="Cargando..." />;
+  if (!appIsReady) {
+    return <Loading fullScreen />;
   }
 
   return <Slot />;
