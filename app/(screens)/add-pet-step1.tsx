@@ -74,7 +74,7 @@ export default function AddPetStep1Screen() {
 
   const handleCancel = () => {
     formData.clearForm();
-    router.back();
+    router.replace("/(tabs)/(user)");
   };
 
   const styles = StyleSheet.create({

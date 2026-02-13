@@ -33,7 +33,7 @@ export const RegisterPetCard: React.FC<RegisterPetCardProps> = ({
     },
     buttonText: {
       fontSize: Typography.fontSize.md,
-      color: colors.secondary,
+      color: colors.primary,
     },
   });
 
@@ -43,7 +43,7 @@ export const RegisterPetCard: React.FC<RegisterPetCardProps> = ({
         Empieza registrando a tu mascota
       </Text>
       <TouchableOpacity style={styles.button} onPress={onPress}>
-        <Icon name="plus" size={18} color={colors.secondary} />
+        <Icon name="plus" size={18} color={colors.primary} />
         <Text variant="semibold" style={styles.buttonText}>
           Registrar mascota
         </Text>

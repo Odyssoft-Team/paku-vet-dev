@@ -89,6 +89,12 @@ export const AddressDrawer: React.FC<AddressDrawerProps> = ({
       color: colors.text,
       marginLeft: Spacing.md,
     },
+    addressTextSelected: {
+      flex: 1,
+      fontSize: Typography.fontSize.md,
+      color: colors.primary,
+      marginLeft: Spacing.md,
+    },
     checkIcon: {
       marginLeft: Spacing.sm,
     },
@@ -113,6 +119,28 @@ export const AddressDrawer: React.FC<AddressDrawerProps> = ({
       color: colors.textSecondary,
       textAlign: "center",
       marginBottom: Spacing.lg,
+    },
+    addButton: {
+      marginTop: Spacing.md,
+      marginHorizontal: Spacing.lg,
+      flexDirection: "row",
+      borderRadius: BorderRadius.lg,
+      backgroundColor: colors.secondary + "20",
+      borderWidth: 1,
+      borderColor: colors.secondary,
+      paddingVertical: Spacing.md,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: Spacing.sm,
+    },
+    addIcon: {
+      marginBottom: Spacing.xs,
+    },
+    addText: {
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.semibold,
+      color: colors.primary,
+      textAlign: "center",
     },
   });
 
@@ -160,7 +188,12 @@ export const AddressDrawer: React.FC<AddressDrawerProps> = ({
               size={20}
               color={item.isDefault ? colors.primary : colors.textSecondary}
             />
-            <Text variant="regular" style={styles.addressText}>
+            <Text
+              variant="regular"
+              style={
+                item.isDefault ? styles.addressTextSelected : styles.addressText
+              }
+            >
               {item.address}
             </Text>
             {item.isDefault && (
@@ -195,17 +228,21 @@ export const AddressDrawer: React.FC<AddressDrawerProps> = ({
 
             {renderContent()}
 
-            <View style={styles.buttonContainer}>
-              <Button
-                title="+ Nueva dirección"
-                onPress={() => {
-                  onAddNew();
-                  onClose();
-                }}
-                variant="secondary"
-                fullWidth
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => {
+                onAddNew();
+                onClose();
+              }}
+            >
+              <Icon
+                name="plus"
+                size={18}
+                color={colors.primary}
+                style={styles.addIcon}
               />
-            </View>
+              <Text style={styles.addText}>Registrar mascota</Text>
+            </TouchableOpacity>
           </View>
         </Pressable>
       </Pressable>

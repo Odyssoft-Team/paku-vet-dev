@@ -44,9 +44,9 @@ export const PetsList: React.FC<PetsListProps> = ({
       height: 130,
       borderRadius: BorderRadius.lg,
       backgroundColor: colors.secondary + "20",
-      borderWidth: 2,
+      borderWidth: 1,
       borderColor: colors.secondary,
-      borderStyle: "dashed",
+      // borderStyle: "dashed",
       justifyContent: "center",
       alignItems: "center",
       marginRight: Spacing.sm,
@@ -57,7 +57,7 @@ export const PetsList: React.FC<PetsListProps> = ({
     addText: {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.semibold,
-      color: colors.secondary,
+      color: colors.primary,
       textAlign: "center",
     },
   });
@@ -81,8 +81,8 @@ export const PetsList: React.FC<PetsListProps> = ({
         <TouchableOpacity style={styles.addButton} onPress={onAddPress}>
           <Icon
             name="plus"
-            size={32}
-            color={colors.secondary}
+            size={24}
+            color={colors.primary}
             style={styles.addIcon}
           />
           <Text style={styles.addText}>Registrar{"\n"}mascota</Text>

@@ -80,6 +80,10 @@ export default function UserHomeScreen() {
     console.log("Pet pressed:", pet);
     // TODO: Navegar a detalle de mascota
     // router.push(`/(screens)/pet-detail/${pet.id}`);
+    router.push({
+      pathname: "/(tabs)/(user)/pet-detail",
+      params: { petId: pet.id },
+    });
   };
 
   const handleServicePress = () => {

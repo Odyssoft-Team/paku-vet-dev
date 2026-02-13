@@ -87,6 +87,14 @@ export default function UserLayout() {
           ),
         }}
       />
+
+      {/* Pantallas ocultas del tab bar */}
+      <Tabs.Screen
+        name="pet-detail"
+        options={{
+          href: null, // Esto la oculta del tab bar
+        }}
+      />
     </Tabs>
   );
 }
