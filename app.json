@@ -15,15 +15,21 @@
         "INTERNET",
         "INTERNET"
       ],
-      "package": "com.aldoparradev.pakuvet"
+      "package": "com.aldoparradev.pakuvet",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCP8NhD7R-g5J81DR-_ZUr_WWx7OpQasaA"
+        }
+      }
     },
     "plugins": [
       "expo-font"
     ],
     "extra": {
       "eas": {
-        "projectId": "6a71eecb-b961-400b-a9e8-d62cb86256f1"
+        "projectId": "e2cc9111-b445-484e-b350-66d780129a13"
       }
-    }
+    },
+    "owner": "fzalvarez"
   }
 }
