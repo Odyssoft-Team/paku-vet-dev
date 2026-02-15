@@ -55,6 +55,9 @@ export default function SelectLocationScreen() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [loadingAddress, setLoadingAddress] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [manualAddressInput, setManualAddressInput] = useState("");
 
   const defaultLocation = {
     latitude: -12.0464,
@@ -98,13 +101,13 @@ export default function SelectLocationScreen() {
 
   const getCurrentLocation = async () => {
     try {
+      setLocationError(null);
+      
       const { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== "granted") {
-        Alert.alert(
-          "Permiso denegado",
-          "Puedes buscar tu dirección manualmente o tocar en el mapa",
-        );
+        const errorMsg = "Permiso de ubicación denegado. Puedes ingresar la dirección manualmente o tocar en el mapa.";
+        setLocationError(errorMsg);
         setLocation({
           latitude: defaultLocation.latitude,
           longitude: defaultLocation.longitude,
@@ -114,30 +117,46 @@ export default function SelectLocationScreen() {
         return;
       }
 
-      const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      try {
+        const currentLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
 
-      const { latitude, longitude } = currentLocation.coords;
-      const address = await getAddressFromCoordinates(latitude, longitude);
+        const { latitude, longitude } = currentLocation.coords;
+        const address = await getAddressFromCoordinates(latitude, longitude);
 
-      setLocation({
-        latitude,
-        longitude,
-        address,
-      });
-
-      mapRef.current?.animateToRegion(
-        {
+        setLocation({
           latitude,
           longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        },
-        1000,
-      );
-    } catch (error) {
-      console.log("Error getting location:", error);
+          address,
+        });
+
+        mapRef.current?.animateToRegion(
+          {
+            latitude,
+            longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          },
+          1000,
+        );
+      } catch (locationError: any) {
+        const errorMsg = `No se pudo obtener tu ubicación actual: ${locationError?.message || 'Error desconocido'}. Puedes ingresar la dirección manualmente.`;
+        console.log("Error getting current position:", locationError);
+        setLocationError(errorMsg);
+        
+        // Fallback a ubicación por defecto
+        setLocation({
+          latitude: defaultLocation.latitude,
+          longitude: defaultLocation.longitude,
+          address: "Lima, Perú",
+        });
+      }
+    } catch (error: any) {
+      const errorMsg = `Error al solicitar permisos: ${error?.message || 'Error desconocido'}. Puedes ingresar la dirección manualmente.`;
+      console.log("Error requesting permissions:", error);
+      setLocationError(errorMsg);
+      
       setLocation({
         latitude: defaultLocation.latitude,
         longitude: defaultLocation.longitude,
@@ -155,10 +174,15 @@ export default function SelectLocationScreen() {
     try {
       setLoadingAddress(true);
 
-      const result = await Location.reverseGeocodeAsync({
-        latitude,
-        longitude,
-      });
+      const result = await Promise.race([
+        Location.reverseGeocodeAsync({
+          latitude,
+          longitude,
+        }),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout al obtener dirección')), 8000)
+        )
+      ]);
 
       if (result.length > 0) {
         const address = result[0];
@@ -168,9 +192,9 @@ export default function SelectLocationScreen() {
       }
 
       return "Dirección no disponible";
-    } catch (error) {
-      console.log("Error getting address:", error);
-      return "Dirección no disponible";
+    } catch (error: any) {
+      console.log("Error getting address:", error?.message || error);
+      return "Dirección no disponible - Puedes ingresarla manualmente";
     } finally {
       setLoadingAddress(false);
     }
@@ -234,40 +258,67 @@ export default function SelectLocationScreen() {
   };
 
   const handleMapPress = async (event: any) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    const address = await getAddressFromCoordinates(latitude, longitude);
+    try {
+      const { latitude, longitude } = event.nativeEvent.coordinate;
+      const address = await getAddressFromCoordinates(latitude, longitude);
 
-    setLocation({
-      latitude,
-      longitude,
-      address,
-    });
+      setLocation({
+        latitude,
+        longitude,
+        address,
+      });
+      setLocationError(null);
+    } catch (error: any) {
+      console.log("Error handling map press:", error);
+      setLocationError(`Error al seleccionar ubicación: ${error?.message || 'Error desconocido'}`);
+    }
   };
 
   const handleMarkerDragEnd = async (event: any) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    const address = await getAddressFromCoordinates(latitude, longitude);
+    try {
+      const { latitude, longitude } = event.nativeEvent.coordinate;
+      const address = await getAddressFromCoordinates(latitude, longitude);
 
-    setLocation({
-      latitude,
-      longitude,
-      address,
-    });
+      setLocation({
+        latitude,
+        longitude,
+        address,
+      });
+      setLocationError(null);
+    } catch (error: any) {
+      console.log("Error handling marker drag:", error);
+      setLocationError(`Error al mover marcador: ${error?.message || 'Error desconocido'}`);
+    }
   };
 
   const handleSaveLocation = () => {
-    if (!location) {
-      Alert.alert("Error", "Por favor selecciona una ubicación en el mapa");
+    // Permitir guardar dirección manual si el mapa falló
+    if (!location && !manualAddressInput.trim()) {
+      Alert.alert(
+        "Dirección requerida",
+        "Por favor selecciona una ubicación en el mapa o ingresa tu dirección manualmente"
+      );
       return;
     }
 
-    // Guardar en el store
-    setLocationData(location.latitude, location.longitude, location.address);
+    // Si hay dirección manual y no hay location del mapa, usar coordenadas por defecto
+    if (manualAddressInput.trim() && (!location || location.address === "Lima, Perú")) {
+      setLocationData(
+        defaultLocation.latitude,
+        defaultLocation.longitude,
+        manualAddressInput.trim()
+      );
+      console.log("Manual address saved:", manualAddressInput);
+      router.back();
+      return;
+    }
 
-    console.log("Location saved:", location);
-
-    // Volver atrás
-    router.back();
+    if (location) {
+      // Guardar en el store
+      setLocationData(location.latitude, location.longitude, location.address);
+      console.log("Location saved:", location);
+      router.back();
+    }
   };
 
   const insets = useSafeAreaInsets();
@@ -417,6 +468,44 @@ export default function SelectLocationScreen() {
       color: colors.primary,
       textAlign: "left",
     },
+    errorBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.error + "20",
+      padding: Spacing.md,
+      gap: Spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.error,
+    },
+    errorBannerText: {
+      flex: 1,
+      fontSize: Typography.fontSize.sm,
+      color: colors.error,
+      lineHeight: 18,
+    },
+    manualInputContainer: {
+      padding: Spacing.md,
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    manualInputLabel: {
+      fontSize: Typography.fontSize.sm,
+      fontWeight: Typography.fontWeight.semibold,
+      color: colors.text,
+      marginBottom: Spacing.sm,
+    },
+    manualInput: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: BorderRadius.md,
+      padding: Spacing.md,
+      fontSize: Typography.fontSize.md,
+      color: colors.text,
+      backgroundColor: colors.background,
+      minHeight: 60,
+      textAlignVertical: "top",
+    },
   });
 
   if (loading) {
@@ -451,6 +540,32 @@ export default function SelectLocationScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Agregar dirección</Text>
       </View>
+
+      {/* Banner de error */}
+      {(locationError || mapError) && (
+        <View style={styles.errorBanner}>
+          <Icon name="close" size={20} color={colors.error} />
+          <Text style={styles.errorBannerText}>
+            {locationError || mapError}
+          </Text>
+        </View>
+      )}
+
+      {/* Input manual de dirección (fallback) */}
+      {(locationError || mapError) && (
+        <View style={styles.manualInputContainer}>
+          <Text style={styles.manualInputLabel}>O ingresa tu dirección manualmente:</Text>
+          <TextInput
+            style={styles.manualInput}
+            placeholder="Ej: Av. Larco 123, Miraflores, Lima"
+            placeholderTextColor={colors.placeholder}
+            value={manualAddressInput}
+            onChangeText={setManualAddressInput}
+            multiline
+            numberOfLines={2}
+          />
+        </View>
+      )}
 
       {/* Mapa */}
       <View style={styles.mapContainer}>
