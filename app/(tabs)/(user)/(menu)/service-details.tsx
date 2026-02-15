@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ImageBackground,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,6 +14,7 @@ import { Icon } from "@/components/common/Icon";
 import { Button } from "@/components/common/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { useSpaServices } from "@/hooks/useSpaceServices";
 
 interface ServicePackageProps {
   title: string;
@@ -97,54 +99,76 @@ const ServicePackage: React.FC<ServicePackageProps> = ({
   );
 };
 
+const getBadgeData = (index: number) => {
+  const badges = [
+    { text: "Recomendado", color: "#FFB6C1" }, // Para el index 0
+    { text: "Más lujo", color: "#FFB6C1" }, // Para el index 1
+    { text: "Cachorro", color: "#FFB6C1" }, // Para el index 2
+  ];
+  return badges[index] || null;
+};
+
 export default function ServiceDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { colors } = useTheme();
 
-  const handleSelectPackage = (packageName: string) => {
-    console.log("Selected package:", packageName);
-    // TODO: Navegar a la siguiente pantalla (selección de fecha/hora)
+  const { data: packages, isLoading } = useSpaServices();
+
+  const handleSelectPackage = (packageCode: string) => {
+    router.push({
+      pathname: "/(tabs)/(user)/service-selected",
+      params: { serviceCode: packageCode },
+    });
   };
 
-  const packages = [
-    {
-      title: "Clásico",
-      subtitle: "Cuidado esencial para el día a día.",
-      price: "S/50.00",
-      badge: "Recomendado",
-      badgeColor: "#FFB6C1",
-      includes: [
-        "Limpieza completa y segura.",
-        "Cuidado básico de uñas y oídos.",
-        "Brillo y frescura inmediata.",
-      ],
-    },
-    {
-      title: "Premium",
-      subtitle: "Experiencia spa de alto nivel.",
-      price: "S/95.00",
-      badge: "Más lujo",
-      badgeColor: "#FFB6C1",
-      includes: [
-        "Hidratación profunda del pelaje.",
-        "Mascarilla nutritiva y acabado superior.",
-        "Suavidad y brillo prolongado.",
-      ],
-    },
-    {
-      title: "Express/Seco",
-      subtitle: "Limpieza rápida agua.",
-      price: "S/75.00",
-      badge: "Cachorre",
-      badgeColor: "#FFB6C1",
-      includes: [
-        "Shampoo en seco hipoalergénico.",
-        "Frescura inmediata para cachorros hasta los 4 meses.",
-        "Frescura inmediata.",
-      ],
-    },
-  ];
+  // const packages = [
+  //   {
+  //     title: "Clásico",
+  //     subtitle: "Cuidado esencial para el día a día.",
+  //     price: "S/50.00",
+  //     badge: "Recomendado",
+  //     badgeColor: "#FFB6C1",
+  //     includes: [
+  //       "Limpieza completa y segura.",
+  //       "Cuidado básico de uñas y oídos.",
+  //       "Brillo y frescura inmediata.",
+  //     ],
+  //   },
+  //   {
+  //     title: "Premium",
+  //     subtitle: "Experiencia spa de alto nivel.",
+  //     price: "S/95.00",
+  //     badge: "Más lujo",
+  //     badgeColor: "#FFB6C1",
+  //     includes: [
+  //       "Hidratación profunda del pelaje.",
+  //       "Mascarilla nutritiva y acabado superior.",
+  //       "Suavidad y brillo prolongado.",
+  //     ],
+  //   },
+  //   {
+  //     title: "Express/Seco",
+  //     subtitle: "Limpieza rápida agua.",
+  //     price: "S/75.00",
+  //     badge: "Cachorre",
+  //     badgeColor: "#FFB6C1",
+  //     includes: [
+  //       "Shampoo en seco hipoalergénico.",
+  //       "Frescura inmediata para cachorros hasta los 4 meses.",
+  //       "Frescura inmediata.",
+  //     ],
+  //   },
+  // ];
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text>Cargando experiencias spa...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView
@@ -180,18 +204,22 @@ export default function ServiceDetailsScreen() {
         </View>
 
         {/* Packages */}
-        {packages.map((pkg, index) => (
-          <ServicePackage
-            key={index}
-            title={pkg.title}
-            subtitle={pkg.subtitle}
-            price={pkg.price}
-            badge={pkg.badge}
-            badgeColor={pkg.badgeColor}
-            includes={pkg.includes}
-            onPress={() => handleSelectPackage(pkg.title)}
-          />
-        ))}
+        {packages?.map((pkg, index) => {
+          const badgeInfo = getBadgeData(index);
+
+          return (
+            <ServicePackage
+              key={pkg.code}
+              title={pkg.name}
+              subtitle={pkg.description}
+              price={`${pkg.currency} ${pkg.price.toFixed(2)}`}
+              includes={pkg.includes}
+              badge={badgeInfo?.text}
+              badgeColor={badgeInfo?.color}
+              onPress={() => handleSelectPackage(pkg.code)}
+            />
+          );
+        })}
       </ScrollView>
     </SafeAreaView>
   );

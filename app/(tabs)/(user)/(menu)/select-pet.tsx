@@ -16,6 +16,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { usePetStore } from "@/store/petStore";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { Pet } from "@/types/pet.types";
+import { useAddressStore } from "@/store/addressStore";
 
 interface PetSelectionCardProps {
   pet: Pet;
@@ -130,6 +131,14 @@ export default function SelectPetForServiceScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { pets, isLoading, fetchPets } = usePetStore();
+  const { addresses, fetchAddresses, error } = useAddressStore();
+
+  useEffect(() => {
+    // Disparamos el fetch al montar el componente
+    fetchAddresses();
+  }, []);
+
+  console.log("addresses", addresses);
 
   useEffect(() => {
     if (pets.length === 0) {

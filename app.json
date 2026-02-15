@@ -11,10 +11,7 @@
   "expo": {
     "android": {
       "usesCleartextTraffic": true,
-      "permissions": [
-        "INTERNET",
-        "INTERNET"
-      ],
+      "permissions": ["INTERNET", "INTERNET"],
       "package": "com.aldoparradev.pakuvet",
       "config": {
         "googleMaps": {
@@ -22,9 +19,7 @@
         }
       }
     },
-    "plugins": [
-      "expo-font"
-    ],
+    "plugins": ["expo-font"],
     "extra": {
       "eas": {
         "projectId": "e2cc9111-b445-484e-b350-66d780129a13"

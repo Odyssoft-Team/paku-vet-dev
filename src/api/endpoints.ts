@@ -41,6 +41,11 @@ export const API_ENDPOINTS = {
     BREEDS: "/catalog/breeds",
   },
 
+  // Servicios de SPA
+  SPA: {
+    LIST: "/paku-spa/plans",
+  },
+
   // Administrador
   ADMIN: {
     DASHBOARD: "/admin/dashboard",
