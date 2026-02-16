@@ -58,6 +58,7 @@ export default function SelectLocationScreen() {
   const [mapError, setMapError] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [manualAddressInput, setManualAddressInput] = useState("");
+  const [mapFailedToLoad, setMapFailedToLoad] = useState(false);
 
   const defaultLocation = {
     latitude: -12.0464,
@@ -97,6 +98,18 @@ export default function SelectLocationScreen() {
       // Si no hay ubicación guardada, obtener ubicación actual
       getCurrentLocation();
     }
+
+    // Timeout de seguridad: si después de 15 segundos aún está cargando, mostrar fallback
+    const mapTimeout = setTimeout(() => {
+      if (loading) {
+        console.log("Map load timeout - showing fallback");
+        setMapFailedToLoad(true);
+        setMapError("El mapa tardó demasiado en cargar. Puedes ingresar tu dirección manualmente.");
+        setLoading(false);
+      }
+    }, 15000);
+
+    return () => clearTimeout(mapTimeout);
   }, []);
 
   const getCurrentLocation = async () => {
@@ -506,6 +519,26 @@ export default function SelectLocationScreen() {
       minHeight: 60,
       textAlignVertical: "top",
     },
+    mapPlaceholder: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: Spacing.xl,
+      backgroundColor: colors.surface,
+    },
+    mapPlaceholderText: {
+      fontSize: Typography.fontSize.md,
+      fontWeight: Typography.fontWeight.semibold,
+      color: colors.textSecondary,
+      marginTop: Spacing.md,
+      textAlign: "center",
+    },
+    mapPlaceholderSubtext: {
+      fontSize: Typography.fontSize.sm,
+      color: colors.textSecondary,
+      marginTop: Spacing.sm,
+      textAlign: "center",
+    },
   });
 
   if (loading) {
@@ -569,50 +602,65 @@ export default function SelectLocationScreen() {
 
       {/* Mapa */}
       <View style={styles.mapContainer}>
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          initialRegion={{
-            latitude: location?.latitude || defaultLocation.latitude,
-            longitude: location?.longitude || defaultLocation.longitude,
-            latitudeDelta: defaultLocation.latitudeDelta,
-            longitudeDelta: defaultLocation.longitudeDelta,
-          }}
-          onPress={handleMapPress}
-          showsUserLocation
-          showsMyLocationButton={false}
-          mapType="none"
-        >
-          {/* Usar tiles de CartoDB (más permisivo que OSM directo) */}
-          {isDark ? (
-            <UrlTile
-              urlTemplate="https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-              maximumZ={19}
-              flipY={false}
-            />
-          ) : (
-            <UrlTile
-              urlTemplate="https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-              maximumZ={19}
-              flipY={false}
-            />
-          )}
+        {!mapFailedToLoad ? (
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            initialRegion={{
+              latitude: location?.latitude || defaultLocation.latitude,
+              longitude: location?.longitude || defaultLocation.longitude,
+              latitudeDelta: defaultLocation.latitudeDelta,
+              longitudeDelta: defaultLocation.longitudeDelta,
+            }}
+            onPress={handleMapPress}
+            showsUserLocation
+            showsMyLocationButton={false}
+            mapType="none"
+            onMapReady={() => {
+              console.log("Map loaded successfully");
+            }}
+          >
+            {/* Usar tiles de CartoDB (más permisivo que OSM directo) */}
+            {isDark ? (
+              <UrlTile
+                urlTemplate="https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+                maximumZ={19}
+                flipY={false}
+              />
+            ) : (
+              <UrlTile
+                urlTemplate="https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+                maximumZ={19}
+                flipY={false}
+              />
+            )}
 
-          {location && (
-            <Marker
-              coordinate={{
-                latitude: location.latitude,
-                longitude: location.longitude,
-              }}
-              draggable
-              onDragEnd={handleMarkerDragEnd}
-              title="Tu ubicación"
-            />
-          )}
-        </MapView>
+            {location && (
+              <Marker
+                coordinate={{
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                }}
+                draggable
+                onDragEnd={handleMarkerDragEnd}
+                title="Tu ubicación"
+              />
+            )}
+          </MapView>
+        ) : (
+          <View style={styles.mapPlaceholder}>
+            <Icon name="gps" size={48} color={colors.textSecondary} />
+            <Text style={styles.mapPlaceholderText}>
+              El mapa no está disponible en este momento
+            </Text>
+            <Text style={styles.mapPlaceholderSubtext}>
+              Por favor, ingresa tu dirección manualmente arriba
+            </Text>
+          </View>
+        )}
 
         {/* Hint inicial */}
-        {!searchQuery && (
+        {!searchQuery && !mapFailedToLoad && (
           <View style={styles.infoHint}>
             <Text style={styles.infoHintText}>
               Arrastra el marcador o toca en el mapa para ajustar tu ubicación
@@ -621,15 +669,17 @@ export default function SelectLocationScreen() {
         )}
 
         {/* Botón Mi Ubicación */}
-        <TouchableOpacity
-          style={styles.myLocationButton}
-          onPress={getCurrentLocation}
-        >
-          <Icon name="gps" size={24} color={colors.primary} />
-        </TouchableOpacity>
+        {!mapFailedToLoad && (
+          <TouchableOpacity
+            style={styles.myLocationButton}
+            onPress={getCurrentLocation}
+          >
+            <Icon name="gps" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        )}
 
         {/* Tarjeta de dirección */}
-        {location && !searchResults.length && (
+        {location && !searchResults.length && !mapFailedToLoad && (
           <View style={styles.addressCard}>
             {loadingAddress ? (
               <View style={styles.addressLoading}>
@@ -649,7 +699,7 @@ export default function SelectLocationScreen() {
           title="Guardar"
           onPress={handleSaveLocation}
           fullWidth
-          disabled={!location}
+          disabled={!location && !manualAddressInput.trim()}
         />
       </View>
     </SafeAreaView>
