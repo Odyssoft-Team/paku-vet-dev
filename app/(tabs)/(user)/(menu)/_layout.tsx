@@ -17,6 +17,8 @@ export default function MenuLayout() {
     "support",
     "payments",
     "preferences",
+    "additional-service",
+    "address-form",
   ];
 
   return (

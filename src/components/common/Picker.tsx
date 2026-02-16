@@ -152,6 +152,12 @@ export const Picker: React.FC<PickerProps> = ({
             style={styles.androidPicker}
             dropdownIconColor={colors.primary}
           >
+            {/* AGREGAR ESTO: Item inicial para que no tome el primero de la lista */}
+            <RNPicker.Item
+              label={placeholder}
+              value={null} // O "" según cómo manejes tus datos
+              color={colors.placeholder}
+            />
             {options.map((option) => (
               <RNPicker.Item
                 key={option.id}

@@ -1,29 +1,17 @@
 import { Button, Icon, Text } from "@/components/common";
-import { BannerBase } from "@/components/home/BannerBase";
+import { ServiceSelect } from "@/components/services/ServiceSelect";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks";
 import { useSpaServices } from "@/hooks/useSpaceServices";
-import { useAddressStore } from "@/store/addressStore";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function ServiceSelectedScreen() {
-  const router = useRouter();
+export default function AdditionalServiceScreen() {
   const { colors } = useTheme();
   const { serviceCode } = useLocalSearchParams();
   const { data: packages } = useSpaServices();
-  const { addresses, fetchAddresses } = useAddressStore();
-
-  console.log("Datos del usuario:", JSON.stringify(addresses, null, 2));
-
-  useFocusEffect(
-    React.useCallback(() => {
-      console.log("🔄 Pantalla enfocada, pidiendo direcciones...");
-      fetchAddresses();
-    }, []),
-  );
 
   const styles = StyleSheet.create({
     container: {
@@ -50,19 +38,9 @@ export default function ServiceSelectedScreen() {
     content: {
       flex: 1,
     },
-    serviceMainTitle: {
-      fontSize: Typography.fontSize.xl,
-      fontFamily: Typography.fontFamily.bold,
-      marginBottom: Spacing.xs,
-    },
     sectionMargin: {
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.md,
-    },
-    packagePrice: {
-      fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.bold,
-      marginBottom: Spacing.sm,
     },
     includesContainer: {
       marginBottom: Spacing.md,
@@ -99,10 +77,57 @@ export default function ServiceSelectedScreen() {
     },
   });
 
-  // 3. Encontramos el objeto específico
+  const [selectedExtra, setSelectedExtra] = useState<
+    (typeof ADDITIONAL_OPTIONS)[0] | null
+  >(null);
+
+  const ADDITIONAL_OPTIONS = [
+    {
+      id: "1",
+      label: "Deslanado + desmotado",
+      price: 25,
+      description: "Elimina pelo muerto y nudos.",
+    },
+    {
+      id: "2",
+      label: "Deslanado",
+      price: 20,
+      description: "Reduce caída y mejora la piel.",
+    },
+    {
+      id: "3",
+      label: "Desmontado",
+      price: 15,
+      description: "Retira nudos localizados.",
+    },
+    {
+      id: "4",
+      label: "Corte estético",
+      price: 15,
+      description: "Define y empareja el pelaje.",
+    },
+    {
+      id: "5",
+      label: "Mascarilla reconstructora",
+      price: 25,
+      description: "Hidrata y fortalece el pelo.",
+    },
+    {
+      id: "6",
+      label: "Atrevia One",
+      price: 59,
+      description: "Control antipulga mensual.",
+      longDescription:
+        "Tableta masticable de acción mensual (aprox. 30 días), indicada para el control de parásitos externos (ectoparásitos).",
+      image: require("@assets/images/services/atrevia-one.png"),
+    },
+  ];
+
   const selectedService = packages?.find((pkg) => pkg.code === serviceCode);
 
   if (!selectedService) return <Text>Servicio no encontrado</Text>;
+
+  const totalAmount = selectedService.price + (selectedExtra?.price || 0);
 
   return (
     <SafeAreaView
@@ -113,71 +138,51 @@ export default function ServiceSelectedScreen() {
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.push("/(tabs)/(user)/service-details")}
+          onPress={() => router.back()}
         >
           <Icon name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Detalles de la reserva</Text>
+        <Text style={styles.headerTitle}>Servicios adicionales</Text>
         <View style={styles.backButton} />
       </View>
 
-      {/* Content */}
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner principal */}
-        <BannerBase
-          imageSource={require("@assets/images/services/banner-service-1.png")}
-          title="Grooming sin estrés"
-          subtitle="Elige el PAKU Spa ideal para tu mascota."
-        />
-
-        {/* Service Info */}
         <View style={styles.sectionMargin}>
-          <Text style={[styles.serviceMainTitle, { color: colors.primary }]}>
-            PAKU Spa - {selectedService.name}
-          </Text>
-          <Text>{selectedService.description}</Text>
-          <Text style={[styles.packagePrice, { color: colors.primary }]}>
-            Costo: {selectedService.price}
-          </Text>
-          <View style={styles.includesContainer}>
-            <Text style={[styles.includesTitle, { color: colors.text }]}>
-              Incluye:
-            </Text>
-            {selectedService.includes.map((item, index) => (
-              <Text
-                key={index}
-                style={[styles.includesItem, { color: colors.text }]}
-              >
-                • {item}
-              </Text>
-            ))}
-          </View>
+          {/* El componente ServiceSelect ya debe tener la lógica interna para mostrar
+              la imagen y descripción larga si 'image' existe en la opción */}
+          <ServiceSelect
+            options={ADDITIONAL_OPTIONS}
+            selectedId={selectedExtra?.id}
+            onSelect={(option) => setSelectedExtra(option)}
+          />
         </View>
+
         <View style={styles.fixedButton}>
           <View style={styles.priceRow}>
             <Text style={[styles.includesTitle, { color: colors.primary }]}>
               Subtotal
             </Text>
             <Text style={[styles.includesTitle, { color: colors.primary }]}>
-              S/ {selectedService.price}.00
+              S/ {totalAmount}.00
             </Text>
           </View>
+
           <Button
-            title="Continuar reserva"
+            // Título dinámico: si eligió algo, ya no es "Omitir"
+            title={selectedExtra ? "Continuar" : "Omitir y Continuar"}
             textStyle={{ fontSize: Typography.fontSize.sm }}
             style={{ borderRadius: BorderRadius.xl }}
-            onPress={() =>
+            onPress={() => {
               router.push({
-                pathname: "/(tabs)/(user)/additional-service",
-                params: { serviceCode: serviceCode },
-              })
-            }
+                pathname: "/(tabs)/(user)/select-address",
+                params: { serviceCode, extraId: selectedExtra?.id },
+              });
+            }}
             fullWidth
-            disabled={!location}
-            // loading={saving}
+            // Eliminamos disabled={!location} si no se usa ubicación en esta vista
           />
         </View>
       </ScrollView>
