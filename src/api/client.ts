@@ -43,13 +43,20 @@ apiClient.interceptors.request.use(
       config.url?.includes("/auth/register") ||
       config.url?.includes("/auth/refresh");
 
+    // DENTRO DEL INTERCEPTOR DE REQUEST
     if (!isAuthEndpoint) {
       const accessToken = await storage.getItem<string>(
         CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
       );
 
+      console.log(`📡 URL: ${config.url} | Token presente: ${!!accessToken}`); // <--- AÑADE ESTO
+
       if (accessToken && config.headers) {
         config.headers.Authorization = `Bearer ${accessToken}`;
+      } else {
+        console.log(
+          "⚠️ ALERTA: Enviando petición sin Token a endpoint protegido",
+        );
       }
     }
 
