@@ -8,6 +8,7 @@ export const pakuSpaService = {
    */
   async getSpaServices(): Promise<SpaService[]> {
     const response = await apiClient.get<SpaService[]>(API_ENDPOINTS.SPA.LIST);
+
     return response.data;
   },
 };

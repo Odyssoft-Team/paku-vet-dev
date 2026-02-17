@@ -80,11 +80,11 @@ export const Loading: React.FC<LoadingProps> = ({
           />
         )}
       </Animated.View>
-      {message && (
+      {/* {message && (
         <Text variant="medium" style={styles.message}>
           {message}
         </Text>
-      )}
+      )} */}
     </View>
   );
 };

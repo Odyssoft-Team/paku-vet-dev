@@ -27,6 +27,11 @@ export const API_ENDPOINTS = {
     DISTRICTS: "/geo/districts",
   },
 
+  // Disponibilidad
+  AVAILABILITY: {
+    GET: "/availability",
+  },
+
   // Mascotas
   PETS: {
     LIST: "/pets",

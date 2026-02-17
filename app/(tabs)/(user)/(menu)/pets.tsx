@@ -197,7 +197,7 @@ export default function PetsScreen() {
   });
 
   if (isLoading && pets.length === 0) {
-    return <Loading message="Cargando mascotas..." />;
+    return <Loading message="Cargando mascotas..." fullScreen />;
   }
 
   return (

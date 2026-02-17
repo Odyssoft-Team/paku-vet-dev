@@ -171,7 +171,9 @@ export default function ServiceSelectedScreen() {
             style={{ borderRadius: BorderRadius.xl }}
             onPress={() =>
               router.push({
-                pathname: "/(tabs)/(user)/additional-service",
+                pathname: "/(tabs)/(user)/select-address",
+                // pathname: "/(tabs)/(user)/select-address",
+                // pathname: "/(tabs)/(user)/additional-service",
                 params: { serviceCode: serviceCode },
               })
             }

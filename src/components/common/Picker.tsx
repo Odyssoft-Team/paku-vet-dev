@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   Modal,
   StyleSheet,
@@ -12,6 +11,7 @@ import { Picker as RNPicker } from "@react-native-picker/picker";
 import { Icon } from "./Icon";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
+import { Text } from "./Text";
 
 interface PickerOption {
   id: string;
@@ -61,7 +61,7 @@ export const Picker: React.FC<PickerProps> = ({
     },
     label: {
       fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.medium,
+      // fontFamily: Typography.fontFamily.semibold,
       color: labelColor || colors.primary,
       marginBottom: Spacing.xs,
     },
@@ -143,7 +143,9 @@ export const Picker: React.FC<PickerProps> = ({
   if (Platform.OS === "android") {
     return (
       <View style={styles.container}>
-        <Text style={styles.label}>{label}</Text>
+        <Text variant="semibold" style={styles.label}>
+          {label}
+        </Text>
         <View style={styles.androidPickerContainer}>
           <RNPicker
             selectedValue={value}
@@ -156,7 +158,7 @@ export const Picker: React.FC<PickerProps> = ({
             <RNPicker.Item
               label={placeholder}
               value={null} // O "" según cómo manejes tus datos
-              color={colors.placeholder}
+              color={colors.text}
             />
             {options.map((option) => (
               <RNPicker.Item

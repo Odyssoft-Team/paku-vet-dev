@@ -28,6 +28,8 @@ import { registerSchema, RegisterFormData } from "@/utils/validators";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
 import { UserSex } from "@/types/auth.types";
 import { useLocationStore } from "@/store/locationStore";
+import { Picker } from "@/components/common";
+import { useGeoStore } from "@/store/geoStore";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -37,6 +39,15 @@ export default function RegisterScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const { districts, fetchDistricts } = useGeoStore();
+  const [districtSelected, setDistrictSelected] = useState<string>("");
+  // Cargar distritos al montar el componente
+  useEffect(() => {
+    if (districts.length === 0) {
+      fetchDistricts();
+    }
+  }, []);
 
   const insets = useSafeAreaInsets();
 
@@ -221,6 +232,7 @@ export default function RegisterScreen() {
       backgroundColor: colors.error + "20",
       padding: Spacing.sm,
       borderRadius: BorderRadius.md,
+      marginBottom: Spacing.lg,
     },
     fixedButton: {
       position: "absolute",
@@ -342,6 +354,14 @@ export default function RegisterScreen() {
             )}
           />
 
+          <Picker
+            label="Distrito"
+            value={districtSelected}
+            options={districts.map((d) => ({ id: d.id, name: d.name }))}
+            placeholder="Selecciona un distrito"
+            onSelect={setDistrictSelected}
+          />
+
           <View style={styles.row}>
             <Controller
               control={control}
@@ -415,7 +435,7 @@ export default function RegisterScreen() {
           />
 
           {/* Dirección */}
-          <Text style={styles.sectionTitle}>Dirección</Text>
+          {/* <Text style={styles.sectionTitle}>Dirección</Text>
           <TouchableOpacity
             style={styles.addressButton}
             onPress={() => {
@@ -432,7 +452,7 @@ export default function RegisterScreen() {
               {watch("address_line") || "Agregar dirección"}
             </Text>
             <Icon name="gps" size={20} color={colors.primary + "80"} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {error && <Text style={styles.errorText}>{error}</Text>}
         </ScrollView>

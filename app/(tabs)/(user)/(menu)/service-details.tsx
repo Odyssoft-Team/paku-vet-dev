@@ -122,45 +122,6 @@ export default function ServiceDetailsScreen() {
     });
   };
 
-  // const packages = [
-  //   {
-  //     title: "Clásico",
-  //     subtitle: "Cuidado esencial para el día a día.",
-  //     price: "S/50.00",
-  //     badge: "Recomendado",
-  //     badgeColor: "#FFB6C1",
-  //     includes: [
-  //       "Limpieza completa y segura.",
-  //       "Cuidado básico de uñas y oídos.",
-  //       "Brillo y frescura inmediata.",
-  //     ],
-  //   },
-  //   {
-  //     title: "Premium",
-  //     subtitle: "Experiencia spa de alto nivel.",
-  //     price: "S/95.00",
-  //     badge: "Más lujo",
-  //     badgeColor: "#FFB6C1",
-  //     includes: [
-  //       "Hidratación profunda del pelaje.",
-  //       "Mascarilla nutritiva y acabado superior.",
-  //       "Suavidad y brillo prolongado.",
-  //     ],
-  //   },
-  //   {
-  //     title: "Express/Seco",
-  //     subtitle: "Limpieza rápida agua.",
-  //     price: "S/75.00",
-  //     badge: "Cachorre",
-  //     badgeColor: "#FFB6C1",
-  //     includes: [
-  //       "Shampoo en seco hipoalergénico.",
-  //       "Frescura inmediata para cachorros hasta los 4 meses.",
-  //       "Frescura inmediata.",
-  //     ],
-  //   },
-  // ];
-
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>

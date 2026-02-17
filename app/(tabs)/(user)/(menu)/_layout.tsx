@@ -19,6 +19,10 @@ export default function MenuLayout() {
     "preferences",
     "additional-service",
     "address-form",
+    "select-address",
+    "add-address-for-service",
+    "confirm-address-for-service",
+    "select-date",
   ];
 
   return (

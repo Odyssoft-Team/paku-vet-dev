@@ -22,9 +22,8 @@
     "plugins": ["expo-font"],
     "extra": {
       "eas": {
-        "projectId": "e2cc9111-b445-484e-b350-66d780129a13"
+        "projectId": "6a71eecb-b961-400b-a9e8-d62cb86256f1"
       }
-    },
-    "owner": "fzalvarez"
+    }
   }
 }

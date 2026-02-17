@@ -87,7 +87,7 @@ export default function UserHomeScreen() {
   };
 
   const handleServicePress = () => {
-    console.log("Service pressed");
+    router.push("/(tabs)/(user)/select-pet");
   };
 
   const handleOfferPress = () => {

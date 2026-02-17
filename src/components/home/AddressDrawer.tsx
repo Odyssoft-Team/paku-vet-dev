@@ -241,7 +241,7 @@ export const AddressDrawer: React.FC<AddressDrawerProps> = ({
                 color={colors.primary}
                 style={styles.addIcon}
               />
-              <Text style={styles.addText}>Registrar mascota</Text>
+              <Text style={styles.addText}>Registrar dirección</Text>
             </TouchableOpacity>
           </View>
         </Pressable>

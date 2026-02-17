@@ -154,8 +154,100 @@ export default function SelectPetForServiceScreen() {
   };
 
   if (isLoading && pets.length === 0) {
-    return <Loading message="Cargando mascotas..." />;
+    return <Loading message="Cargando mascotas..." fullScreen />;
   }
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.md,
+    },
+    backButton: {
+      padding: Spacing.sm,
+      width: 40,
+    },
+    headerTitle: {
+      flex: 1,
+      fontSize: Typography.fontSize.lg,
+      fontFamily: Typography.fontFamily.bold,
+      color: "#FFFFFF",
+      textAlign: "center",
+    },
+    scrollContent: {
+      padding: Spacing.md,
+    },
+    question: {
+      fontSize: Typography.fontSize.md,
+      fontFamily: Typography.fontFamily.bold,
+      marginBottom: Spacing.lg,
+    },
+    petsGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+    },
+    petCard: {
+      width: "48%",
+      height: 200,
+      borderRadius: BorderRadius.xl,
+      overflow: "hidden",
+      marginBottom: Spacing.md,
+      ...Shadows.md,
+    },
+    petImage: {
+      width: "100%",
+      height: "100%",
+    },
+    petImageStyle: {
+      borderRadius: BorderRadius.xl,
+    },
+    petOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.4)",
+      justifyContent: "flex-end",
+      padding: Spacing.md,
+    },
+    petName: {
+      fontSize: Typography.fontSize.lg,
+      fontFamily: Typography.fontFamily.bold,
+      color: "#FFFFFF",
+      marginBottom: Spacing.xs,
+    },
+    petDetails: {
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.regular,
+      color: "#FFFFFF",
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingTop: 100,
+    },
+    emptyIcon: {
+      marginBottom: Spacing.lg,
+    },
+    emptyText: {
+      fontSize: Typography.fontSize.lg,
+      fontFamily: Typography.fontFamily.bold,
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: Spacing.xs,
+    },
+    emptySubtext: {
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.regular,
+      color: colors.textSecondary,
+      textAlign: "center",
+      paddingHorizontal: Spacing.xl,
+    },
+  });
 
   return (
     <SafeAreaView
@@ -184,84 +276,33 @@ export default function SelectPetForServiceScreen() {
         </Text>
 
         <View style={styles.petsGrid}>
-          {pets.map((pet) => (
-            <PetSelectionCard
-              key={pet.id}
-              pet={pet}
-              onPress={() => handlePetSelect(pet)}
-            />
-          ))}
+          {pets.length > 0 ? (
+            pets.map((pet) => (
+              <PetSelectionCard
+                key={pet.id}
+                pet={pet}
+                onPress={() => handlePetSelect(pet)}
+              />
+            ))
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Icon
+                name="pets"
+                size={80}
+                color={colors.textSecondary}
+                style={styles.emptyIcon}
+              />
+              <Text style={styles.emptyText}>
+                Aún no tienes mascotas registradas
+              </Text>
+              <Text style={styles.emptySubtext}>
+                Registra a tu primera mascota para comenzar a gestionar sus
+                citas y servicios
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-  },
-  backButton: {
-    padding: Spacing.sm,
-    width: 40,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamily.bold,
-    color: "#FFFFFF",
-    textAlign: "center",
-  },
-  scrollContent: {
-    padding: Spacing.md,
-  },
-  question: {
-    fontSize: Typography.fontSize.md,
-    fontFamily: Typography.fontFamily.bold,
-    marginBottom: Spacing.lg,
-  },
-  petsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  petCard: {
-    width: "48%",
-    height: 200,
-    borderRadius: BorderRadius.xl,
-    overflow: "hidden",
-    marginBottom: Spacing.md,
-    ...Shadows.md,
-  },
-  petImage: {
-    width: "100%",
-    height: "100%",
-  },
-  petImageStyle: {
-    borderRadius: BorderRadius.xl,
-  },
-  petOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    justifyContent: "flex-end",
-    padding: Spacing.md,
-  },
-  petName: {
-    fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamily.bold,
-    color: "#FFFFFF",
-    marginBottom: Spacing.xs,
-  },
-  petDetails: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    color: "#FFFFFF",
-  },
-});

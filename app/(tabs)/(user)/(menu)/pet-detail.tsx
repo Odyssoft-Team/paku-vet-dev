@@ -259,7 +259,7 @@ export default function PetDetailScreen() {
   });
 
   if (!pet) {
-    return <Loading message="Cargando información..." />;
+    return <Loading message="Cargando información..." fullScreen />;
   }
 
   return (
