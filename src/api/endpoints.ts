@@ -77,4 +77,9 @@ export const API_ENDPOINTS = {
     PETS: "/client/pets",
     APPOINTMENTS: "/client/appointments",
   },
+
+  // Clinical History
+  CLINICAL_HISTORY: {
+    BY_PET: (petId: string) => `/pets/${petId}/clinical-history`,
+  },
 } as const;

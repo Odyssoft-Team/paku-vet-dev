@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { FlatList } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Text } from "@/components/common/Text";
 import { Icon } from "@/components/common/Icon";
@@ -18,6 +19,11 @@ import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { usePetStore } from "@/store/petStore";
 import { Pet } from "@/types/pet.types";
+import { SALUD_LIST } from "@/constants/appointment";
+import CardHistory from "@/components/pets/CardHistory";
+import type { ClinicalHistory } from "@/types/clinical-history.type";
+import { clinicalHistoryService } from "@/api/services/clinical-history.service";
+import CardHealth from "@/components/pets/CardHealth";
 
 type TabType = "salud" | "historial" | "citas";
 
@@ -31,8 +37,26 @@ export default function PetDetailScreen() {
   const [activeTab, setActiveTab] = useState<TabType>("salud");
   const [imagePickerVisible, setImagePickerVisible] = useState(false);
 
+  const [historyData, setHistoryData] = useState<ClinicalHistory[]>([]);
+
+  const petId = params.petId as string;
+
   useEffect(() => {
-    const petId = params.petId as string;
+    const fetchHistory = async () => {
+      try {
+        const data = await clinicalHistoryService.getHistoryByPet(petId); // Llamada al servicio
+        setHistoryData(data); // Guardamos la data
+      } catch (error) {
+        console.error("Error al cargar historial:", error);
+      }
+    };
+
+    fetchHistory();
+  }, []);
+
+  console.log("History data:", JSON.stringify(historyData, null, 2));
+
+  useEffect(() => {
     const foundPet = pets.find((p) => p.id === petId);
     if (foundPet) {
       setPet(foundPet);
@@ -146,7 +170,7 @@ export default function PetDetailScreen() {
       padding: Spacing.sm,
     },
     bannerContainer: {
-      height: 360,
+      height: 300,
       backgroundColor: colors.border,
       position: "relative",
       overflow: "hidden",
@@ -248,13 +272,18 @@ export default function PetDetailScreen() {
     content: {
       flex: 1,
       padding: Spacing.lg,
-      backgroundColor: colors.surface,
     },
     placeholderText: {
       fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.regular,
       color: colors.textSecondary,
       textAlign: "center",
+    },
+    tabContent: {
+      flex: 1,
+    },
+    flatListPadding: {
+      paddingHorizontal: Spacing.md,
     },
   });
 
@@ -277,7 +306,6 @@ export default function PetDetailScreen() {
           <Icon name="cart" size={22} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
-
       {/* Banner with pet photo */}
       <View style={styles.bannerContainer}>
         {pet.photo_url ? (
@@ -334,9 +362,21 @@ export default function PetDetailScreen() {
           <Icon name="pencil" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
-
       {/* Tabs */}
       <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "citas" && styles.tabActive]}
+          onPress={() => setActiveTab("citas")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "citas" && styles.tabTextActive,
+            ]}
+          >
+            Grooming
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === "salud" && styles.tabActive]}
           onPress={() => setActiveTab("salud")}
@@ -363,39 +403,37 @@ export default function PetDetailScreen() {
             Historial
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "citas" && styles.tabActive]}
-          onPress={() => setActiveTab("citas")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "citas" && styles.tabTextActive,
-            ]}
-          >
-            Citas
-          </Text>
-        </TouchableOpacity>
       </View>
 
-      {/* Tab content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {activeTab === "salud" && (
-          <Text style={styles.placeholderText}>
-            Contenido de Salud - Por implementar
-          </Text>
-        )}
-        {activeTab === "historial" && (
-          <Text style={styles.placeholderText}>
-            Contenido de Historial - Por implementar
-          </Text>
-        )}
+      {/* /* --- Estructura Corregida ---  */}
+      <View style={styles.container}>
         {activeTab === "citas" && (
-          <Text style={styles.placeholderText}>
-            Contenido de Citas - Por implementar
-          </Text>
+          <ScrollView contentContainerStyle={styles.tabContent}>
+            <Text style={styles.placeholderText}>Citas - Por implementar</Text>
+          </ScrollView>
         )}
-      </ScrollView>
+        {activeTab === "salud" && (
+          <FlatList
+            data={SALUD_LIST}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <CardHealth appointment={item} />}
+            contentContainerStyle={styles.flatListPadding}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+
+        {activeTab === "historial" && (
+          <FlatList
+            data={historyData}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <CardHistory history={item} petId={petId} />
+            )}
+            contentContainerStyle={styles.flatListPadding}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
 
       {/* Image Picker Modal */}
       <ImagePickerModal

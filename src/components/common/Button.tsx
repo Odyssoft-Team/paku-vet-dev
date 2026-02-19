@@ -135,7 +135,15 @@ export const Button: React.FC<ButtonProps> = ({
           size="small"
         />
       ) : (
-        <Text style={[getTextStyle(), textStyle]}>{title}</Text>
+        <Text
+          style={[
+            getTextStyle(),
+            textStyle,
+            { includeFontPadding: false, flexShrink: 1 },
+          ]}
+        >
+          {title}
+        </Text>
       )}
     </TouchableOpacity>
   );

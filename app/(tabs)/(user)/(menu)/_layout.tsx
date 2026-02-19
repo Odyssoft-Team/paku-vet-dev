@@ -25,6 +25,8 @@ export default function MenuLayout() {
     "select-date",
     "cart",
     "invoice-form",
+    "healt-detail",
+    "history-detail",
   ];
 
   return (
