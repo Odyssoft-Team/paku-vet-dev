@@ -161,20 +161,20 @@ export default function SelectAddressScreen() {
     header: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
+      justifyContent: "center",
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.md,
-      backgroundColor: colors.primary,
+      position: "relative",
     },
     backButton: {
-      padding: Spacing.sm,
+      position: "absolute",
+      left: Spacing.md,
       width: 40,
     },
     headerTitle: {
-      flex: 1,
+      color: "#FFFFFF",
       fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.bold,
-      color: "#FFFFFF",
       textAlign: "center",
     },
     scrollContent: {
@@ -251,7 +251,7 @@ export default function SelectAddressScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}

@@ -305,17 +305,21 @@ export default function CartScreen() {
     header: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
+      justifyContent: "center",
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.md,
+      position: "relative",
       backgroundColor: colors.primary,
     },
-    backBtn: { padding: Spacing.sm, width: 40 },
+    backButton: {
+      position: "absolute",
+      left: Spacing.md,
+      width: 40,
+    },
     headerTitle: {
-      flex: 1,
+      color: "#FFFFFF",
       fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.bold,
-      color: "#FFF",
       textAlign: "center",
     },
     scroll: { flex: 1 },
@@ -563,13 +567,13 @@ export default function CartScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity
-          style={s.backBtn}
+          style={s.backButton}
           onPress={() => router.push("/(tabs)/(user)/select-date")}
         >
           <Icon name="arrow-back" size={20} color="#FFF" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Tu carrito</Text>
-        <View style={s.backBtn} />
+        <View style={s.backButton} />
       </View>
 
       <ScrollView

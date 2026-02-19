@@ -70,7 +70,7 @@ export default function HistoryDetailScreen() {
           <Icon name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.navTitle}>Detalle de Registro</Text>
-        <View style={{ width: 40 }} />
+        <View style={styles.backButton} />
       </View>
 
       <ScrollView
@@ -147,16 +147,21 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.md,
+    position: "relative",
   },
-  backButton: { width: 40, alignItems: "center" },
+  backButton: {
+    position: "absolute",
+    left: Spacing.md,
+    width: 40,
+  },
   navTitle: {
     color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: Typography.fontSize.md,
     fontFamily: Typography.fontFamily.bold,
+    textAlign: "center",
   },
   scrollContent: { padding: Spacing.lg },
   card: {
