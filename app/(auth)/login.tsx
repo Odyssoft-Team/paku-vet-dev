@@ -115,9 +115,26 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.socialContainer}>
-            <SocialButton provider="google" onPress={() => {}} disabled />
-            <SocialButton provider="facebook" onPress={() => {}} disabled />
-            <SocialButton provider="apple" onPress={() => {}} disabled />
+            <SocialButton
+              icon="google"
+              label="Continuar con Google"
+              onPress={() => {}}
+              disabled
+            />
+            <SocialButton
+              icon="facebook-2"
+              label="Continuar con Facebook"
+              sizeIcon={26}
+              onPress={() => {}}
+              disabled
+            />
+            <SocialButton
+              icon="apple"
+              label="Continuar con Apple"
+              sizeIcon={24}
+              onPress={() => {}}
+              disabled
+            />
           </View>
 
           <TouchableOpacity

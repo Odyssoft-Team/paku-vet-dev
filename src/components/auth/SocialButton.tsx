@@ -1,37 +1,23 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, View } from "react-native";
-import { useTheme } from "@/hooks/useTheme";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
+import { Icon, IconName } from "../common";
 
 interface SocialButtonProps {
-  provider: "google" | "facebook" | "apple";
+  icon: IconName;
+  label: string;
+  sizeIcon?: number;
   onPress: () => void;
   disabled?: boolean;
 }
 
-const providerConfig = {
-  google: {
-    label: "Continuar con Google",
-    icon: "G",
-  },
-  facebook: {
-    label: "Continuar con Facebook",
-    icon: "F",
-  },
-  apple: {
-    label: "Continuar con Apple",
-    icon: "A",
-  },
-};
-
 export const SocialButton: React.FC<SocialButtonProps> = ({
-  provider,
+  icon,
+  label,
+  sizeIcon = 20,
   onPress,
   disabled = true,
 }) => {
-  const { isDark } = useTheme();
-  const config = providerConfig[provider];
-
   const styles = StyleSheet.create({
     button: {
       flexDirection: "row",
@@ -45,6 +31,7 @@ export const SocialButton: React.FC<SocialButtonProps> = ({
       backgroundColor: "transparent",
       opacity: disabled ? 0.6 : 1,
       height: 38,
+      gap: Spacing.md,
     },
     iconContainer: {
       width: 24,
@@ -65,6 +52,10 @@ export const SocialButton: React.FC<SocialButtonProps> = ({
       fontSize: Typography.fontSize.md,
       fontWeight: Typography.fontWeight.medium,
     },
+    icon: {
+      position: "absolute",
+      left: Spacing.md,
+    },
   });
 
   return (
@@ -74,10 +65,8 @@ export const SocialButton: React.FC<SocialButtonProps> = ({
       disabled={disabled}
       activeOpacity={0.7}
     >
-      <View style={styles.iconContainer}>
-        <Text style={styles.iconText}>{config.icon}</Text>
-      </View>
-      <Text style={styles.text}>{config.label}</Text>
+      <Icon name={icon} size={sizeIcon} style={styles.icon} color="#fff" />
+      <Text style={styles.text}>{label}</Text>
     </TouchableOpacity>
   );
 };
