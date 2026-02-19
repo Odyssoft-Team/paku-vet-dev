@@ -12,7 +12,7 @@
       {
         "backgroundColor": "#ffffff",
         "image": "./assets/app/splash.png",
-        "imageWidth": 500,
+        "imageWidth": 900,
         "resizeMode": "contain"
       }
     ]
