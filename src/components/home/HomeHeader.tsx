@@ -22,7 +22,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     container: {
       backgroundColor: colors.primary,
       paddingHorizontal: Spacing.lg,
-      paddingVertical: Spacing.md,
+      paddingVertical: Spacing.sm,
       justifyContent: "space-between",
       flexDirection: "row",
       alignItems: "center",

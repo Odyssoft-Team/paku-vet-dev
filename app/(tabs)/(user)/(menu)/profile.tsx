@@ -277,19 +277,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
+    position: "relative",
   },
   backButton: {
-    padding: Spacing.sm,
+    position: "absolute",
+    left: Spacing.md,
     width: 40,
   },
   headerTitle: {
-    flex: 1,
+    color: "#FFFFFF",
     fontSize: Typography.fontSize.md,
     fontFamily: Typography.fontFamily.bold,
-    color: "#FFFFFF",
     textAlign: "center",
   },
   profileCard: {

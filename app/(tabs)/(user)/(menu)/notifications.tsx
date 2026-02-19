@@ -275,17 +275,21 @@ export default function NotificationsScreen() {
     header: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
+      justifyContent: "center",
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.md,
+      position: "relative",
       backgroundColor: colors.primary,
     },
-    backBtn: { padding: Spacing.sm, width: 40 },
+    backButton: {
+      position: "absolute",
+      left: Spacing.md,
+      width: 40,
+    },
     headerTitle: {
-      flex: 1,
+      color: "#FFFFFF",
       fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.bold,
-      color: "#FFF",
       textAlign: "center",
     },
     markAllBtn: {
@@ -337,7 +341,7 @@ export default function NotificationsScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity
-          style={s.backBtn}
+          style={s.backButton}
           onPress={() => router.push("/(tabs)/(user)/")}
         >
           <Icon name="arrow-back" size={20} color="#FFF" />
@@ -348,7 +352,7 @@ export default function NotificationsScreen() {
             <Text style={s.markAllText}>Leer{"\n"}todo</Text>
           </TouchableOpacity>
         ) : (
-          <View style={s.backBtn} />
+          <View style={s.backButton} />
         )}
       </View>
 

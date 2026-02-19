@@ -151,23 +151,27 @@ export default function PetDetailScreen() {
     header: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
+      justifyContent: "center", // Importante: ahora centramos el contenido
       paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.md,
+      paddingVertical: Spacing.md, // Este valor ahora controla la altura real
       backgroundColor: colors.primary,
+      position: "relative", // Referencia para los hijos absolutos
     },
     backButton: {
-      padding: Spacing.sm,
+      position: "absolute", // Sale del flujo, no ocupa espacio
+      left: Spacing.md, // Se alinea a la izquierda
+      zIndex: 10, // Para que siempre sea cliqueable
     },
     headerTitle: {
-      flex: 1,
       fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.bold,
       color: "#FFFFFF",
       textAlign: "center",
     },
     cartButton: {
-      padding: Spacing.sm,
+      position: "absolute", // Sale del flujo
+      right: Spacing.md, // Se alinea a la derecha
+      zIndex: 10,
     },
     bannerContainer: {
       height: 300,
