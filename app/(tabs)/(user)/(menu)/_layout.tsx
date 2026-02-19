@@ -23,6 +23,8 @@ export default function MenuLayout() {
     "add-address-for-service",
     "confirm-address-for-service",
     "select-date",
+    "healt-detail",
+    "history-detail",
   ];
 
   return (
