@@ -412,15 +412,23 @@ export default function PetDetailScreen() {
       {/* /* --- Estructura Corregida ---  */}
       <View style={styles.container}>
         {activeTab === "citas" && (
-          <ScrollView contentContainerStyle={styles.tabContent}>
-            <Text style={styles.placeholderText}>Citas - Por implementar</Text>
-          </ScrollView>
+          <FlatList
+            data={historyData.filter((item) => item.type === "grooming")}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <CardHistory history={item} petId={petId} />
+            )}
+            contentContainerStyle={styles.flatListPadding}
+            showsVerticalScrollIndicator={false}
+          />
         )}
         {activeTab === "salud" && (
           <FlatList
-            data={SALUD_LIST}
+            data={historyData.filter((item) => item.type === "vaccine")}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <CardHealth appointment={item} />}
+            renderItem={({ item }) => (
+              <CardHealth appointment={item} petId={petId} />
+            )}
             contentContainerStyle={styles.flatListPadding}
             showsVerticalScrollIndicator={false}
           />
@@ -428,7 +436,7 @@ export default function PetDetailScreen() {
 
         {activeTab === "historial" && (
           <FlatList
-            data={historyData}
+            data={historyData.filter((item) => item.type === "checkup")}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <CardHistory history={item} petId={petId} />

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Text } from "@/components/common/Text";
@@ -6,12 +6,14 @@ import { SALUD_LIST } from "@/constants/appointment";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks";
+import type { ClinicalHistory } from "@/types/clinical-history.type";
 import { Icon } from "@/components/common";
+import { formatDateTime } from "@/utils/helpers";
 
 export default function HealthDetailScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, data } = useLocalSearchParams<{ id: string; data: string }>();
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#F5F5F5" }, // Fondo grisáceo ligero
@@ -76,9 +78,24 @@ export default function HealthDetailScreen() {
     observationsText: { fontSize: 14, color: "#333", lineHeight: 20 },
   });
 
+  const [record, setRecord] = useState<ClinicalHistory | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (data) {
+      try {
+        const parsedRecord = JSON.parse(data);
+        setRecord(parsedRecord);
+        setLoading(false);
+      } catch (e) {
+        console.error("Error al parsear el objeto", e);
+      }
+    }
+  }, [data]);
+
   const appointment = SALUD_LIST.find((item) => item.id === id);
 
-  if (!appointment) {
+  if (!record) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <Text>No se encontró la información.</Text>
@@ -107,51 +124,64 @@ export default function HealthDetailScreen() {
         {/* Card Principal */}
         <View style={styles.card}>
           <Text style={styles.cardMainTitle}>
-            {appointment.type} • {appointment.doctor}
+            {record.type} • {record.doctor || "Especialista no asignado"}
           </Text>
-          <Text style={styles.dateText}>Fecha - {appointment.date}</Text>
+          <Text style={styles.dateText}>
+            Fecha - {formatDateTime(record?.created_at ?? "")}
+          </Text>
 
           {/* Detalles */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Detalles del registro</Text>
             <View style={styles.bulletRow}>
               <Text style={styles.itemText}>
-                • <Text style={styles.boldText}>Motivo:</Text>{" "}
-                {appointment.details.reason}
+                • <Text style={styles.boldText}>Motivo:</Text> {record.summary}
               </Text>
             </View>
-            <View style={styles.bulletRow}>
+            {/* <View style={styles.bulletRow}>
               <Text style={styles.itemText}>
                 • <Text style={styles.boldText}>Diagnóstico:</Text>{" "}
                 {appointment.details.diagnosis}
               </Text>
-            </View>
-            <View style={styles.bulletRow}>
+            </View> */}
+            {/* <View style={styles.bulletRow}>
               <Text style={styles.itemText}>
                 • <Text style={styles.boldText}>Tratamiento:</Text>{" "}
                 {appointment.details.treatment}
               </Text>
-            </View>
+            </View> */}
           </View>
 
-          {/* Adjuntos */}
+          {/* Sección de Adjuntos - Manteniendo tus estilos originales */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Documentos adjuntos</Text>
-            {appointment.attachments?.map((file, index) => (
+            {appointment?.attachments?.map((file, index) => (
               <TouchableOpacity key={index} style={styles.attachmentBox}>
                 <Text style={styles.attachmentName}>{file.name}</Text>
                 <Text style={styles.closeIcon}>×</Text>
               </TouchableOpacity>
             ))}
-          </View>
 
+            {/* Mensaje opcional si no hay adjuntos en la mock data para ese ID */}
+            {(!appointment?.attachments ||
+              appointment.attachments.length === 0) && (
+              <Text
+                style={[
+                  styles.itemText,
+                  { fontStyle: "italic", color: "#999", marginTop: 5 },
+                ]}
+              >
+                No hay documentos adjuntos.
+              </Text>
+            )}
+          </View>
           {/* Observaciones */}
-          <View style={styles.section}>
+          {/* <View style={styles.section}>
             <Text style={styles.sectionTitle}>Observaciones:</Text>
             <Text style={styles.observationsText}>
               {appointment.observations}
             </Text>
-          </View>
+          </View> */}
         </View>
       </ScrollView>
     </SafeAreaView>

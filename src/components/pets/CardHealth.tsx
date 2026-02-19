@@ -1,15 +1,17 @@
 import React from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Text } from "@/components/common/Text";
-import { Appointment } from "@/constants/appointment";
+import { ClinicalHistory } from "@/types/clinical-history.type";
 import { useRouter } from "expo-router";
 import { Button } from "../common";
+import { formatDateTime } from "@/utils/helpers";
 
 interface Props {
-  appointment: Appointment;
+  appointment: ClinicalHistory;
+  petId: string;
 }
 
-export default function CardHealth({ appointment }: Props) {
+export default function CardHealth({ appointment, petId }: Props) {
   const router = useRouter();
   return (
     <View style={styles.card}>
@@ -17,11 +19,15 @@ export default function CardHealth({ appointment }: Props) {
       <View style={styles.infoContainer}>
         <Text style={styles.title}>{appointment.type}</Text>
 
-        <Text style={styles.subtitle}>Fecha - {appointment.date}</Text>
+        <Text style={styles.subtitle}>
+          Fecha - {formatDateTime(appointment?.created_at ?? "")}
+        </Text>
 
         <View style={styles.doctorContainer}>
           <Text style={styles.bullet}>•</Text>
-          <Text style={styles.subtitle}>{appointment.doctor}</Text>
+          <Text style={styles.subtitle}>
+            {appointment.doctor || "Especialista no asignado"}
+          </Text>
         </View>
       </View>
 
@@ -33,7 +39,7 @@ export default function CardHealth({ appointment }: Props) {
         onPress={() =>
           router.push({
             pathname: "/(tabs)/(user)/healt-detail",
-            params: { id: appointment.id },
+            params: { id: appointment.id, data: JSON.stringify(appointment) },
           })
         }
       />
