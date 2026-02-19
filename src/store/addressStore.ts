@@ -23,7 +23,6 @@ export const useAddressStore = create<AddressState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const addresses = await addressService.getAddresses();
-      console.log("address:::::", addresses);
 
       set({ addresses, isLoading: false });
     } catch (error: any) {

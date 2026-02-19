@@ -21,13 +21,6 @@ export const useGeoStore = create<GeoState>((set) => ({
       set({ isLoading: true, error: null });
       const districts = await geoService.getDistricts();
 
-      console.log("Distritos recibidos de la API:", districts.length);
-      console.log("Primer distrito:", districts[0]);
-      console.log(
-        "IDs de muestra:",
-        districts.slice(0, 5).map((d) => ({ id: d.id, name: d.name })),
-      );
-
       // Filtrar solo distritos activos y ordenar alfabéticamente
       const activeDistricts = districts
         .filter((d) => d.active)

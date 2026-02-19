@@ -7,8 +7,6 @@ import { CONFIG } from "@/constants/config";
 import { storage } from "@/utils/storage";
 import { LoginResponse } from "@/types/auth.types";
 
-console.log("API Base URL:", CONFIG.API_URL); // Log para verificar
-
 const apiClient: AxiosInstance = axios.create({
   baseURL: CONFIG.API_URL,
   timeout: CONFIG.API_TIMEOUT,
@@ -49,8 +47,6 @@ apiClient.interceptors.request.use(
         CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
       );
 
-      console.log(`📡 URL: ${config.url} | Token presente: ${!!accessToken}`); // <--- AÑADE ESTO
-
       if (accessToken && config.headers) {
         config.headers.Authorization = `Bearer ${accessToken}`;
       } else {
@@ -70,7 +66,6 @@ apiClient.interceptors.request.use(
 // Interceptor de response
 apiClient.interceptors.response.use(
   (response) => {
-    console.log("Response received:", response.status); // Log
     return response;
   },
   async (error: AxiosError) => {

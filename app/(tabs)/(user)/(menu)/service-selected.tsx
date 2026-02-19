@@ -17,8 +17,6 @@ export default function ServiceSelectedScreen() {
   const { data: packages } = useSpaServices();
   const { addresses, fetchAddresses } = useAddressStore();
 
-  console.log("Datos del usuario:", JSON.stringify(addresses, null, 2));
-
   useFocusEffect(
     React.useCallback(() => {
       console.log("🔄 Pantalla enfocada, pidiendo direcciones...");

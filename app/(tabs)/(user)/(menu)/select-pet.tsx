@@ -140,8 +140,6 @@ export default function SelectPetForServiceScreen() {
     fetchAddresses();
   }, []);
 
-  console.log("addresses", addresses);
-
   useEffect(() => {
     if (pets.length === 0) {
       fetchPets();

@@ -28,13 +28,11 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const notifications = await notificationService.getNotifications(params);
-      console.log("GAAAAAAAAAAAAAAAAAA");
 
       set({ notifications, isLoading: false });
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.detail || "Error al cargar notificaciones";
-      console.log("GAAAAAAAAAAAAAAAAAAxdxdxdxd");
       set({ error: errorMessage, isLoading: false });
     }
   },
