@@ -54,8 +54,6 @@ export default function PetDetailScreen() {
     fetchHistory();
   }, []);
 
-  console.log("History data:", JSON.stringify(historyData, null, 2));
-
   useEffect(() => {
     const foundPet = pets.find((p) => p.id === petId);
     if (foundPet) {
@@ -101,7 +99,7 @@ export default function PetDetailScreen() {
 
       if (!result.canceled && result.assets[0]) {
         const imageUri = result.assets[0].uri;
-        console.log("Photo taken:", imageUri);
+        // console.log("Photo taken:", imageUri);
         // TODO: Actualizar foto de mascota en la API
         setImagePickerVisible(false);
       }
@@ -133,7 +131,7 @@ export default function PetDetailScreen() {
 
       if (!result.canceled && result.assets[0]) {
         const imageUri = result.assets[0].uri;
-        console.log("Image selected:", imageUri);
+        // console.log("Image selected:", imageUri);
         // TODO: Actualizar foto de mascota en la API
         setImagePickerVisible(false);
       }

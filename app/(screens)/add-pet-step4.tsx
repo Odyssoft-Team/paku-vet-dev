@@ -94,8 +94,6 @@ export default function AddPetStep4Screen() {
         special_shampoo: data.special_shampoo,
       };
 
-      console.log("Datos a enviar:", petData);
-
       // Crear mascota
       await createPet(petData);
 

@@ -334,7 +334,6 @@ export default function SelectLocationScreen() {
         defaultLocation.longitude,
         manualAddressInput.trim(),
       );
-      console.log("Manual address saved:", manualAddressInput);
       router.back();
       return;
     }
@@ -342,7 +341,6 @@ export default function SelectLocationScreen() {
     if (location) {
       // Guardar en el store
       setLocationData(location.latitude, location.longitude, location.address);
-      console.log("Location saved:", location);
       router.back();
     }
   };

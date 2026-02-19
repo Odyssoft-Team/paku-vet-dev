@@ -56,7 +56,7 @@ export default function ConfirmAddressForServiceScreen() {
   const initializeLocation = () => {
     try {
       if (!formData.district_id) {
-        console.log("No hay distrito seleccionado");
+        // console.log("No hay distrito seleccionado");
         useDefaultLocation();
         setLoading(false);
         return;
@@ -65,12 +65,12 @@ export default function ConfirmAddressForServiceScreen() {
       const selectedDistrict = districts.find(
         (d) => d.id === formData.district_id,
       );
-      console.log("Distrito seleccionado:", selectedDistrict);
+      // console.log("Distrito seleccionado:", selectedDistrict);
 
       const coords = getDistrictCoordinates(formData.district_id);
 
       if (coords) {
-        console.log("Coordenadas del distrito:", coords);
+        // console.log("Coordenadas del distrito:", coords);
 
         const address = `${formData.address_line} ${formData.building_number}${
           formData.apartment_number ? `, ${formData.apartment_number}` : ""
@@ -96,7 +96,7 @@ export default function ConfirmAddressForServiceScreen() {
           );
         }, 500);
       } else {
-        console.log("No se encontraron coordenadas para el distrito");
+        // console.log("No se encontraron coordenadas para el distrito");
         useDefaultLocation();
       }
     } catch (error) {
@@ -110,8 +110,6 @@ export default function ConfirmAddressForServiceScreen() {
   const useDefaultLocation = () => {
     const lat = defaultLocation.latitude;
     const lng = defaultLocation.longitude;
-
-    console.log("Usando ubicación por defecto:", { lat, lng });
 
     setLocation({
       latitude: lat,
@@ -169,8 +167,6 @@ export default function ConfirmAddressForServiceScreen() {
         lng: formData.lng,
         is_default: false,
       };
-
-      console.log("Guardando dirección:", addressData);
 
       await createAddress(addressData);
 

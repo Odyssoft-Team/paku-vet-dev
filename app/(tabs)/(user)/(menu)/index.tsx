@@ -77,7 +77,6 @@ export default function UserHomeScreen() {
   };
 
   const handlePetPress = (pet: any) => {
-    console.log("Pet pressed:", pet);
     // TODO: Navegar a detalle de mascota
     // router.push(`/(screens)/pet-detail/${pet.id}`);
     router.push({
@@ -90,9 +89,7 @@ export default function UserHomeScreen() {
     router.push("/(tabs)/(user)/select-pet");
   };
 
-  const handleOfferPress = () => {
-    console.log("Offer pressed");
-  };
+  const handleOfferPress = () => {};
 
   const styles = StyleSheet.create({
     container: {

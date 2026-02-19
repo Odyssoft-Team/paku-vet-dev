@@ -36,8 +36,6 @@ export const addressService = {
       API_ENDPOINTS.ADDRESSES.UPDATE_DEFAULT(id),
       // data,
     );
-    console.log("GAAAA:::", response.data);
-    console.log("DATAAAAA:::", data);
 
     return response.data;
   },
