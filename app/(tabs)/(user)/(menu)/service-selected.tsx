@@ -179,7 +179,7 @@ export default function ServiceSelectedScreen() {
               })
             }
             fullWidth
-            disabled={!location}
+            // disabled={!location}
             // loading={saving}
           />
         </View>
