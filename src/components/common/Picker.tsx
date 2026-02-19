@@ -74,8 +74,9 @@ export const Picker: React.FC<PickerProps> = ({
       borderRadius: BorderRadius.md,
       backgroundColor: disabled ? colors.border + "40" : colors.surface,
       paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.md,
+      paddingVertical: Spacing.xl,
       minHeight: 48,
+      includeFontPadding: false,
     },
     pickerText: {
       flex: 1,
@@ -116,6 +117,7 @@ export const Picker: React.FC<PickerProps> = ({
     modalButton: {
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.xs,
+      includeFontPadding: false,
     },
     modalButtonText: {
       fontSize: Typography.fontSize.md,

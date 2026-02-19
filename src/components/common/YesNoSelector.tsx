@@ -34,7 +34,7 @@ export const YesNoSelector: React.FC<YesNoSelectorProps> = ({
     },
     option: {
       flex: 1,
-      paddingVertical: Spacing.md,
+      paddingVertical: 10,
       borderRadius: BorderRadius.xl,
       borderWidth: 1,
       borderColor: colors.border,

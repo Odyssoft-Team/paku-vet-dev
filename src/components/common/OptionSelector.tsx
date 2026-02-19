@@ -44,13 +44,14 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
     },
     option: {
       flex: columns === 2 ? 0.48 : 0.31,
-      paddingVertical: Spacing.md,
+      paddingVertical: 10,
       paddingHorizontal: Spacing.sm,
       borderRadius: BorderRadius.xl,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface,
       alignItems: "center",
+      includeFontPadding: false,
     },
     optionSelected: {
       backgroundColor: colors.secondary,

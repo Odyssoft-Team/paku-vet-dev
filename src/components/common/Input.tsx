@@ -83,7 +83,7 @@ export const Input = forwardRef<TextInput, InputProps>(
       },
       input: {
         flex: 1,
-        paddingVertical: Spacing.md,
+        paddingVertical: 10,
         fontSize: Typography.fontSize.md,
         fontFamily: Typography.fontFamily.regular,
         color: variant === "auth" ? colors.loginInputText : colors.text,
