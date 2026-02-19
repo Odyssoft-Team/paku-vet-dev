@@ -124,7 +124,7 @@ export default function AddPetStep3Screen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Icon name="arrow-back" size={24} color="#FFFFFF" />
+          <Icon name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Registro de mascota</Text>
         <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>

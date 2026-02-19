@@ -299,7 +299,7 @@ export default function ConfirmAddressLocationScreen() {
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Icon name="arrow-back" size={24} color="#FFFFFF" />
+            <Icon name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Agregar dirección</Text>
         </View>
@@ -319,7 +319,7 @@ export default function ConfirmAddressLocationScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Icon name="arrow-back" size={24} color="#FFFFFF" />
+          <Icon name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Confirmar ubicación</Text>
       </View>

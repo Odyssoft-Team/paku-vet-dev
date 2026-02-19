@@ -104,7 +104,9 @@ export default function SelectLocationScreen() {
       if (loading) {
         console.log("Map load timeout - showing fallback");
         setMapFailedToLoad(true);
-        setMapError("El mapa tardó demasiado en cargar. Puedes ingresar tu dirección manualmente.");
+        setMapError(
+          "El mapa tardó demasiado en cargar. Puedes ingresar tu dirección manualmente.",
+        );
         setLoading(false);
       }
     }, 15000);
@@ -115,11 +117,12 @@ export default function SelectLocationScreen() {
   const getCurrentLocation = async () => {
     try {
       setLocationError(null);
-      
+
       const { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== "granted") {
-        const errorMsg = "Permiso de ubicación denegado. Puedes ingresar la dirección manualmente o tocar en el mapa.";
+        const errorMsg =
+          "Permiso de ubicación denegado. Puedes ingresar la dirección manualmente o tocar en el mapa.";
         setLocationError(errorMsg);
         setLocation({
           latitude: defaultLocation.latitude,
@@ -154,10 +157,10 @@ export default function SelectLocationScreen() {
           1000,
         );
       } catch (locationError: any) {
-        const errorMsg = `No se pudo obtener tu ubicación actual: ${locationError?.message || 'Error desconocido'}. Puedes ingresar la dirección manualmente.`;
+        const errorMsg = `No se pudo obtener tu ubicación actual: ${locationError?.message || "Error desconocido"}. Puedes ingresar la dirección manualmente.`;
         console.log("Error getting current position:", locationError);
         setLocationError(errorMsg);
-        
+
         // Fallback a ubicación por defecto
         setLocation({
           latitude: defaultLocation.latitude,
@@ -166,10 +169,10 @@ export default function SelectLocationScreen() {
         });
       }
     } catch (error: any) {
-      const errorMsg = `Error al solicitar permisos: ${error?.message || 'Error desconocido'}. Puedes ingresar la dirección manualmente.`;
+      const errorMsg = `Error al solicitar permisos: ${error?.message || "Error desconocido"}. Puedes ingresar la dirección manualmente.`;
       console.log("Error requesting permissions:", error);
       setLocationError(errorMsg);
-      
+
       setLocation({
         latitude: defaultLocation.latitude,
         longitude: defaultLocation.longitude,
@@ -192,9 +195,12 @@ export default function SelectLocationScreen() {
           latitude,
           longitude,
         }),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout al obtener dirección')), 8000)
-        )
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error("Timeout al obtener dirección")),
+            8000,
+          ),
+        ),
       ]);
 
       if (result.length > 0) {
@@ -283,7 +289,9 @@ export default function SelectLocationScreen() {
       setLocationError(null);
     } catch (error: any) {
       console.log("Error handling map press:", error);
-      setLocationError(`Error al seleccionar ubicación: ${error?.message || 'Error desconocido'}`);
+      setLocationError(
+        `Error al seleccionar ubicación: ${error?.message || "Error desconocido"}`,
+      );
     }
   };
 
@@ -300,7 +308,9 @@ export default function SelectLocationScreen() {
       setLocationError(null);
     } catch (error: any) {
       console.log("Error handling marker drag:", error);
-      setLocationError(`Error al mover marcador: ${error?.message || 'Error desconocido'}`);
+      setLocationError(
+        `Error al mover marcador: ${error?.message || "Error desconocido"}`,
+      );
     }
   };
 
@@ -309,17 +319,20 @@ export default function SelectLocationScreen() {
     if (!location && !manualAddressInput.trim()) {
       Alert.alert(
         "Dirección requerida",
-        "Por favor selecciona una ubicación en el mapa o ingresa tu dirección manualmente"
+        "Por favor selecciona una ubicación en el mapa o ingresa tu dirección manualmente",
       );
       return;
     }
 
     // Si hay dirección manual y no hay location del mapa, usar coordenadas por defecto
-    if (manualAddressInput.trim() && (!location || location.address === "Lima, Perú")) {
+    if (
+      manualAddressInput.trim() &&
+      (!location || location.address === "Lima, Perú")
+    ) {
       setLocationData(
         defaultLocation.latitude,
         defaultLocation.longitude,
-        manualAddressInput.trim()
+        manualAddressInput.trim(),
       );
       console.log("Manual address saved:", manualAddressInput);
       router.back();
@@ -549,7 +562,7 @@ export default function SelectLocationScreen() {
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Icon name="arrow-back" size={24} color="#FFFFFF" />
+            <Icon name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Agregar dirección</Text>
         </View>
@@ -569,7 +582,7 @@ export default function SelectLocationScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Icon name="arrow-back" size={24} color="#FFFFFF" />
+          <Icon name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Agregar dirección</Text>
       </View>
@@ -587,7 +600,9 @@ export default function SelectLocationScreen() {
       {/* Input manual de dirección (fallback) */}
       {(locationError || mapError) && (
         <View style={styles.manualInputContainer}>
-          <Text style={styles.manualInputLabel}>O ingresa tu dirección manualmente:</Text>
+          <Text style={styles.manualInputLabel}>
+            O ingresa tu dirección manualmente:
+          </Text>
           <TextInput
             style={styles.manualInput}
             placeholder="Ej: Av. Larco 123, Miraflores, Lima"

@@ -23,6 +23,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
       backgroundColor: colors.primary,
       paddingHorizontal: Spacing.lg,
       paddingVertical: Spacing.md,
+      justifyContent: "space-between",
+      flexDirection: "row",
+      alignItems: "center",
     },
     greeting: {
       fontSize: Typography.fontSize.md,
@@ -56,6 +59,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
         <View style={styles.iconContainer}>
           <Icon name="arrow-down" size={16} color="#FFFFFF" />
         </View>
+      </TouchableOpacity>
+      <TouchableOpacity>
+        <Icon name="cart" size={22} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );

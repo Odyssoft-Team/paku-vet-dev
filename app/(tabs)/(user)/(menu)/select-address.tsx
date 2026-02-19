@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/common/Text";
 import { Icon } from "@/components/common/Icon";
@@ -14,6 +14,7 @@ import { Button } from "@/components/common/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { useAddressStore } from "@/store/addressStore";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { useBookingStore } from "@/store/bookingStore";
 
 interface AddressCardProps {
   id: string;
@@ -105,9 +106,9 @@ const AddressCard: React.FC<AddressCardProps> = ({
 
 export default function SelectAddressScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
   const { colors } = useTheme();
   const { addresses, isLoading, fetchAddresses } = useAddressStore();
+  const { setAddress } = useBookingStore();
 
   const [selectedAddressId, setSelectedAddressId] = React.useState<string>("");
   const [refreshing, setRefreshing] = React.useState(false);
@@ -139,26 +140,16 @@ export default function SelectAddressScreen() {
   };
 
   const handleAddNewAddress = () => {
-    router.push({
-      pathname: "/(tabs)/(user)/add-address-for-service",
-      params: { serviceCode: params.serviceCode },
-    });
+    router.push("/(tabs)/(user)/add-address-for-service");
   };
 
   const handleContinue = () => {
     if (!selectedAddressId) return;
 
     // TODO: Navegar a la siguiente pantalla con el serviceCode y addressId
-    console.log("Selected address:", selectedAddressId);
-    console.log("Service code:", params.serviceCode);
 
-    router.push({
-      pathname: "/(tabs)/(user)/select-date",
-      params: {
-        serviceCode: params.serviceCode,
-        addressId: selectedAddressId,
-      },
-    });
+    setAddress(selectedAddressId!);
+    router.push("/(tabs)/(user)/select-date");
     // router.push({ pathname: '/(tabs)/(user)/additional-service', params: { ... } });
   };
 
@@ -238,6 +229,23 @@ export default function SelectAddressScreen() {
       color: colors.surface,
       fontSize: Typography.fontSize.md,
     },
+    addReservaBtn: {
+      borderWidth: 1,
+      borderColor: colors.secondary,
+      backgroundColor: colors.secondary + "25",
+      borderRadius: BorderRadius.full,
+      paddingVertical: Spacing.md,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: Spacing.sm,
+      gap: Spacing.xs,
+    },
+    addReservaText: {
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.semibold,
+      color: colors.primary,
+    },
   });
 
   return (
@@ -303,7 +311,7 @@ export default function SelectAddressScreen() {
           textStyle={styles.addAddressButtonText}
         /> */}
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.addAddressButton}
           onPress={handleAddNewAddress}
         >
@@ -311,6 +319,13 @@ export default function SelectAddressScreen() {
           <Text variant="medium" style={styles.addAddressButtonText}>
             Registrar dirección
           </Text>
+        </TouchableOpacity> */}
+        <TouchableOpacity
+          style={styles.addReservaBtn}
+          onPress={handleAddNewAddress}
+        >
+          <Icon name="plus" size={16} color={colors.primary} />
+          <Text style={styles.addReservaText}>Registrar dirección</Text>
         </TouchableOpacity>
         <Button
           title="Continuar"

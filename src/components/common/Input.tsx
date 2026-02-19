@@ -55,7 +55,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 
     const styles = StyleSheet.create({
       container: {
-        marginBottom: Spacing.md,
+        marginBottom: Spacing.sm,
       },
       label: {
         fontSize: Typography.fontSize.sm,
@@ -67,7 +67,7 @@ export const Input = forwardRef<TextInput, InputProps>(
       inputContainer: {
         flexDirection: "row",
         alignItems: "center",
-        borderWidth: variant === "auth" ? 1 : 1,
+        borderWidth: 1,
         borderColor:
           variant === "auth"
             ? colors.loginInputBorder
@@ -80,13 +80,17 @@ export const Input = forwardRef<TextInput, InputProps>(
         backgroundColor:
           variant === "auth" ? colors.loginInput : colors.surface,
         paddingHorizontal: Spacing.md,
+        minHeight: 44,
       },
       input: {
         flex: 1,
         paddingVertical: 10,
-        fontSize: Typography.fontSize.md,
+        fontSize: Typography.fontSize.sm,
         fontFamily: Typography.fontFamily.regular,
         color: variant === "auth" ? colors.loginInputText : colors.text,
+        // Garantiza centrado vertical en Android
+        textAlignVertical: "center",
+        includeFontPadding: false,
       },
       iconContainer: {
         marginHorizontal: Spacing.xs,
@@ -113,16 +117,14 @@ export const Input = forwardRef<TextInput, InputProps>(
         <View style={styles.inputContainer}>
           {leftIcon && (
             <View style={styles.iconContainer}>
-              <Icon name={leftIcon} size={20} color={colors.textSecondary} />
+              <Icon name={leftIcon} size={18} color={colors.textSecondary} />
             </View>
           )}
 
           <TextInput
             ref={ref}
             style={styles.input}
-            placeholderTextColor={
-              variant === "auth" ? colors.placeholder : colors.placeholder
-            }
+            placeholderTextColor={colors.placeholder}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             secureTextEntry={type === "password" && !isPasswordVisible}
@@ -153,7 +155,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 
           {rightIcon && type !== "password" && (
             <View style={styles.iconContainer}>
-              <Icon name={rightIcon} size={20} color={colors.textSecondary} />
+              <Icon name={rightIcon} size={18} color={colors.textSecondary} />
             </View>
           )}
         </View>
@@ -164,5 +166,4 @@ export const Input = forwardRef<TextInput, InputProps>(
   },
 );
 
-// Agregar displayName para debugging
 Input.displayName = "Input";
