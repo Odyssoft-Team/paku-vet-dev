@@ -4,7 +4,8 @@ import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks";
 import { useSpaServices } from "@/hooks/useSpaceServices";
 import { useAddressStore } from "@/store/addressStore";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useBookingStore } from "@/store/bookingStore";
+import { useFocusEffect, useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function ServiceSelectedScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { serviceCode } = useLocalSearchParams();
+  const { serviceCode, serviceName, servicePrice } = useBookingStore();
   const { data: packages } = useSpaServices();
   const { addresses, fetchAddresses } = useAddressStore();
 

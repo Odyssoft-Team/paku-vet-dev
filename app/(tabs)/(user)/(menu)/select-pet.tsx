@@ -17,6 +17,7 @@ import { usePetStore } from "@/store/petStore";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { Pet } from "@/types/pet.types";
 import { useAddressStore } from "@/store/addressStore";
+import { useBookingStore } from "@/store/bookingStore";
 
 interface PetSelectionCardProps {
   pet: Pet;
@@ -131,6 +132,7 @@ export default function SelectPetForServiceScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { pets, isLoading, fetchPets } = usePetStore();
+  const { setPet, clearBooking } = useBookingStore();
   const { addresses, fetchAddresses, error } = useAddressStore();
 
   useEffect(() => {
@@ -147,10 +149,10 @@ export default function SelectPetForServiceScreen() {
   }, []);
 
   const handlePetSelect = (pet: Pet) => {
-    router.push({
-      pathname: "/(tabs)/(user)/service-details",
-      params: { petId: pet.id },
-    });
+    // Empezamos un nuevo booking limpio y guardamos la mascota en el store
+    clearBooking();
+    setPet(pet.id);
+    router.push("/(tabs)/(user)/service-details");
   };
 
   if (isLoading && pets.length === 0) {
@@ -260,7 +262,7 @@ export default function SelectPetForServiceScreen() {
           style={styles.backButton}
           onPress={() => router.push("/(tabs)/(user)/services")}
         >
-          <Icon name="arrow-back" size={24} color="#FFFFFF" />
+          <Icon name="arrow-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Selección de mascota</Text>
         <View style={styles.backButton} />

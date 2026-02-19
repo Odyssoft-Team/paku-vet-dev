@@ -51,6 +51,13 @@ export const API_ENDPOINTS = {
     LIST: "/paku-spa/plans",
   },
 
+  // Notificaciones
+  NOTIFICATIONS: {
+    LIST: "/notifications",
+    UNREAD_COUNT: "/notifications/unread-count",
+    MARK_READ: (id: string) => `/notifications/${id}/read`,
+  },
+
   // Administrador
   ADMIN: {
     DASHBOARD: "/admin/dashboard",

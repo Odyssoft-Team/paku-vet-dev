@@ -7,7 +7,7 @@ import {
   ImageBackground,
   ActivityIndicator,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/common/Text";
 import { Icon } from "@/components/common/Icon";
@@ -15,6 +15,7 @@ import { Button } from "@/components/common/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useSpaServices } from "@/hooks/useSpaceServices";
+import { useBookingStore } from "@/store/bookingStore";
 
 interface ServicePackageProps {
   title: string;
@@ -110,16 +111,21 @@ const getBadgeData = (index: number) => {
 
 export default function ServiceDetailsScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
   const { colors } = useTheme();
 
   const { data: packages, isLoading } = useSpaServices();
+  const { setService } = useBookingStore();
 
   const handleSelectPackage = (packageCode: string) => {
-    router.push({
-      pathname: "/(tabs)/(user)/service-selected",
-      params: { serviceCode: packageCode },
-    });
+    const pkg = packages?.find((p) => p.code === packageCode);
+    if (pkg) {
+      setService({
+        serviceCode: pkg.code,
+        serviceName: pkg.name,
+        servicePrice: pkg.price,
+      });
+    }
+    router.push("/(tabs)/(user)/service-selected");
   };
 
   if (isLoading) {

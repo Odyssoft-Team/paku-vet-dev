@@ -156,9 +156,10 @@ export default function AddPetStep2Screen() {
                 label="Selecciona el tamaño"
                 value={value}
                 options={[
-                  { id: "small", name: "Pequeño (hasta 5 kg)" },
-                  { id: "medium", name: "Mediano (5 a 15 kg)" },
-                  { id: "large", name: "Grande (25 a 35 kg)" },
+                  { id: "small", name: "Pequeño (hasta 10 kg)" },
+                  { id: "medium", name: "Mediano (11 a 25 kg)" },
+                  { id: "large", name: "Grande (26 a 44 kg)" },
+                  { id: "big", name: "Gigantes (+45 kg)" },
                 ]}
                 placeholder="Selecciona el tamaño"
                 onSelect={onChange}

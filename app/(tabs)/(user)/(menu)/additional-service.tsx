@@ -3,14 +3,15 @@ import { ServiceSelect } from "@/components/services/ServiceSelect";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks";
 import { useSpaServices } from "@/hooks/useSpaceServices";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
+import { useBookingStore } from "@/store/bookingStore";
 import { useState } from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AdditionalServiceScreen() {
   const { colors } = useTheme();
-  const { serviceCode } = useLocalSearchParams();
+  const { serviceCode, setExtra } = useBookingStore();
   const { data: packages } = useSpaServices();
 
   const styles = StyleSheet.create({

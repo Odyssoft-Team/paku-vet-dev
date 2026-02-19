@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/common/Text";
 import { Icon } from "@/components/common/Icon";
@@ -15,6 +15,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
 import { useAvailabilityStore } from "@/store/availabilityStore";
 import { useSpaServices } from "@/hooks/useSpaceServices";
+import { useBookingStore } from "@/store/bookingStore";
 
 const DAYS = ["L", "Ma", "Mi", "J", "V", "S", "D"];
 const MONTHS = [
@@ -34,20 +35,18 @@ const MONTHS = [
 
 export default function SelectDateScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
   const { colors } = useTheme();
 
   const { data: packages } = useSpaServices();
+  const { serviceCode, setDate } = useBookingStore();
 
   const { availability, isLoading, fetchAvailability } = useAvailabilityStore();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // Encontrar el servicio seleccionado
-  const selectedService = packages?.find(
-    (pkg) => pkg.code === params.serviceCode,
-  );
+  // Encontrar el servicio seleccionado desde el store
+  const selectedService = packages?.find((pkg) => pkg.code === serviceCode);
 
   useEffect(() => {
     loadAvailability();
@@ -185,10 +184,8 @@ export default function SelectDateScreen() {
 
   const handleContinue = () => {
     if (!selectedDate) return;
-
-    // TODO: Navegar a selección de hora
-    console.log("Selected date:", selectedDate);
-    // router.push({ pathname: '/(tabs)/(user)/select-time', params: { ... } });
+    setDate(selectedDate);
+    router.push("/(tabs)/(user)/cart");
   };
 
   const getSelectedDateAvailability = () => {
