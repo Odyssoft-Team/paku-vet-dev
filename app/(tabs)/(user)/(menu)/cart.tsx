@@ -20,6 +20,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useBookingStore } from "@/store/bookingStore";
 import { useAddressStore } from "@/store/addressStore";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 type PaymentMethod = "card" | "yape" | null;
 
@@ -566,16 +567,16 @@ export default function CartScreen() {
   return (
     <SafeAreaView style={s.container} edges={["top"]}>
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity
-          style={s.backButton}
-          onPress={() => router.push("/(tabs)/(user)/select-date")}
-        >
-          <Icon name="arrow-back" size={20} color="#FFF" />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Tu carrito</Text>
-        <View style={s.backButton} />
-      </View>
+
+      <ScreenHeader
+        title="Tu carrito"
+        backHref="/(tabs)/(user)/select-date"
+        // right={{
+        //   type: "icon",
+        //   name: "cart",
+        //   onPress: () => router.push("/(tabs)/(user)/cart"),
+        // }}
+      />
 
       <ScrollView
         style={s.scroll}

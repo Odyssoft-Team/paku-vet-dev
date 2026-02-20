@@ -16,6 +16,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useSpaServices } from "@/hooks/useSpaceServices";
 import { useBookingStore } from "@/store/bookingStore";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 interface ServicePackageProps {
   title: string;
@@ -120,6 +121,7 @@ export default function ServiceDetailsScreen() {
     const pkg = packages?.find((p) => p.code === packageCode);
     if (pkg) {
       setService({
+        serviceId: pkg.id, // ← UUID real del backend
         serviceCode: pkg.code,
         serviceName: pkg.name,
         servicePrice: pkg.price,
@@ -143,16 +145,16 @@ export default function ServiceDetailsScreen() {
       edges={["top"]}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(tabs)/(user)/select-pet")}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Servicios</Text>
-        <View style={styles.backButton} />
-      </View>
+
+      <ScreenHeader
+        title="Elige tu spa"
+        backHref="/(tabs)/(user)/select-pet"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: () => router.push("/(tabs)/(user)/cart"),
+        }}
+      />
 
       {/* Content */}
       <ScrollView

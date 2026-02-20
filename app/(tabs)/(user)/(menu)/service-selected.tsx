@@ -1,4 +1,5 @@
 import { Button, Icon, Text } from "@/components/common";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { BannerBase } from "@/components/home/BannerBase";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks";
@@ -110,16 +111,16 @@ export default function ServiceSelectedScreen() {
       edges={["top"]}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(tabs)/(user)/service-details")}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Detalles de la reserva</Text>
-        <View style={styles.backButton} />
-      </View>
+
+      <ScreenHeader
+        title="Detalles de la reserva"
+        backHref="/(tabs)/(user)/service-details"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: () => router.push("/(tabs)/(user)/cart"),
+        }}
+      />
 
       {/* Content */}
       <ScrollView

@@ -18,6 +18,7 @@ import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { Pet } from "@/types/pet.types";
 import { useAddressStore } from "@/store/addressStore";
 import { useBookingStore } from "@/store/bookingStore";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 interface PetSelectionCardProps {
   pet: Pet;
@@ -256,16 +257,16 @@ export default function SelectPetForServiceScreen() {
       edges={["top"]}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(tabs)/(user)/services")}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Selección de mascota</Text>
-        <View style={styles.backButton} />
-      </View>
+
+      <ScreenHeader
+        title="Selección de mascota"
+        backHref="/(tabs)/(user)/"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: () => router.push("/(tabs)/(user)/cart"),
+        }}
+      />
 
       {/* Content */}
       <ScrollView

@@ -15,6 +15,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useNotificationStore } from "@/store/notificationStore";
 import { Notification } from "@/types/notification.types";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -339,22 +340,16 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={s.container} edges={["top"]}>
       {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity
-          style={s.backButton}
-          onPress={() => router.push("/(tabs)/(user)/")}
-        >
-          <Icon name="arrow-back" size={20} color="#FFF" />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Notificaciones</Text>
-        {unreadCount > 0 ? (
-          <TouchableOpacity style={s.markAllBtn} onPress={markAllAsRead}>
-            <Text style={s.markAllText}>Leer{"\n"}todo</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={s.backButton} />
-        )}
-      </View>
+
+      <ScreenHeader
+        title="Notificaciones"
+        backHref="/(tabs)/(user)/"
+        right={
+          unreadCount > 0
+            ? { type: "text", label: "Leer todo", onPress: markAllAsRead }
+            : { type: "none" }
+        }
+      />
 
       {/* Loading inicial */}
       {isLoading && notifications.length === 0 ? (

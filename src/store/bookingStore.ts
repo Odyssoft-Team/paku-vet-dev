@@ -1,7 +1,5 @@
 import { create } from "zustand";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
 interface InvoiceData {
   ruc: string;
   razonSocial: string;
@@ -13,7 +11,8 @@ interface BookingState {
   petId: string | null;
 
   // Step: service-details (paquete principal)
-  serviceCode: string | null;
+  serviceId: string | null; // ← UUID del backend (ref_id para el carrito)
+  serviceCode: string | null; // ← code para lookup local
   serviceName: string | null;
   servicePrice: number | null;
 
@@ -36,11 +35,12 @@ interface BookingState {
   needsInvoice: boolean;
   invoiceData: InvoiceData | null;
 
-  // ─── Actions ────────────────────────────────────────────────────────────────
+  // ─── Actions ──────────────────────────────────────────────────────────────
 
   setPet: (petId: string) => void;
 
   setService: (data: {
+    serviceId: string; // ← nuevo
     serviceCode: string;
     serviceName: string;
     servicePrice: number;
@@ -64,14 +64,12 @@ interface BookingState {
   setInvoice: (data: InvoiceData) => void;
   removeInvoice: () => void;
 
-  /** Limpia todo el estado al terminar o cancelar el flujo */
   clearBooking: () => void;
 }
 
-// ─── Initial state ──────────────────────────────────────────────────────────────
-
 const initialState = {
   petId: null,
+  serviceId: null, // ← nuevo
   serviceCode: null,
   serviceName: null,
   servicePrice: null,
@@ -86,8 +84,6 @@ const initialState = {
   invoiceData: null,
 };
 
-// ─── Store ─────────────────────────────────────────────────────────────────────
-
 export const useBookingStore = create<BookingState>((set) => ({
   ...initialState,
 
@@ -95,8 +91,8 @@ export const useBookingStore = create<BookingState>((set) => ({
     set({ petId });
   },
 
-  setService: ({ serviceCode, serviceName, servicePrice }) => {
-    set({ serviceCode, serviceName, servicePrice });
+  setService: ({ serviceId, serviceCode, serviceName, servicePrice }) => {
+    set({ serviceId, serviceCode, serviceName, servicePrice });
   },
 
   setExtra: (data) => {

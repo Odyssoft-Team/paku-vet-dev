@@ -16,8 +16,9 @@ import { Typography, Spacing, BorderRadius } from "@/constants/theme";
 import { useAvailabilityStore } from "@/store/availabilityStore";
 import { useSpaServices } from "@/hooks/useSpaceServices";
 import { useBookingStore } from "@/store/bookingStore";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
-const DAYS = ["L", "Ma", "Mi", "J", "V", "S", "D"];
+const DAYS = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
 const MONTHS = [
   "ENERO",
   "FEBRERO",
@@ -223,30 +224,32 @@ export default function SelectDateScreen() {
       padding: Spacing.lg,
     },
     titleContainer: {
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.sm,
     },
     title: {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.regular,
       color: colors.textSecondary,
-      marginBottom: Spacing.xs,
+      includeFontPadding: false,
+      // marginBottom: Spacing.xs,
     },
     serviceTitle: {
       fontSize: Typography.fontSize.lg,
       fontFamily: Typography.fontFamily.bold,
       color: colors.primary,
+      includeFontPadding: false,
     },
     calendarContainer: {
       backgroundColor: colors.surface,
       borderRadius: BorderRadius.xl,
       padding: Spacing.md,
-      marginBottom: Spacing.md,
+      marginBottom: Spacing.sm,
     },
     monthHeader: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.sm,
     },
     monthButton: {
       padding: Spacing.sm,
@@ -255,11 +258,12 @@ export default function SelectDateScreen() {
       fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.bold,
       color: colors.primary,
+      includeFontPadding: false,
     },
     daysHeader: {
       flexDirection: "row",
       justifyContent: "space-around",
-      marginBottom: Spacing.sm,
+      marginBottom: Spacing.xs,
     },
     dayHeaderText: {
       fontSize: Typography.fontSize.sm,
@@ -296,6 +300,7 @@ export default function SelectDateScreen() {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.regular,
       color: colors.text,
+      includeFontPadding: false,
     },
     dayTextSelected: {
       color: "#FFFFFF",
@@ -311,12 +316,13 @@ export default function SelectDateScreen() {
       color: colors.border,
     },
     legendContainer: {
-      marginBottom: Spacing.md,
+      marginBottom: Spacing.sm,
     },
     legendText: {
       fontSize: Typography.fontSize.xs,
       fontFamily: Typography.fontFamily.regular,
       color: colors.textSecondary,
+      includeFontPadding: false,
     },
     availabilityInfo: {
       backgroundColor: colors.surface,
@@ -329,18 +335,20 @@ export default function SelectDateScreen() {
       fontFamily: Typography.fontFamily.bold,
       color: colors.primary,
       marginBottom: Spacing.xs,
+      includeFontPadding: false,
     },
     availabilityText: {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.regular,
       color: colors.text,
+      includeFontPadding: false,
     },
     loadingContainer: {
       padding: Spacing.xl,
       alignItems: "center",
     },
     fixedButton: {
-      padding: Spacing.lg,
+      padding: Spacing.md,
       backgroundColor: colors.background,
       borderTopWidth: 1,
       borderTopColor: colors.border,
@@ -384,16 +392,16 @@ export default function SelectDateScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Seleccionar fecha</Text>
-        <View style={styles.backButton} />
-      </View>
+
+      <ScreenHeader
+        title="Seleccionar fecha"
+        backHref="/(tabs)/(user)/select-address"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: () => router.push("/(tabs)/(user)/cart"),
+        }}
+      />
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -413,7 +421,7 @@ export default function SelectDateScreen() {
               style={styles.monthButton}
               onPress={handlePreviousMonth}
             >
-              <Icon name="arrow-left" size={20} color={colors.primary} />
+              <Icon name="arrow-left" size={18} color={colors.primary} />
             </TouchableOpacity>
             <Text style={styles.monthText}>
               {MONTHS[currentMonth.getMonth()]} {currentMonth.getFullYear()}
@@ -422,7 +430,7 @@ export default function SelectDateScreen() {
               style={styles.monthButton}
               onPress={handleNextMonth}
             >
-              <Icon name="arrow-right" size={20} color={colors.primary} />
+              <Icon name="arrow-right" size={18} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
@@ -445,7 +453,7 @@ export default function SelectDateScreen() {
               const isDisabled = !day.isCurrentMonth || isPast || isOccupied;
 
               return (
-                <View key={index} style={styles.dayCell}>
+                <View key={index} style={[styles.dayCell]}>
                   <TouchableOpacity
                     style={[
                       styles.dayButton,

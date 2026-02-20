@@ -20,6 +20,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useAddressStore } from "@/store/addressStore";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 interface MenuItemProps {
   label: string;
@@ -50,7 +51,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
       </Text>
       {icon ||
         (showArrow && (
-          <Icon name="arrow-right" size={20} color={colors.primary} />
+          <Icon name="arrow-right" size={16} color={colors.primary} />
         ))}
     </TouchableOpacity>
   );
@@ -164,16 +165,16 @@ export default function ProfileScreen() {
       edges={["top"]}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Perfil</Text>
-        <View style={styles.backButton} />
-      </View>
+
+      <ScreenHeader
+        title="Mi perfil"
+        backHref="/(tabs)/(user)/"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: () => router.push("/(tabs)/(user)/cart"),
+        }}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Card */}
@@ -247,7 +248,7 @@ export default function ProfileScreen() {
             label="Cerrar sesión"
             onPress={handleLogout}
             showArrow={false}
-            icon={<Icon name="logout" size={20} color={colors.primary} />}
+            icon={<Icon name="logout" size={18} color={colors.primary} />}
           />
 
           <MenuItem
@@ -296,8 +297,9 @@ const styles = StyleSheet.create({
   profileCard: {
     flexDirection: "row",
     alignItems: "center",
-    padding: Spacing.lg,
-    margin: Spacing.md,
+    padding: Spacing.md,
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.md,
     borderRadius: BorderRadius.lg,
     ...Shadows.md,
   },

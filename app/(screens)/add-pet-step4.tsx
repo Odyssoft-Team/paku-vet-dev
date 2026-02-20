@@ -27,6 +27,7 @@ import { Typography, Spacing } from "@/constants/theme";
 import { useAddPetStore } from "@/store/addPetStore";
 import { usePetStore } from "@/store/petStore";
 import { CreatePetData } from "@/types/pet.types";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 export default function AddPetStep4Screen() {
   const router = useRouter();
@@ -190,18 +191,15 @@ export default function AddPetStep4Screen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Registro de mascota</Text>
-        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-          <Text style={styles.cancelText}>Cancelar</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Registro de mascota"
+        backHref="/(screens)/add-pet-step3"
+        right={{
+          type: "text",
+          label: "Cancelar",
+          onPress: handleCancel,
+        }}
+      />
 
       {/* Formulario */}
       <KeyboardAvoidingView

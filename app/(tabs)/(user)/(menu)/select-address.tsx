@@ -15,6 +15,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAddressStore } from "@/store/addressStore";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useBookingStore } from "@/store/bookingStore";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 interface AddressCardProps {
   id: string;
@@ -38,28 +39,28 @@ const AddressCard: React.FC<AddressCardProps> = ({
       borderRadius: BorderRadius.lg,
       padding: Spacing.md,
       marginBottom: Spacing.md,
-      borderWidth: 2,
+      borderWidth: 1,
       borderColor: isSelected ? colors.primary : colors.border,
       ...Shadows.sm,
     },
     cardContent: {
       flexDirection: "row",
-      alignItems: "center",
+      alignItems: "flex-start",
     },
     radioOuter: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      borderWidth: 2,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 1,
       borderColor: isSelected ? colors.primary : colors.border,
       alignItems: "center",
       justifyContent: "center",
       marginRight: Spacing.md,
     },
     radioInner: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
+      width: 10,
+      height: 10,
+      borderRadius: 5,
       backgroundColor: colors.primary,
     },
     textContainer: {
@@ -67,9 +68,10 @@ const AddressCard: React.FC<AddressCardProps> = ({
     },
     addressText: {
       fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
+      // fontFamily: Typography.fontFamily.regular,
       color: colors.text,
       marginBottom: Spacing.xs,
+      includeFontPadding: false,
     },
     defaultBadge: {
       backgroundColor: colors.secondary,
@@ -92,7 +94,9 @@ const AddressCard: React.FC<AddressCardProps> = ({
           {isSelected && <View style={styles.radioInner} />}
         </View>
         <View style={styles.textContainer}>
-          <Text style={styles.addressText}>{address}</Text>
+          <Text variant="medium" style={styles.addressText}>
+            {address}
+          </Text>
           {isDefault && (
             <View style={styles.defaultBadge}>
               <Text style={styles.defaultText}>Predeterminada</Text>
@@ -251,16 +255,16 @@ export default function SelectAddressScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Seleccionar dirección</Text>
-        <View style={styles.backButton} />
-      </View>
+
+      <ScreenHeader
+        title="Seleccione su dirección"
+        backHref="/(tabs)/(user)/service-selected"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: () => router.push("/(tabs)/(user)/cart"),
+        }}
+      />
 
       {/* Content */}
       <ScrollView

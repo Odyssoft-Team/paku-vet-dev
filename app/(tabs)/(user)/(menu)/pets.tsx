@@ -16,12 +16,15 @@ import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { usePetStore } from "@/store/petStore";
 import { Pet } from "@/types/pet.types";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { useCartDrawerStore } from "@/store/cartDrawerStore";
 
 export default function PetsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { pets, isLoading, fetchPets } = usePetStore();
   const [refreshing, setRefreshing] = useState(false);
+  const { open: openCartDrawer } = useCartDrawerStore();
 
   useEffect(() => {
     loadPets();
@@ -209,18 +212,16 @@ export default function PetsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(tabs)/(user)")}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mis mascotas</Text>
-        <TouchableOpacity style={styles.cartButton}>
-          <Icon name="cart" size={22} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+
+      <ScreenHeader
+        title="Mis mascotas"
+        backHref="/(tabs)/(user)/"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: openCartDrawer,
+        }}
+      />
 
       {/* Content */}
       <ScrollView

@@ -29,6 +29,7 @@ import { petStep1Schema, PetStep1FormData } from "@/utils/validators";
 import { Typography, Spacing } from "@/constants/theme";
 import { useAddPetStore } from "@/store/addPetStore";
 import { useCatalogStore } from "@/store/catalogStore";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 export default function AddPetStep1Screen() {
   const router = useRouter();
@@ -184,18 +185,16 @@ export default function AddPetStep1Screen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Registro de mascota</Text>
-        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-          <Text style={styles.cancelText}>Cancelar</Text>
-        </TouchableOpacity>
-      </View>
+
+      <ScreenHeader
+        title="Registro de mascota"
+        backHref="/(tabs)/(user)/pets"
+        right={{
+          type: "text",
+          label: "Cancelar",
+          onPress: handleCancel,
+        }}
+      />
 
       {/* Formulario */}
       <KeyboardAvoidingView
@@ -229,6 +228,7 @@ export default function AddPetStep1Screen() {
               <Input
                 label="Nombre de tu mascota"
                 placeholder="Nombre completo"
+                placeholderTextColor={colors.text}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}

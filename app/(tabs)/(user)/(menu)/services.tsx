@@ -13,6 +13,7 @@ import { Icon } from "@/components/common/Icon";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { ServiceCard } from "@/components/home";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 interface ServiceCardProps {
   title: string;
@@ -34,17 +35,15 @@ export default function ServicesScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(tabs)/(user)/")}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nuestros servicios</Text>
-        <View style={styles.backButton} />
-      </View>
+      <ScreenHeader
+        title="Nuestros servicios"
+        backHref="/(tabs)/(user)/"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: () => router.push("/(tabs)/(user)/cart"),
+        }}
+      />
 
       {/* Content */}
       <ScrollView

@@ -1,4 +1,5 @@
 export type SpaService = {
+  id: string;
   code: string;
   name: string;
   description: string;
