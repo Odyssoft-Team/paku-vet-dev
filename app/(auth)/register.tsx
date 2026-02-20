@@ -260,7 +260,8 @@ export default function RegisterScreen() {
       {/* Formulario */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -431,26 +432,6 @@ export default function RegisterScreen() {
               />
             )}
           />
-
-          {/* Dirección */}
-          {/* <Text style={styles.sectionTitle}>Dirección</Text>
-          <TouchableOpacity
-            style={styles.addressButton}
-            onPress={() => {
-              // Navegar a la pantalla del mapa
-              router.push("/(auth)/select-location");
-            }}
-          >
-            <Text
-              style={[
-                styles.addressText,
-                watch("address_line") && styles.addressTextFilled,
-              ]}
-            >
-              {watch("address_line") || "Agregar dirección"}
-            </Text>
-            <Icon name="gps" size={20} color={colors.primary + "80"} />
-          </TouchableOpacity> */}
 
           {error && <Text style={styles.errorText}>{error}</Text>}
         </ScrollView>

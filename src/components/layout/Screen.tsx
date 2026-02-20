@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   ScrollView,
@@ -6,10 +6,10 @@ import {
   Platform,
   StyleSheet,
   ViewStyle,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '@/hooks/useTheme';
-import { Spacing } from '@/constants/theme';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "@/hooks/useTheme";
+import { Spacing } from "@/constants/theme";
 
 interface ScreenProps {
   children: React.ReactNode;
@@ -43,14 +43,14 @@ export const Screen: React.FC<ScreenProps> = ({
         padding: Spacing.md,
       }),
       ...(centered && {
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: "center",
+        alignItems: "center",
       }),
     },
     scrollContent: {
       flexGrow: 1,
       ...(centered && {
-        justifyContent: 'center',
+        justifyContent: "center",
       }),
     },
   });
@@ -68,10 +68,11 @@ export const Screen: React.FC<ScreenProps> = ({
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         {content}
       </KeyboardAvoidingView>

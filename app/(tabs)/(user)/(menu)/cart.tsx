@@ -63,6 +63,7 @@ const CouponModal = ({ visible, onClose, onApply, colors }: any) => {
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
         >
           <TouchableOpacity activeOpacity={1}>
             <View
