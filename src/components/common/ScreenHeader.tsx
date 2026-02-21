@@ -63,7 +63,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
       padding: Spacing.xs,
     },
     title: {
-      fontSize: Typography.fontSize.md,
+      fontSize: Typography.fontSize.xs,
       fontFamily: Typography.fontFamily.bold,
       color: "#FFFFFF",
       textAlign: "center",
@@ -80,7 +80,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
       justifyContent: "center",
     },
     cancelText: {
-      fontSize: Typography.fontSize.sm,
+      fontSize: Typography.fontSize.xs,
       fontFamily: Typography.fontFamily.medium,
       color: "#FFFFFF99",
     },
@@ -117,7 +117,9 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
     if (right.type === "text") {
       return (
         <TouchableOpacity style={styles.rightSlot} onPress={right.onPress}>
-          <Text style={styles.cancelText}>{right.label}</Text>
+          <Text style={[styles.cancelText, { marginTop: 3 }]}>
+            {right.label}
+          </Text>
         </TouchableOpacity>
       );
     }

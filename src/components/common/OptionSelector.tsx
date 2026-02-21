@@ -32,7 +32,7 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
       marginBottom: Spacing.md,
     },
     label: {
-      fontSize: Typography.fontSize.sm,
+      fontSize: Typography.fontSize.xs,
       fontFamily: Typography.fontFamily.medium,
       color: colors.primary,
       marginBottom: Spacing.xs,
@@ -44,7 +44,7 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
     },
     option: {
       flex: columns === 2 ? 0.48 : 0.31,
-      paddingVertical: 10,
+      paddingVertical: 9,
       paddingHorizontal: Spacing.sm,
       borderRadius: BorderRadius.xl,
       borderWidth: 1,

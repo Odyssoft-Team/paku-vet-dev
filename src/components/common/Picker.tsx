@@ -74,7 +74,7 @@ export const Picker: React.FC<PickerProps> = ({
       borderRadius: BorderRadius.md,
       backgroundColor: disabled ? colors.border + "40" : colors.surface,
       paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.xl,
+      paddingVertical: Spacing.md,
       minHeight: 48,
       includeFontPadding: false,
     },
@@ -135,6 +135,8 @@ export const Picker: React.FC<PickerProps> = ({
       backgroundColor: disabled ? colors.border + "40" : colors.surface,
       overflow: "hidden",
       paddingLeft: Spacing.sm,
+      height: 45,
+      justifyContent: "center",
     },
     androidPicker: {
       color: colors.text,

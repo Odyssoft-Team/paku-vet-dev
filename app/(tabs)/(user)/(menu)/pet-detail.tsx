@@ -24,6 +24,7 @@ import CardHistory from "@/components/pets/CardHistory";
 import type { ClinicalHistory } from "@/types/clinical-history.type";
 import { clinicalHistoryService } from "@/api/services/clinical-history.service";
 import CardHealth from "@/components/pets/CardHealth";
+import { translateBreed } from "@/constants/breed";
 
 type TabType = "salud" | "historial" | "citas";
 
@@ -328,7 +329,8 @@ export default function PetDetailScreen() {
               </View>
               <Text style={styles.petName}>{pet.name}</Text>
               <Text style={styles.petInfo}>
-                {pet.breed} • {calculateAge(pet.birth_date)} • {pet.weight_kg}kg
+                {translateBreed(pet.breed)} • {calculateAge(pet.birth_date)} •{" "}
+                {pet.weight_kg}kg
               </Text>
             </View>
           </ImageBackground>
@@ -350,7 +352,8 @@ export default function PetDetailScreen() {
               </View>
               <Text style={styles.petName}>{pet.name}</Text>
               <Text style={styles.petInfo}>
-                {pet.breed} • {calculateAge(pet.birth_date)} • {pet.weight_kg}kg
+                {translateBreed(pet.breed)} • {calculateAge(pet.birth_date)} •{" "}
+                {pet.weight_kg}kg
               </Text>
             </View>
           </ImageBackground>

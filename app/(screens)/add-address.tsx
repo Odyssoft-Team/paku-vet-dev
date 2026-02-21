@@ -144,7 +144,9 @@ export default function AddAddressScreen() {
       borderRadius: BorderRadius.md,
       backgroundColor: colors.border + "40",
       paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.md,
+      paddingVertical: Spacing.xs,
+      height: 42,
+      justifyContent: "center",
     },
     fixedValueText: {
       fontSize: Typography.fontSize.md,

@@ -73,7 +73,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       borderRadius: BorderRadius.md,
       backgroundColor: colors.surface,
       paddingHorizontal: Spacing.md,
-      paddingVertical: paddingVertical || 12,
+      paddingVertical: paddingVertical || 10,
     },
     dateText: {
       flex: 1,

@@ -18,6 +18,7 @@ import { usePetStore } from "@/store/petStore";
 import { Pet } from "@/types/pet.types";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { useCartDrawerStore } from "@/store/cartDrawerStore";
+import { translateBreed } from "@/constants/breed";
 
 export default function PetsScreen() {
   const router = useRouter();
@@ -279,7 +280,9 @@ export default function PetsScreen() {
                 </View>
                 <View style={styles.petInfo}>
                   <Text style={styles.petName}>{pet.name}</Text>
-                  <Text style={styles.petDetails}>{pet.breed}</Text>
+                  <Text style={styles.petDetails}>
+                    {translateBreed(pet.breed)}
+                  </Text>
                   <Text style={styles.petDetails}>
                     {calculateAge(pet.birth_date)} • {pet.weight_kg}kg
                   </Text>

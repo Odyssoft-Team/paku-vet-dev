@@ -342,47 +342,45 @@ export default function RegisterScreen() {
             )}
           />
 
-          <View style={styles.row}>
-            <Controller
-              control={control}
-              name="password"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <View style={styles.halfInput}>
-                  <Text style={styles.sectionTitle}>Contraseña</Text>
-                  <Input
-                    type="password"
-                    placeholder="contraseña"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.password?.message}
-                    returnKeyType="next"
-                    variant="register"
-                  />
-                </View>
-              )}
-            />
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.halfInput}>
+                <Text style={styles.sectionTitle}>Contraseña</Text>
+                <Input
+                  type="password"
+                  placeholder="contraseña"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.password?.message}
+                  returnKeyType="next"
+                  variant="register"
+                />
+              </View>
+            )}
+          />
 
-            <Controller
-              control={control}
-              name="confirmPassword"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <View style={styles.halfInput}>
-                  <Text style={styles.sectionTitle}>Confirmar contraseña</Text>
-                  <Input
-                    type="password"
-                    placeholder="contraseña"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.confirmPassword?.message}
-                    returnKeyType="done"
-                    variant="register"
-                  />
-                </View>
-              )}
-            />
-          </View>
+          <Controller
+            control={control}
+            name="confirmPassword"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.halfInput}>
+                <Text style={styles.sectionTitle}>Confirmar contraseña</Text>
+                <Input
+                  type="password"
+                  placeholder="contraseña"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.confirmPassword?.message}
+                  returnKeyType="done"
+                  variant="register"
+                />
+              </View>
+            )}
+          />
 
           {/* Género */}
           <Controller
