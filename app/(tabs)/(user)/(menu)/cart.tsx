@@ -8,6 +8,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
@@ -21,6 +22,9 @@ import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useBookingStore } from "@/store/bookingStore";
 import { useAddressStore } from "@/store/addressStore";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { CreateCartItemInput } from "@/types/cart.types";
+import { cartService } from "@/api/services/cart.service";
+import { orderService } from "@/api/services/order.service";
 
 type PaymentMethod = "card" | "yape" | null;
 
@@ -212,6 +216,10 @@ export default function CartScreen() {
   const {
     serviceName,
     servicePrice,
+    serviceId,
+    petId,
+    selectedDate,
+    selectedTime,
     extraLabel,
     extraPrice,
     addressId,
@@ -223,6 +231,7 @@ export default function CartScreen() {
     removeCoupon,
     removeInvoice,
     clearBooking,
+    setCartId,
   } = useBookingStore();
 
   const { addresses } = useAddressStore();
@@ -282,9 +291,50 @@ export default function CartScreen() {
 
   const processPayment = async () => {
     setPaying(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setPaying(false);
-    setSuccessVisible(true);
+    try {
+      // 1. Armar items — solo service_base (addons en v2)
+      const items: CreateCartItemInput[] = [
+        {
+          kind: "service_base",
+          ref_id: serviceId!,
+          name: serviceName!,
+          qty: 1,
+          unit_price: servicePrice!,
+          meta: {
+            pet_id: petId!,
+            scheduled_date: selectedDate!,
+            scheduled_time: selectedTime ?? "12:00",
+          },
+        },
+      ];
+
+      // 2. POST /cart/items — crear carrito con items en batch
+      const cartResponse = await cartService.createWithItems({ items });
+      const newCartId = cartResponse.cart.id;
+      setCartId(newCartId);
+
+      // 3. POST /cart/{id}/checkout — finalizar carrito
+      await cartService.checkout(newCartId);
+
+      // 4. POST /orders — crear la orden con cart_id + address_id
+      await orderService.createOrder({
+        cart_id: newCartId,
+        address_id: addressId!,
+      });
+
+      // 5. Éxito
+      setSuccessVisible(true);
+    } catch (error: any) {
+      const message =
+        error.response?.data?.detail ||
+        (Array.isArray(error.response?.data?.errors)
+          ? error.response.data.errors.join("\n")
+          : null) ||
+        "Ocurrió un error al procesar tu pago. Intenta nuevamente.";
+      Alert.alert("Error al procesar", message);
+    } finally {
+      setPaying(false);
+    }
   };
 
   const handlePay = () => {
@@ -570,7 +620,7 @@ export default function CartScreen() {
 
       <ScreenHeader
         title="Tu carrito"
-        backHref="/(tabs)/(user)/select-date"
+        backHref="/(tabs)/(user)/"
         // right={{
         //   type: "icon",
         //   name: "cart",
@@ -931,13 +981,13 @@ export default function CartScreen() {
 
       {/* ── Botones fijos ──────────────────────────────────────────────────── */}
       <View style={s.fixedBottom}>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={s.addReservaBtn}
           onPress={() => router.push("/(tabs)/(user)/select-pet")}
         >
           <Icon name="plus" size={16} color={colors.primary} />
           <Text style={s.addReservaText}>Añadir reserva</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <Button
           title={`Pagar S/${subtotal.toFixed(2)}`}
           onPress={handlePay}

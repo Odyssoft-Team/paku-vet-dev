@@ -7,12 +7,9 @@ import {
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/common/Text";
-import { Icon } from "@/components/common/Icon";
+import { Icon, IconName } from "@/components/common/Icon";
 import { AvatarPicker } from "@/components/common/AvatarPicker";
 import { ImagePickerModal } from "@/components/common/ImagePickerModal";
 import * as ImagePicker from "expo-image-picker";
@@ -21,47 +18,76 @@ import { useAuthStore } from "@/store/authStore";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useAddressStore } from "@/store/addressStore";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { useCartDrawerStore } from "@/store/cartDrawerStore";
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface MenuItemProps {
   label: string;
   onPress: () => void;
-  showArrow?: boolean;
-  textColor?: string;
-  icon?: React.ReactNode;
+  icon: IconName;
+  iconColor?: string;
+  labelColor?: string;
+  rightElement?: React.ReactNode;
 }
+
+// ─── MenuItem ──────────────────────────────────────────────────────────────────
 
 const MenuItem: React.FC<MenuItemProps> = ({
   label,
   onPress,
-  showArrow = true,
-  textColor,
   icon,
+  iconColor,
+  labelColor,
+  rightElement,
 }) => {
   const { colors } = useTheme();
+  const ic = iconColor ?? colors.primary;
 
   return (
     <TouchableOpacity
       style={[styles.menuItem, { backgroundColor: colors.surface }]}
       onPress={onPress}
+      activeOpacity={0.7}
     >
-      <Text
-        style={[styles.menuItemText, { color: textColor || colors.primary }]}
-      >
+      {/* Icono izquierdo */}
+      <View style={[styles.iconWrapper, { backgroundColor: ic + "18" }]}>
+        <Icon name={icon} size={18} color={ic} />
+      </View>
+
+      {/* Etiqueta */}
+      <Text style={[styles.menuLabel, { color: labelColor ?? colors.text }]}>
         {label}
       </Text>
-      {icon ||
-        (showArrow && (
-          <Icon name="arrow-right" size={16} color={colors.primary} />
-        ))}
+
+      {/* Elemento derecho — flecha por defecto */}
+      {rightElement ?? (
+        <Icon name="arrow-right" size={12} color={colors.border} />
+      )}
     </TouchableOpacity>
   );
 };
 
+// ─── SectionHeader ─────────────────────────────────────────────────────────────
+
+const SectionHeader: React.FC<{ title: string }> = ({ title }) => {
+  const { colors } = useTheme();
+  return (
+    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+      {title}
+    </Text>
+  );
+};
+
+// ─── Main Screen ───────────────────────────────────────────────────────────────
+
 export default function ProfileScreen() {
   const router = useRouter();
-  const { addresses } = useAddressStore();
-  const { colors, isDark, toggleColorScheme } = useTheme();
+  const { colors, isDark } = useTheme();
   const { user, logout } = useAuthStore();
+  const { addresses } = useAddressStore();
+  const { open: openCartDrawer } = useCartDrawerStore();
+
   const [imagePickerVisible, setImagePickerVisible] = useState(false);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
@@ -71,7 +97,6 @@ export default function ProfileScreen() {
     try {
       const permissionResult =
         await ImagePicker.requestCameraPermissionsAsync();
-
       if (!permissionResult.granted) {
         Alert.alert(
           "Permiso denegado",
@@ -79,18 +104,15 @@ export default function ProfileScreen() {
         );
         return;
       }
-
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets[0]) {
         setAvatarUri(result.assets[0].uri);
         setImagePickerVisible(false);
-        // TODO: Subir foto al servidor
       }
     } catch (error) {
       console.error("Error taking photo:", error);
@@ -101,7 +123,6 @@ export default function ProfileScreen() {
     try {
       const permissionResult =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
-
       if (!permissionResult.granted) {
         Alert.alert(
           "Permiso denegado",
@@ -109,18 +130,15 @@ export default function ProfileScreen() {
         );
         return;
       }
-
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets[0]) {
         setAvatarUri(result.assets[0].uri);
         setImagePickerVisible(false);
-        // TODO: Subir foto al servidor
       }
     } catch (error) {
       console.error("Error picking image:", error);
@@ -147,14 +165,7 @@ export default function ProfileScreen() {
       "¿Estás seguro? Esta acción no se puede deshacer.",
       [
         { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: () => {
-            console.log("Delete account");
-            // TODO: Implementar eliminación de cuenta
-          },
-        },
+        { text: "Eliminar", style: "destructive", onPress: () => {} },
       ],
     );
   };
@@ -164,103 +175,158 @@ export default function ProfileScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
-      {/* Header */}
-
       <ScreenHeader
         title="Mi perfil"
         backHref="/(tabs)/(user)/"
         right={{
           type: "icon",
           name: "cart",
-          onPress: () => router.push("/(tabs)/(user)/cart"),
+          onPress: openCartDrawer,
         }}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Profile Card */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* ── Tarjeta de usuario ──────────────────────────────────────────── */}
         <View style={[styles.profileCard, { backgroundColor: colors.surface }]}>
-          <View style={styles.avatarContainer}>
-            <AvatarPicker
-              imageUri={avatarUri}
-              onImageSelected={() => setImagePickerVisible(true)}
-              size={80}
-            />
-          </View>
+          <AvatarPicker
+            imageUri={avatarUri}
+            onImageSelected={() => setImagePickerVisible(true)}
+            size={72}
+          />
 
           <View style={styles.profileInfo}>
             <Text style={[styles.userName, { color: colors.text }]}>
-              {`${user?.first_name} ${user?.last_name}` || "Usuario"}
+              {user?.first_name} {user?.last_name}
             </Text>
             <Text style={[styles.userEmail, { color: colors.textSecondary }]}>
-              {user?.email || "correo@ejemplo.com"}
+              {user?.email}
             </Text>
-            <Text style={[styles.userAddress, { color: colors.textSecondary }]}>
-              {defaultAddress?.address_line} {defaultAddress?.building_number}
-            </Text>
+            {defaultAddress && (
+              <View style={styles.addressRow}>
+                <Icon name="gps" size={12} color={colors.textSecondary} />
+                <Text
+                  style={[styles.userAddress, { color: colors.textSecondary }]}
+                >
+                  {defaultAddress.address_line} {defaultAddress.building_number}
+                </Text>
+              </View>
+            )}
           </View>
 
           <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => console.log("Edit profile")}
+            style={[styles.editBtn, { backgroundColor: colors.primary + "15" }]}
+            onPress={() => {}}
           >
-            <Icon name="pencil" size={20} color={colors.primary} />
+            <Icon name="pencil" size={16} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
-        {/* Menu Items */}
-        <View style={styles.menuContainer}>
+        {/* ── Sección: Mi cuenta ──────────────────────────────────────────── */}
+        <SectionHeader title="Mi cuenta" />
+        <View style={styles.section}>
           <MenuItem
-            label="Preferencias"
-            onPress={() => router.push("/(tabs)/(user)/preferences")}
-            icon={
-              <View style={styles.preferenceRight}>
-                <Text
-                  style={[styles.themeText, { color: colors.textSecondary }]}
-                >
-                  {isDark ? "Modo oscuro" : "Modo claro"}
-                </Text>
-              </View>
-            }
-            showArrow={false}
+            label="Mis mascotas"
+            icon="pets"
+            onPress={() => router.push("/(tabs)/(user)/pets")}
           />
-
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
+          <MenuItem label="Mis reservas" icon="calendar" onPress={() => {}} />
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
           <MenuItem
-            label="Pagos y facturación"
-            onPress={() => router.push("/(tabs)/(user)/payments")}
-          />
-
-          <MenuItem
-            label="Ayuda y soporte"
-            onPress={() => router.push("/(tabs)/(user)/support")}
-          />
-
-          <MenuItem
-            label="Información legal"
-            onPress={() => router.push("/(tabs)/(user)/legal")}
-          />
-
-          <MenuItem
-            label="Libro de reclamaciones"
-            onPress={() => router.push("/(tabs)/(user)/complaints")}
-          />
-
-          <MenuItem
-            label="Cerrar sesión"
-            onPress={handleLogout}
-            showArrow={false}
-            icon={<Icon name="logout" size={18} color={colors.primary} />}
-          />
-
-          <MenuItem
-            label="Eliminar cuenta"
-            onPress={handleDeleteAccount}
-            showArrow={false}
-            textColor={colors.error}
+            label="Mis direcciones"
+            icon="gps"
+            onPress={() => {
+              router.push("/(tabs)/(user)/addresses");
+            }}
           />
         </View>
+
+        {/* ── Sección: Actividad ──────────────────────────────────────────── */}
+        <SectionHeader title="Actividad" />
+        <View style={styles.section}>
+          <MenuItem
+            label="Pagos y facturación"
+            icon="wallet"
+            onPress={() => router.push("/(tabs)/(user)/payments")}
+          />
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
+          <MenuItem label="Mis cupones" icon="ticket" onPress={() => {}} />
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
+          <MenuItem
+            label="Notificaciones"
+            icon="notification"
+            onPress={() => router.push("/(tabs)/(user)/notifications")}
+          />
+        </View>
+
+        {/* ── Sección: Configuración ──────────────────────────────────────── */}
+        <SectionHeader title="Configuración" />
+        <View style={styles.section}>
+          <MenuItem
+            label="Preferencias"
+            icon="services"
+            onPress={() => router.push("/(tabs)/(user)/preferences")}
+            rightElement={
+              <Text
+                style={[
+                  styles.preferenceValue,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {isDark ? "Modo oscuro" : "Modo claro"}
+              </Text>
+            }
+          />
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
+          <MenuItem
+            label="Ayuda y soporte"
+            icon="chat"
+            onPress={() => router.push("/(tabs)/(user)/support")}
+          />
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
+          <MenuItem
+            label="Información legal"
+            icon="file"
+            onPress={() => router.push("/(tabs)/(user)/legal")}
+          />
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
+          <MenuItem
+            label="Libro de reclamaciones"
+            icon="send"
+            onPress={() => router.push("/(tabs)/(user)/complaints")}
+          />
+        </View>
+
+        {/* ── Sección: Sesión ─────────────────────────────────────────────── */}
+        <SectionHeader title="Sesión" />
+        <View style={styles.section}>
+          <MenuItem
+            label="Cerrar sesión"
+            icon="logout"
+            iconColor={colors.textSecondary}
+            onPress={handleLogout}
+            rightElement={<View />}
+          />
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
+          <MenuItem
+            label="Eliminar cuenta"
+            icon="close"
+            iconColor={colors.error}
+            labelColor={colors.error}
+            onPress={handleDeleteAccount}
+            rightElement={<View />}
+          />
+        </View>
+
+        {/* Versión */}
+        <Text style={[styles.version, { color: colors.border }]}>
+          Paku v1.0.0
+        </Text>
       </ScrollView>
 
-      {/* Image Picker Modal */}
       <ImagePickerModal
         visible={imagePickerVisible}
         onClose={() => setImagePickerVisible(false)}
@@ -275,86 +341,108 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    position: "relative",
+  scrollContent: {
+    paddingBottom: 40,
   },
-  backButton: {
-    position: "absolute",
-    left: Spacing.md,
-    width: 40,
-  },
-  headerTitle: {
-    color: "#FFFFFF",
-    fontSize: Typography.fontSize.md,
-    fontFamily: Typography.fontFamily.bold,
-    textAlign: "center",
-  },
+
+  // ── Tarjeta de usuario ────────────────────────────────────────────────────
   profileCard: {
     flexDirection: "row",
     alignItems: "center",
-    padding: Spacing.md,
     marginHorizontal: Spacing.md,
     marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+    padding: Spacing.md,
     borderRadius: BorderRadius.lg,
-    ...Shadows.md,
-  },
-  avatarContainer: {
-    marginRight: Spacing.md,
+    gap: Spacing.md,
+    ...Shadows.sm,
   },
   profileInfo: {
     flex: 1,
+    gap: 3,
   },
   userName: {
     fontSize: Typography.fontSize.md,
     fontFamily: Typography.fontFamily.bold,
-    marginBottom: Spacing.xs,
   },
   userEmail: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.regular,
-    marginBottom: Spacing.xs,
+  },
+  addressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
   },
   userAddress: {
     fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.regular,
-    lineHeight: 16,
+    flex: 1,
   },
-  editButton: {
-    padding: Spacing.sm,
-    position: "absolute",
-    top: Spacing.md,
-    right: Spacing.md,
+  editBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "flex-start",
   },
-  menuContainer: {
-    marginTop: Spacing.md,
-    paddingHorizontal: Spacing.md,
+
+  // ── Secciones ─────────────────────────────────────────────────────────────
+  sectionTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.xs,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
+  section: {
+    marginHorizontal: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  divider: {
+    height: 1,
+    width: "100%",
+  },
+
+  // ── MenuItem ──────────────────────────────────────────────────────────────
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    ...Shadows.md,
-    marginBottom: Spacing.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.md,
   },
-  menuItemText: {
-    fontSize: Typography.fontSize.md,
-    fontFamily: Typography.fontFamily.medium,
-    flex: 1,
-  },
-  preferenceRight: {
-    flexDirection: "row",
+  iconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: "center",
+    justifyContent: "center",
   },
-  themeText: {
+  menuLabel: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+  },
+  preferenceValue: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.regular,
+  },
+
+  // ── Versión ───────────────────────────────────────────────────────────────
+  version: {
+    textAlign: "center",
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    marginTop: Spacing.xl,
   },
 });

@@ -17,12 +17,15 @@ import { Picker } from "@/components/common/Picker";
 import { Button } from "@/components/common/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { useCartDrawerStore } from "@/store/cartDrawerStore";
 
 export default function SupportScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const { open: openCartDrawer } = useCartDrawerStore();
 
   const subjects = [
     { id: "servicio", name: "Reserva o servicio" },
@@ -111,15 +114,16 @@ export default function SupportScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(tabs)/(user)/profile")}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Ayuda y soporte</Text>
-      </View>
+
+      <ScreenHeader
+        title="Ayuda y soporte"
+        backHref="/(tabs)/(user)/profile"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: openCartDrawer,
+        }}
+      />
 
       {/* Content */}
       <KeyboardAvoidingView

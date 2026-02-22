@@ -6,10 +6,14 @@ import { Text } from "@/components/common/Text";
 import { Icon } from "@/components/common/Icon";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing } from "@/constants/theme";
+import { useCartDrawerStore } from "@/store/cartDrawerStore";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 export default function LegalScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+
+  const { open: openCartDrawer } = useCartDrawerStore();
 
   const styles = StyleSheet.create({
     container: {
@@ -91,15 +95,16 @@ export default function LegalScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(tabs)/(user)/profile")}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Información legal</Text>
-      </View>
+
+      <ScreenHeader
+        title="Información legal"
+        backHref="/(tabs)/(user)/profile"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: openCartDrawer,
+        }}
+      />
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

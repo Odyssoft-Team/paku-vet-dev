@@ -29,6 +29,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       set({ isLoading: true, error: null });
       const notifications = await notificationService.getNotifications(params);
 
+      console.log("NOTIFICACIONES::", notifications);
+
       set({ notifications, isLoading: false });
     } catch (error: any) {
       const errorMessage =

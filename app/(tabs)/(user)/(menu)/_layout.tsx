@@ -28,6 +28,7 @@ export default function MenuLayout() {
     "invoice-form",
     "healt-detail",
     "history-detail",
+    "addresses",
   ];
 
   return (
@@ -50,21 +51,27 @@ export default function MenuLayout() {
           name="pets"
           options={{
             title: "Mascotas",
-            tabBarIcon: ({ color }) => <Icon name="pets" color={color} />,
+            tabBarIcon: ({ color }) => (
+              <Icon name="pets" size={20} color={color} />
+            ),
           }}
         />
         <Tabs.Screen
           name="services"
           options={{
             title: "Servicios",
-            tabBarIcon: ({ color }) => <Icon name="services" color={color} />,
+            tabBarIcon: ({ color }) => (
+              <Icon name="services" size={20} color={color} />
+            ),
           }}
         />
         <Tabs.Screen
           name="index"
           options={{
             title: "Inicio",
-            tabBarIcon: ({ color }) => <Icon name="home" color={color} />,
+            tabBarIcon: ({ color }) => (
+              <Icon name="home" size={20} color={color} />
+            ),
           }}
         />
         <Tabs.Screen
@@ -72,7 +79,7 @@ export default function MenuLayout() {
           options={{
             title: "Avisos",
             tabBarIcon: ({ color }) => (
-              <Icon name="notification" color={color} />
+              <Icon name="notification" size={20} color={color} />
             ),
           }}
         />
@@ -80,7 +87,9 @@ export default function MenuLayout() {
           name="profile"
           options={{
             title: "Perfil",
-            tabBarIcon: ({ color }) => <Icon name="profile" color={color} />,
+            tabBarIcon: ({ color }) => (
+              <Icon name="profile" size={20} color={color} />
+            ),
           }}
         />
         {hiddenScreens.map((screenName) => (

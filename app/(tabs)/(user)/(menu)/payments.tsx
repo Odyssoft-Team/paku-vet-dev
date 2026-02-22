@@ -6,6 +6,8 @@ import { Text } from "@/components/common/Text";
 import { Icon } from "@/components/common/Icon";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { useCartDrawerStore } from "@/store/cartDrawerStore";
 
 interface AccordionItemProps {
   title: string;
@@ -88,6 +90,8 @@ export default function PaymentsScreen() {
   const { colors } = useTheme();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
+  const { open: openCartDrawer } = useCartDrawerStore();
+
   const faqs = [
     {
       title: "¿Cómo pago en Paku?",
@@ -154,15 +158,16 @@ Fallas técnicas graves comprobadas.`,
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(tabs)/(user)/profile")}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Pagos y facturación</Text>
-      </View>
+
+      <ScreenHeader
+        title="Pagos y facturación"
+        backHref="/(tabs)/(user)/profile"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: openCartDrawer,
+        }}
+      />
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

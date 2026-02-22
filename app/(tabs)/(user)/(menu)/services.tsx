@@ -14,6 +14,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { ServiceCard } from "@/components/home";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { useCartDrawerStore } from "@/store/cartDrawerStore";
 
 interface ServiceCardProps {
   title: string;
@@ -25,6 +26,8 @@ interface ServiceCardProps {
 export default function ServicesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+
+  const { open: openCartDrawer } = useCartDrawerStore();
 
   const handleServicePress = () => {
     router.push("/(tabs)/(user)/select-pet");
@@ -41,7 +44,7 @@ export default function ServicesScreen() {
         right={{
           type: "icon",
           name: "cart",
-          onPress: () => router.push("/(tabs)/(user)/cart"),
+          onPress: openCartDrawer,
         }}
       />
 

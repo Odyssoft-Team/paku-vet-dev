@@ -4,6 +4,7 @@ import { Icon } from "@/components/common/Icon";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing } from "@/constants/theme";
 import { Text } from "../common/Text";
+import { useCartDrawerStore } from "@/store/cartDrawerStore";
 
 interface HomeHeaderProps {
   userName: string;
@@ -17,6 +18,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   onAddressPress,
 }) => {
   const { colors } = useTheme();
+  const { open: openCartDrawer } = useCartDrawerStore();
 
   const styles = StyleSheet.create({
     container: {
@@ -30,6 +32,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     greeting: {
       fontSize: Typography.fontSize.md,
       color: "#FFFFFF",
+      includeFontPadding: false,
     },
     addressButton: {
       flexDirection: "row",
@@ -39,6 +42,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     address: {
       fontSize: Typography.fontSize.sm,
       color: "#FFFFFF",
+      includeFontPadding: false,
     },
     iconContainer: {
       padding: Spacing.xs,
@@ -60,7 +64,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           <Icon name="arrow-down" size={16} color="#FFFFFF" />
         </View>
       </TouchableOpacity>
-      <TouchableOpacity>
+      <TouchableOpacity onPress={openCartDrawer}>
         <Icon name="cart" size={22} color="#FFFFFF" />
       </TouchableOpacity>
     </View>

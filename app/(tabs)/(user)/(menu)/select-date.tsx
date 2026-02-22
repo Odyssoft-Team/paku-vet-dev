@@ -39,7 +39,7 @@ export default function SelectDateScreen() {
   const { colors } = useTheme();
 
   const { data: packages } = useSpaServices();
-  const { serviceCode, setDate } = useBookingStore();
+  const { serviceCode, setDate, setTime } = useBookingStore();
 
   const { availability, isLoading, fetchAvailability } = useAvailabilityStore();
 
@@ -186,6 +186,7 @@ export default function SelectDateScreen() {
   const handleContinue = () => {
     if (!selectedDate) return;
     setDate(selectedDate);
+    setTime("12:00"); // ← hora por defecto
     router.push("/(tabs)/(user)/cart");
   };
 

@@ -19,6 +19,8 @@ import { Button } from "@/components/common/Button";
 import { DatePicker } from "@/components/common/DatePicker";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
+import { useCartDrawerStore } from "@/store/cartDrawerStore";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 interface ComplaintFormData {
   name: string;
@@ -38,6 +40,8 @@ export default function ComplaintsScreen() {
   const { colors } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const { open: openCartDrawer } = useCartDrawerStore();
 
   const {
     control,
@@ -166,15 +170,16 @@ export default function ComplaintsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/(tabs)/(user)/profile")}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Libro de reclamaciones</Text>
-      </View>
+
+      <ScreenHeader
+        title="Libro de reclamaciones"
+        backHref="/(tabs)/(user)/profile"
+        right={{
+          type: "icon",
+          name: "cart",
+          onPress: openCartDrawer,
+        }}
+      />
 
       {/* Content */}
       <KeyboardAvoidingView

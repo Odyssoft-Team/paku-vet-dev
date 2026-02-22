@@ -58,6 +58,21 @@ export const API_ENDPOINTS = {
     MARK_READ: (id: string) => `/notifications/${id}/read`,
   },
 
+  // Carrito
+  CART: {
+    GET: "/cart",
+    CREATE_WITH_ITEMS: "/cart/items",
+    REPLACE_ITEMS: (id: string) => `/cart/${id}/items`,
+    DELETE_ITEM: (id: string, itemId: string) => `/cart/${id}/items/${itemId}`,
+    VALIDATE: (id: string) => `/cart/${id}/validate`,
+    CHECKOUT: (id: string) => `/cart/${id}/checkout`,
+  },
+
+  // Órdenes
+  ORDERS: {
+    CREATE: "/orders",
+  },
+
   // Administrador
   ADMIN: {
     DASHBOARD: "/admin/dashboard",
