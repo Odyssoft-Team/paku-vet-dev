@@ -157,6 +157,8 @@ export default function ServiceSelectedScreen() {
             ))}
           </View>
         </View>
+
+        {/* Fixed button */}
         <View style={styles.fixedButton}>
           <View style={styles.priceRow}>
             <Text style={[styles.includesTitle, { color: colors.primary }]}>

@@ -29,6 +29,7 @@ export default function MenuLayout() {
     "healt-detail",
     "history-detail",
     "addresses",
+    "tracking-service",
   ];
 
   return (

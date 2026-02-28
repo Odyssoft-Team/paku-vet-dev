@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, ScrollView, RefreshControl } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
@@ -18,6 +15,8 @@ import { Text } from "@/components/common/Text";
 import { useAddressStore } from "@/store/addressStore";
 import { usePetStore } from "@/store/petStore";
 import { PetsList } from "@/components/home/PetsList";
+import { Button } from "@/components/common";
+import { OrderProgressBar } from "@/components/common/OrdenProgressBar";
 
 export default function UserHomeScreen() {
   const router = useRouter();
@@ -108,7 +107,26 @@ export default function UserHomeScreen() {
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.md,
     },
+    sectionTracking: {
+      backgroundColor: colors.surface,
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.sm,
+    },
+    titleTracking: {
+      color: colors.primary,
+      fontSize: 12,
+      fontWeight: Typography.fontWeight.bold,
+    },
+    textTracking: {
+      fontSize: 10,
+      color: colors.primary,
+    },
+    buttonTracking: {
+      paddingVertical: Spacing.sm,
+    },
   });
+
+  const [onService, setOnService] = useState<boolean>(true);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -122,6 +140,26 @@ export default function UserHomeScreen() {
         }
         onAddressPress={() => setDrawerVisible(true)}
       />
+
+      {/* Servicio en camino */}
+      {onService && (
+        <View style={styles.sectionTracking}>
+          <Text variant="regular" style={styles.titleTracking}>
+            ¡Tu groomer esta en camino!
+          </Text>
+          <Text variant="regular" style={styles.textTracking} numberOfLines={1}>
+            Llegada estimada: 15:30 h
+          </Text>
+          <OrderProgressBar />
+          <Button
+            title="Rastrear"
+            textStyle={{ fontSize: Typography.fontSize.xs }}
+            style={styles.buttonTracking}
+            onPress={() => router.push("/(tabs)/(user)/tracking-service")}
+            fullWidth
+          />
+        </View>
+      )}
 
       {/* Contenido scrolleable */}
       <ScrollView

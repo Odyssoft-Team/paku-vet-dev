@@ -44,6 +44,7 @@ import WhatsappIcon from "@assets/icons/whatsapp.svg";
 import AppleIcon from "@assets/icons/apple.svg";
 import GoogleIcon from "@assets/icons/google.svg";
 import Facebook2Icon from "@assets/icons/facebook-2.svg";
+import StartIcon from "@assets/icons/start.svg";
 
 // Mapa de iconos
 const icons = {
@@ -88,6 +89,7 @@ const icons = {
   apple: AppleIcon,
   google: GoogleIcon,
   "facebook-2": Facebook2Icon,
+  start: StartIcon,
 };
 
 export type IconName = keyof typeof icons;
