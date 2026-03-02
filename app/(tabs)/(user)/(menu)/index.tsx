@@ -17,15 +17,23 @@ import { usePetStore } from "@/store/petStore";
 import { PetsList } from "@/components/home/PetsList";
 import { Button } from "@/components/common";
 import { OrderProgressBar } from "@/components/common/OrdenProgressBar";
+import { orderService } from "@/api/services/order.service";
+import { useOrderStore } from "@/store/orderStore";
 
 export default function UserHomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
 
+  // Servicios
+  const { getOrder } = orderService;
+
   // Address store
   const { addresses, isLoading, fetchAddresses, setDefaultAddress } =
     useAddressStore();
+
+  // Order store
+  const { order, setOrder } = useOrderStore();
 
   // Pet store
   const { pets, isLoading: loadingPets, fetchPets } = usePetStore();
@@ -55,6 +63,40 @@ export default function UserHomeScreen() {
     await loadAddresses();
     setRefreshing(false);
   };
+
+  const loadDataTracking = async () => {
+    // 1. Si no hay ID en el store, no hacemos nada
+    if (!order?.id) return;
+
+    try {
+      const response = await getOrder(order.id);
+      if (response) {
+        setOrder(response);
+
+        // 2. Si la orden ya terminó, quizás quieras limpiar el store
+        if (response.status === "done" || response.status === "cancelled") {
+          // Opcional: clearOrder();
+        }
+      }
+    } catch (error) {
+      console.log("Error al cargar datos del tracking:", error);
+    }
+  };
+
+  useEffect(() => {
+    // En navegadores/React Native, setInterval devuelve un ID numérico.
+    let interval: any;
+    if (order?.id && order.status !== "done" && order.status !== "cancelled") {
+      loadDataTracking();
+      interval = setInterval(() => {
+        loadDataTracking();
+      }, 10000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [order?.id, order?.status]);
 
   // Obtener dirección por defecto
   const defaultAddress = addresses.find((addr) => addr.is_default);
@@ -126,8 +168,6 @@ export default function UserHomeScreen() {
     },
   });
 
-  const [onService, setOnService] = useState<boolean>(true);
-
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header fijo */}
@@ -142,7 +182,7 @@ export default function UserHomeScreen() {
       />
 
       {/* Servicio en camino */}
-      {onService && (
+      {order && order.status !== "done" && order.status !== "cancelled" && (
         <View style={styles.sectionTracking}>
           <Text variant="regular" style={styles.titleTracking}>
             ¡Tu groomer esta en camino!
@@ -150,7 +190,7 @@ export default function UserHomeScreen() {
           <Text variant="regular" style={styles.textTracking} numberOfLines={1}>
             Llegada estimada: 15:30 h
           </Text>
-          <OrderProgressBar />
+          <OrderProgressBar currentStatus={order.status} />
           <Button
             title="Rastrear"
             textStyle={{ fontSize: Typography.fontSize.xs }}

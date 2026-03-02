@@ -4,16 +4,18 @@ import { Typography, Spacing, BorderRadius } from "@/constants/theme";
 import { View, Text, StyleSheet, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Icon } from "@/components/common";
-import { useRouter } from "expo-router";
 import { OrderProgressBar } from "@/components/common/OrdenProgressBar";
+import { useOrderStore } from "@/store/orderStore";
 
 // ... mismos imports
 
 export default function TrackingServiceScreen() {
   const driverImage = null;
   const driverName = "David";
-  const router = useRouter();
   const { colors } = useTheme();
+
+  // Order store
+  const { order } = useOrderStore();
 
   const styles = StyleSheet.create({
     container: {
@@ -126,7 +128,9 @@ export default function TrackingServiceScreen() {
 
         {/* Barra de progreso */}
         <View style={{ marginVertical: Spacing.sm }}>
-          <OrderProgressBar currentStatus="in_service" />
+          {order && order.status !== "done" && order.status !== "cancelled" && (
+            <OrderProgressBar currentStatus={order.status} />
+          )}
         </View>
 
         <Button

@@ -1,8 +1,8 @@
 export const SERVICE_STATUS = {
-  on_way: 0,
+  on_the_way: 0,
   in_service: 1,
   live: 2,
-  finished: 3,
+  done: 3,
 };
 
 export const STEPS = [

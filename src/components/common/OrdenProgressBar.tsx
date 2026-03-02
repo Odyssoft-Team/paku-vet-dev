@@ -3,12 +3,13 @@ import { View, StyleSheet, Animated, Easing } from "react-native";
 import { Text } from "../common/Text";
 import { useTheme } from "@/hooks/useTheme";
 import { SERVICE_STATUS, STEPS } from "@/constants/service-status";
+import { TypeStatus } from "@/types/order.types";
 
 type StatusBar = {
-  currentStatus: "on_way" | "in_service" | "live" | "finished";
+  currentStatus: TypeStatus;
 };
 
-export const OrderProgressBar = ({ currentStatus = "on_way" }) => {
+export const OrderProgressBar = ({ currentStatus }: StatusBar) => {
   const { colors } = useTheme();
 
   // Encontramos el índice actual

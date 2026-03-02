@@ -70,6 +70,7 @@ export const API_ENDPOINTS = {
 
   // Órdenes
   ORDERS: {
+    BY_USER: (userId: string) => `/orders/${userId}`,
     CREATE: "/orders",
   },
 

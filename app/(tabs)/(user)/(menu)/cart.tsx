@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useOrderStore } from "@/store/orderStore";
 import {
   View,
   StyleSheet,
@@ -212,6 +213,7 @@ const SuccessModal = ({ visible, onGoHome, colors }: any) => (
 export default function CartScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { setOrder } = useOrderStore();
 
   const {
     serviceName,
@@ -317,10 +319,13 @@ export default function CartScreen() {
       await cartService.checkout(newCartId);
 
       // 4. POST /orders — crear la orden con cart_id + address_id
-      await orderService.createOrder({
+      const newOrder = await orderService.createOrder({
         cart_id: newCartId,
         address_id: addressId!,
       });
+
+      // Paso adicional para guardar la respuesta del POST order
+      setOrder(newOrder);
 
       // 5. Éxito
       setSuccessVisible(true);
@@ -961,12 +966,13 @@ export default function CartScreen() {
               <Controller
                 control={yapeControl}
                 name="yapeCode"
-                rules={{ required: "Requerido" }}
+                rules={{ required: "Requerido", minLength: 4 }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
                     placeholder="Pega tu código de aprobación"
                     placeholderTextColor={colors.text}
                     value={value}
+                    maxLength={4}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     error={yapeErrors.yapeCode?.message}
