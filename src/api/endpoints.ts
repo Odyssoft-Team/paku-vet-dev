@@ -51,6 +51,11 @@ export const API_ENDPOINTS = {
     LIST: "/paku-spa/plans",
   },
 
+  // Comercio / Servicios
+  COMMERCE: {
+    SERVICES: "/services",
+  },
+
   // Notificaciones
   NOTIFICATIONS: {
     LIST: "/notifications",
