@@ -63,6 +63,22 @@ apiClient.interceptors.request.use(
   },
 );
 
+const forceLogout = async () => {
+  await storage.removeItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
+  await storage.removeItem(CONFIG.STORAGE_KEYS.REFRESH_TOKEN);
+  await storage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
+
+  // Import dinámico para evitar dependencia circular con authStore
+  const { useAuthStore } = await import("@/store/authStore");
+  useAuthStore.setState({
+    user: null,
+    tokens: null,
+    isAuthenticated: false,
+    isLoading: false,
+    error: null,
+  });
+};
+
 // Interceptor de response
 apiClient.interceptors.response.use(
   (response) => {
@@ -138,9 +154,7 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError as Error, null);
 
-        await storage.removeItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
-        await storage.removeItem(CONFIG.STORAGE_KEYS.REFRESH_TOKEN);
-        await storage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
+        await forceLogout();
 
         return Promise.reject(refreshError);
       } finally {

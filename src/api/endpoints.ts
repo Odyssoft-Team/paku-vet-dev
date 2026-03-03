@@ -63,6 +63,13 @@ export const API_ENDPOINTS = {
     MARK_READ: (id: string) => `/notifications/${id}/read`,
   },
 
+  STORE: {
+    CATEGORIES: "/store/categories",
+    PRODUCTS: (slug: string) => `/store/categories/${slug}/products`,
+    PRODUCT: (id: string) => `/store/products/${id}`,
+    QUOTE: "/store/quote",
+  },
+
   // Carrito
   CART: {
     GET: "/cart",

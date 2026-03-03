@@ -1,11 +1,20 @@
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { useTheme } from "@/hooks";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
-import { View, Text, StyleSheet, Image } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  TextInput,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Icon } from "@/components/common";
 import { OrderProgressBar } from "@/components/common/OrdenProgressBar";
 import { useOrderStore } from "@/store/orderStore";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 
 // ... mismos imports
 
@@ -13,6 +22,10 @@ export default function TrackingServiceScreen() {
   const driverImage = null;
   const driverName = "David";
   const { colors } = useTheme();
+
+  const [testRoomId, setTestRoomId] = useState("");
+
+  const router = useRouter();
 
   // Order store
   const { order } = useOrderStore();
@@ -84,6 +97,27 @@ export default function TrackingServiceScreen() {
       color: "#4ADE80",
       marginRight: 4,
     },
+    liveButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: BorderRadius.lg,
+      paddingVertical: 14,
+      marginTop: Spacing.sm,
+      gap: 8,
+    },
+    liveDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#FFF",
+    },
+    liveButtonText: {
+      color: "#FFF",
+      fontSize: Typography.fontSize.xs,
+      fontFamily: "Poppins_700Bold",
+      letterSpacing: 0.5,
+    },
   });
 
   return (
@@ -131,6 +165,53 @@ export default function TrackingServiceScreen() {
           {order && order.status !== "done" && order.status !== "cancelled" && (
             <OrderProgressBar currentStatus={order.status} />
           )}
+        </View>
+
+        {order?.status === "in_service" && (
+          <TouchableOpacity
+            style={[styles.liveButton, { backgroundColor: "#E53935" }]}
+            onPress={() =>
+              router.push({
+                pathname: "/(tabs)/(user)/live-view",
+                params: { orderId: order.id },
+              })
+            }
+          >
+            <View style={styles.liveDot} />
+            <Text style={styles.liveButtonText}>Ver en vivo</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={{ marginBottom: Spacing.sm }}>
+          <TextInput
+            value={testRoomId}
+            onChangeText={setTestRoomId}
+            placeholder="Room ID para pruebas..."
+            placeholderTextColor={colors.textSecondary}
+            style={{
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: BorderRadius.md,
+              padding: Spacing.sm,
+              color: colors.text,
+              fontSize: Typography.fontSize.sm,
+              marginBottom: Spacing.xs,
+            }}
+          />
+          <TouchableOpacity
+            style={[styles.liveButton, { backgroundColor: "#E53935" }]}
+            onPress={() => {
+              if (testRoomId.trim()) {
+                router.push({
+                  pathname: "/(tabs)/(user)/live-view",
+                  params: { orderId: testRoomId.trim() },
+                });
+              }
+            }}
+          >
+            <View style={styles.liveDot} />
+            <Text style={styles.liveButtonText}>Entrar al live (TEST)</Text>
+          </TouchableOpacity>
         </View>
 
         <Button

@@ -30,6 +30,7 @@ export default function MenuLayout() {
     "history-detail",
     "addresses",
     "tracking-service",
+    "live-view",
   ];
 
   return (

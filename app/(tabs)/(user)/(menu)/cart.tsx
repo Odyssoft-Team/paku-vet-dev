@@ -216,14 +216,14 @@ export default function CartScreen() {
   const { setOrder } = useOrderStore();
 
   const {
-    serviceName,
-    servicePrice,
-    serviceId,
+    productName,
+    productId,
+    quotedTotal,
+    currency,
+    selectedAddonIds,
     petId,
     selectedDate,
     selectedTime,
-    extraLabel,
-    extraPrice,
     addressId,
     appliedCoupon,
     couponDiscount,
@@ -279,8 +279,8 @@ export default function CartScreen() {
   });
 
   const subtotal = useMemo(() => {
-    return (servicePrice ?? 0) + (extraPrice ?? 0) - couponDiscount;
-  }, [servicePrice, extraPrice, couponDiscount]);
+    return (quotedTotal ?? 0) - couponDiscount;
+  }, [quotedTotal, couponDiscount]);
 
   const handleInvoiceToggle = (option: "si" | "no") => {
     setInvoiceOption(option);
@@ -294,40 +294,34 @@ export default function CartScreen() {
   const processPayment = async () => {
     setPaying(true);
     try {
-      // 1. Armar items — solo service_base (addons en v2)
       const items: CreateCartItemInput[] = [
         {
           kind: "service_base",
-          ref_id: serviceId!,
-          name: serviceName!,
+          ref_id: productId!,
+          name: productName!,
           qty: 1,
-          unit_price: servicePrice!,
+          unit_price: quotedTotal!,
           meta: {
             pet_id: petId!,
             scheduled_date: selectedDate!,
             scheduled_time: selectedTime ?? "12:00",
+            addon_ids: selectedAddonIds, // ← addons viajan en meta
           },
         },
       ];
 
-      // 2. POST /cart/items — crear carrito con items en batch
       const cartResponse = await cartService.createWithItems({ items });
       const newCartId = cartResponse.cart.id;
       setCartId(newCartId);
 
-      // 3. POST /cart/{id}/checkout — finalizar carrito
       await cartService.checkout(newCartId);
 
-      // 4. POST /orders — crear la orden con cart_id + address_id
       const newOrder = await orderService.createOrder({
         cart_id: newCartId,
         address_id: addressId!,
       });
 
-      // Paso adicional para guardar la respuesta del POST order
       setOrder(newOrder);
-
-      // 5. Éxito
       setSuccessVisible(true);
     } catch (error: any) {
       const message =
@@ -648,17 +642,22 @@ export default function CartScreen() {
         <View style={s.card}>
           <Text style={s.sectionTitle}>Resumen</Text>
 
-          {serviceName && servicePrice != null && (
+          {productName && quotedTotal != null && (
             <View style={s.summaryRow}>
-              <Text style={s.summaryLabel}>• PAKU Spa - {serviceName}</Text>
-              <Text style={s.summaryValue}>S/{servicePrice}.00</Text>
+              <Text style={s.summaryLabel}>• PAKU Spa - {productName}</Text>
+              <Text style={s.summaryValue}>
+                {currency} {quotedTotal.toFixed(2)}
+              </Text>
             </View>
           )}
 
-          {extraLabel && extraPrice != null && (
+          {selectedAddonIds.length > 0 && (
             <View style={s.summaryRow}>
-              <Text style={s.summaryLabel}>• {extraLabel}</Text>
-              <Text style={s.summaryValue}>S/{extraPrice}.00</Text>
+              <Text style={s.summaryLabel}>
+                • {selectedAddonIds.length} adicional
+                {selectedAddonIds.length > 1 ? "es" : ""}
+              </Text>
+              <Text style={s.summaryValue}>Incluido</Text>
             </View>
           )}
 

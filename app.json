@@ -1,26 +1,9 @@
 {
-  "plugins": [
-    "@react-native-community/datetimepicker",
-    [
-      "expo-location",
-      {
-        "locationAlwaysAndWhenInUsePermission": "Permitir que $(PRODUCT_NAME) use tu ubicación."
-      }
-    ],
-    [
-      "expo-splash-screen",
-      {
-        "backgroundColor": "#ffffff",
-        "image": "./assets/app/splash.png",
-        "imageWidth": 900,
-        "resizeMode": "contain"
-      }
-    ]
-  ],
   "expo": {
     "name": "Paku",
     "slug": "paku-vet",
     "version": "1.0.0",
+    "scheme": "paku",
     "orientation": "portrait",
     "icon": "./assets/app/icon.png",
     "userInterfaceStyle": "light",
@@ -31,7 +14,7 @@
     },
     "android": {
       "usesCleartextTraffic": true,
-      "permissions": ["INTERNET"],
+      "permissions": ["INTERNET", "CAMERA", "RECORD_AUDIO"],
       "package": "com.aldoparradev.pakuvet",
       "adaptiveIcon": {
         "foregroundImage": "./assets/app/adaptive-icon.png",
@@ -51,7 +34,40 @@
     "web": {
       "favicon": "./assets/app/favicon.png"
     },
-    "plugins": ["expo-font"],
+    "plugins": [
+      "expo-font",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permitir que $(PRODUCT_NAME) use tu ubicación."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./assets/app/splash.png",
+          "imageWidth": 900,
+          "resizeMode": "contain"
+        }
+      ],
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Paku necesita acceso a la cámara para el servicio en vivo",
+          "microphonePermission": "Paku necesita acceso al micrófono para el servicio en vivo"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24
+          }
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "6a71eecb-b961-400b-a9e8-d62cb86256f1"

@@ -3,41 +3,37 @@ import {
   View,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
   TouchableOpacity,
   ImageBackground,
-  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/common/Text";
-import { Icon } from "@/components/common/Icon";
 import { Button } from "@/components/common/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
-import { useSpaServices } from "@/hooks/useSpaceServices";
-import { useBookingStore } from "@/store/bookingStore";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { useCartDrawerStore } from "@/store/cartDrawerStore";
+import { useBookingStore } from "@/store/bookingStore";
+import { useStoreProducts } from "@/hooks/useStoreProducts";
+import { StoreProduct } from "@/types/store.types";
 
-interface ServicePackageProps {
-  title: string;
-  subtitle: string;
-  price: string;
-  badge?: string;
-  badgeColor?: string;
-  includes: string[];
+const CATEGORY_SLUG = "paku-spa";
+
+const BADGES = [
+  { text: "Recomendado", color: "#FFB6C1" },
+  { text: "Más lujo", color: "#FFB6C1" },
+  { text: "Cachorro", color: "#FFB6C1" },
+];
+
+const ProductCard: React.FC<{
+  product: StoreProduct;
+  index: number;
   onPress: () => void;
-}
-
-const ServicePackage: React.FC<ServicePackageProps> = ({
-  title,
-  subtitle,
-  price,
-  badge,
-  badgeColor,
-  includes,
-  onPress,
-}) => {
+}> = ({ product, index, onPress }) => {
   const { colors } = useTheme();
+  const badge = BADGES[index] ?? null;
 
   return (
     <View style={[styles.packageCard, { backgroundColor: colors.surface }]}>
@@ -54,45 +50,29 @@ const ServicePackage: React.FC<ServicePackageProps> = ({
         <View style={styles.packageHeader}>
           <View style={styles.packageTitleContainer}>
             <Text style={[styles.packageTitle, { color: colors.primary }]}>
-              {title}
+              {product.name}
             </Text>
             {badge && (
-              <View
-                style={[
-                  styles.badge,
-                  { backgroundColor: badgeColor || colors.secondary },
-                ]}
-              >
+              <View style={[styles.badge, { backgroundColor: badge.color }]}>
                 <Text style={[styles.badgeText, { color: colors.primary }]}>
-                  {badge}
+                  {badge.text}
                 </Text>
               </View>
             )}
           </View>
-          <Text style={[styles.packageSubtitle, { color: colors.text }]}>
-            {subtitle}
-          </Text>
+          {product.description && (
+            <Text style={[styles.packageSubtitle, { color: colors.text }]}>
+              {product.description}
+            </Text>
+          )}
         </View>
 
         {/* Price */}
         <Text style={[styles.packagePrice, { color: colors.primary }]}>
-          Costo: {price}
+          {product.price
+            ? `Costo: ${product.currency} ${product.price.toFixed(2)}`
+            : "Precio según cotización"}
         </Text>
-
-        {/* Includes */}
-        <View style={styles.includesContainer}>
-          <Text style={[styles.includesTitle, { color: colors.text }]}>
-            Incluye:
-          </Text>
-          {includes.map((item, index) => (
-            <Text
-              key={index}
-              style={[styles.includesItem, { color: colors.text }]}
-            >
-              • {item}
-            </Text>
-          ))}
-        </View>
 
         {/* Button */}
         <Button title="Elegir este spa" onPress={onPress} fullWidth />
@@ -101,125 +81,128 @@ const ServicePackage: React.FC<ServicePackageProps> = ({
   );
 };
 
-const getBadgeData = (index: number) => {
-  const badges = [
-    { text: "Recomendado", color: "#FFB6C1" }, // Para el index 0
-    { text: "Más lujo", color: "#FFB6C1" }, // Para el index 1
-    { text: "Cachorro", color: "#FFB6C1" }, // Para el index 2
-  ];
-  return badges[index] || null;
-};
-
 export default function ServiceDetailsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { open: openCartDrawer } = useCartDrawerStore();
+  const { petId, petSpecies, setProduct } = useBookingStore();
 
-  const { data: packages, isLoading } = useSpaServices();
-  const { setService } = useBookingStore();
+  const {
+    data: products,
+    isLoading,
+    isError,
+  } = useStoreProducts(
+    CATEGORY_SLUG,
+    petId ?? undefined,
+    petSpecies ?? undefined,
+  );
 
-  const handleSelectPackage = (packageCode: string) => {
-    const pkg = packages?.find((p) => p.code === packageCode);
-    if (pkg) {
-      setService({
-        serviceId: pkg.id, // ← UUID real del backend
-        serviceCode: pkg.code,
-        serviceName: pkg.name,
-        servicePrice: pkg.price,
-      });
-    }
-    router.push("/(tabs)/(user)/service-selected");
+  const handleSelectProduct = (product: StoreProduct) => {
+    setProduct({
+      productId: product.id,
+      productName: product.name,
+      categorySlug: CATEGORY_SLUG,
+    });
+    router.push("/(tabs)/(user)/additional-service");
   };
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text>Cargando experiencias spa...</Text>
-      </View>
-    );
-  }
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
-      {/* Header */}
-
       <ScreenHeader
-        title="Elige tu spa"
+        title="Elige tu servicio"
         backHref="/(tabs)/(user)/select-pet"
-        right={{
-          type: "icon",
-          name: "cart",
-          onPress: () => router.push("/(tabs)/(user)/cart"),
-        }}
+        right={{ type: "icon", name: "cart", onPress: openCartDrawer }}
       />
 
-      {/* Content */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Service Info */}
-        <View style={styles.serviceInfo}>
-          <Text style={[styles.serviceMainTitle, { color: colors.primary }]}>
-            PAKU Spa
-          </Text>
-          <Text style={[styles.serviceDescription, { color: colors.text }]}>
-            Cuidado profesional, seguimiento en vivo y total transparencia desde
-            tu app.
-          </Text>
-        </View>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+          PAKU Spa
+        </Text>
+        <Text style={[styles.sectionSubtitle, { color: colors.text }]}>
+          Cuidado profesional, seguimiento en vivo y total transparencia desde
+          tu app.
+        </Text>
 
-        {/* Packages */}
-        {packages?.map((pkg, index) => {
-          const badgeInfo = getBadgeData(index);
+        {isLoading && (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text
+              style={{ color: colors.textSecondary, marginTop: Spacing.sm }}
+            >
+              Cargando servicios...
+            </Text>
+          </View>
+        )}
 
-          return (
-            <ServicePackage
-              key={pkg.code}
-              title={pkg.name}
-              subtitle={pkg.description}
-              price={`${pkg.currency} ${pkg.price.toFixed(2)}`}
-              includes={pkg.includes}
-              badge={badgeInfo?.text}
-              badgeColor={badgeInfo?.color}
-              onPress={() => handleSelectPackage(pkg.code)}
-            />
-          );
-        })}
+        {isError && (
+          <View style={styles.centered}>
+            <Text style={{ color: colors.textSecondary }}>
+              No se pudo cargar los servicios. Intenta de nuevo.
+            </Text>
+          </View>
+        )}
+
+        {products?.map((product, index) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            index={index}
+            onPress={() => handleSelectProduct(product)}
+          />
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  scrollContent: { padding: Spacing.md, paddingBottom: Spacing.xl },
+  sectionTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontFamily: Typography.fontFamily.bold,
+    marginBottom: Spacing.xs,
   },
-  header: {
+  sectionSubtitle: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    lineHeight: 20,
+    marginBottom: Spacing.lg,
+  },
+  card: {
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    position: "relative",
+    justifyContent: "space-between",
+    ...Shadows.md,
   },
-  backButton: {
-    position: "absolute",
-    left: Spacing.md,
-    width: 40,
-  },
-  headerTitle: {
-    fontSize: Typography.fontSize.md,
+  cardContent: { flex: 1, marginRight: Spacing.md },
+  cardTitle: {
+    fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
-    color: "#FFFFFF",
-    textAlign: "center",
+    marginBottom: Spacing.xs,
   },
-  scrollContent: {
-    padding: Spacing.md,
-    paddingBottom: Spacing.xl,
+  cardDescription: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    marginBottom: Spacing.xs,
+    lineHeight: 18,
+  },
+  cardPrice: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+  },
+  centered: {
+    paddingVertical: Spacing.xl,
+    alignItems: "center",
   },
   serviceInfo: {
     marginBottom: Spacing.lg,
@@ -285,19 +268,5 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.md,
     fontFamily: Typography.fontFamily.bold,
     marginBottom: Spacing.sm,
-  },
-  includesContainer: {
-    marginBottom: Spacing.md,
-  },
-  includesTitle: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.semibold,
-    marginBottom: Spacing.xs,
-  },
-  includesItem: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    marginBottom: 2,
-    lineHeight: 18,
   },
 });

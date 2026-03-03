@@ -3,7 +3,6 @@ import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { BannerBase } from "@/components/home/BannerBase";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks";
-import { useSpaServices } from "@/hooks/useSpaceServices";
 import { useAddressStore } from "@/store/addressStore";
 import { useBookingStore } from "@/store/bookingStore";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -14,9 +13,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function ServiceSelectedScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { serviceCode, serviceName, servicePrice } = useBookingStore();
-  const { data: packages } = useSpaServices();
-  const { addresses, fetchAddresses } = useAddressStore();
+  // const { serviceCode, serviceName, servicePrice } = useBookingStore();
+  const { productName, quotedTotal, currency, selectedAddonIds } =
+    useBookingStore();
+  const { fetchAddresses } = useAddressStore();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -101,9 +101,9 @@ export default function ServiceSelectedScreen() {
   });
 
   // 3. Encontramos el objeto específico
-  const selectedService = packages?.find((pkg) => pkg.code === serviceCode);
+  // const selectedService = packages?.find((pkg) => pkg.code === serviceCode);
 
-  if (!selectedService) return <Text>Servicio no encontrado</Text>;
+  // if (!selectedService) return <Text>Servicio no encontrado</Text>;
 
   return (
     <SafeAreaView
@@ -135,27 +135,18 @@ export default function ServiceSelectedScreen() {
         />
 
         {/* Service Info */}
+        {/* Service Info */}
         <View style={styles.sectionMargin}>
           <Text style={[styles.serviceMainTitle, { color: colors.primary }]}>
-            PAKU Spa - {selectedService.name}
+            PAKU Spa - {productName}
           </Text>
-          <Text>{selectedService.description}</Text>
-          <Text style={[styles.packagePrice, { color: colors.primary }]}>
-            Costo: {selectedService.price}
-          </Text>
-          <View style={styles.includesContainer}>
-            <Text style={[styles.includesTitle, { color: colors.text }]}>
-              Incluye:
-            </Text>
-            {selectedService.includes.map((item, index) => (
-              <Text
-                key={index}
-                style={[styles.includesItem, { color: colors.text }]}
-              >
-                • {item}
+          {selectedAddonIds.length > 0 && (
+            <View style={styles.includesContainer}>
+              <Text style={[styles.includesTitle, { color: colors.text }]}>
+                Adicionales seleccionados: {selectedAddonIds.length}
               </Text>
-            ))}
-          </View>
+            </View>
+          )}
         </View>
 
         {/* Fixed button */}
@@ -165,24 +156,17 @@ export default function ServiceSelectedScreen() {
               Subtotal
             </Text>
             <Text style={[styles.includesTitle, { color: colors.primary }]}>
-              S/ {selectedService.price}.00
+              {quotedTotal != null
+                ? `${currency} ${quotedTotal.toFixed(2)}`
+                : "Calculando..."}
             </Text>
           </View>
           <Button
             title="Continuar reserva"
             textStyle={{ fontSize: Typography.fontSize.sm }}
             style={{ borderRadius: BorderRadius.xl }}
-            onPress={() =>
-              router.push({
-                pathname: "/(tabs)/(user)/select-address",
-                // pathname: "/(tabs)/(user)/select-address",
-                // pathname: "/(tabs)/(user)/additional-service",
-                params: { serviceCode: serviceCode },
-              })
-            }
+            onPress={() => router.push("/(tabs)/(user)/select-address")}
             fullWidth
-            // disabled={!location}
-            // loading={saving}
           />
         </View>
       </ScrollView>

@@ -1,35 +1,35 @@
 import React from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ImageBackground,
-} from "react-native";
+import { StyleSheet, ScrollView, ActivityIndicator, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/common/Text";
-import { Icon } from "@/components/common/Icon";
 import { useTheme } from "@/hooks/useTheme";
-import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { Spacing, Typography } from "@/constants/theme";
 import { ServiceCard } from "@/components/home";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { useCartDrawerStore } from "@/store/cartDrawerStore";
-
-interface ServiceCardProps {
-  title: string;
-  subtitle: string;
-  image: any;
-  onPress: () => void;
-}
+import { useQuery } from "@tanstack/react-query";
+import { storeService } from "@/api/services/store.service";
+import { useBookingStore } from "@/store/bookingStore";
 
 export default function ServicesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-
   const { open: openCartDrawer } = useCartDrawerStore();
+  const { clearBooking } = useBookingStore();
 
-  const handleServicePress = () => {
+  const {
+    data: categories,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["storeCategories"],
+    queryFn: () => storeService.getCategories(),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const handleCategoryPress = (slug: string) => {
+    clearBooking();
     router.push("/(tabs)/(user)/select-pet");
   };
 
@@ -41,85 +41,45 @@ export default function ServicesScreen() {
       <ScreenHeader
         title="Nuestros servicios"
         backHref="/(tabs)/(user)/"
-        right={{
-          type: "icon",
-          name: "cart",
-          onPress: openCartDrawer,
-        }}
+        right={{ type: "icon", name: "cart", onPress: openCartDrawer }}
       />
 
-      {/* Content */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <ServiceCard
-          title="PAKU Spa"
-          subtitle="Grooming inteligente."
-          onPress={handleServicePress}
-        />
+        {isLoading && (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        )}
 
-        {/* Aquí irán más servicios en el futuro */}
+        {isError && (
+          <View style={styles.centered}>
+            <Text style={{ color: colors.textSecondary }}>
+              No se pudieron cargar los servicios.
+            </Text>
+          </View>
+        )}
+
+        {categories?.map((category) => (
+          <ServiceCard
+            key={category.id}
+            title={category.name}
+            subtitle="Grooming inteligente."
+            onPress={() => handleCategoryPress(category.slug)}
+          />
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: "row",
+  container: { flex: 1 },
+  scrollContent: { padding: Spacing.md },
+  centered: {
+    paddingVertical: Spacing.xl,
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    position: "relative",
-  },
-  backButton: {
-    position: "absolute",
-    left: Spacing.md,
-    width: 40,
-  },
-  headerTitle: {
-    color: "#FFFFFF",
-    fontSize: Typography.fontSize.md,
-    fontFamily: Typography.fontFamily.bold,
-    textAlign: "center",
-  },
-  scrollContent: {
-    padding: Spacing.md,
-  },
-  serviceCard: {
-    height: 160,
-    borderRadius: BorderRadius.xl,
-    overflow: "hidden",
-    marginBottom: Spacing.md,
-    ...Shadows.lg,
-  },
-  serviceImage: {
-    width: "100%",
-    height: "100%",
-  },
-  serviceImageStyle: {
-    borderRadius: BorderRadius.xl,
-  },
-  serviceOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(29, 42, 216, 0.7)",
-    justifyContent: "center",
-    paddingHorizontal: Spacing.lg,
-  },
-  serviceTitle: {
-    fontSize: Typography.fontSize.xxl,
-    fontFamily: Typography.fontFamily.bold,
-    color: "#FFFFFF",
-    marginBottom: Spacing.xs,
-  },
-  serviceSubtitle: {
-    fontSize: Typography.fontSize.md,
-    fontFamily: Typography.fontFamily.regular,
-    color: "#FFFFFF",
   },
 });

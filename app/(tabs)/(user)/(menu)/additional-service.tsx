@@ -1,61 +1,119 @@
-import { Button, Icon, Text } from "@/components/common";
-import { ServiceSelect } from "@/components/services/ServiceSelect";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
+import { router } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Text } from "@/components/common/Text";
+import { Button } from "@/components/common/Button";
+import { Icon } from "@/components/common/Icon";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks";
-import { useSpaServices } from "@/hooks/useSpaceServices";
-import { router } from "expo-router";
 import { useBookingStore } from "@/store/bookingStore";
-import { useState } from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useStoreProduct } from "@/hooks/useStoreProduct";
+import { storeService } from "@/api/services/store.service";
+import { StoreAddon } from "@/types/store.types";
 
 export default function AdditionalServiceScreen() {
   const { colors } = useTheme();
-  const { serviceCode, setExtra } = useBookingStore();
-  const { data: packages } = useSpaServices();
+  const {
+    petId,
+    productId,
+    productName,
+    selectedAddonIds,
+    setAddons,
+    setQuotedTotal,
+  } = useBookingStore();
+
+  const [quoting, setQuoting] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+
+  const { data: productDetail, isLoading } = useStoreProduct(
+    productId ?? "",
+    petId ?? undefined,
+  );
+
+  const addons = productDetail?.available_addons ?? [];
+
+  const toggleAddon = (addonId: string) => {
+    if (selectedAddonIds.includes(addonId)) {
+      setAddons(selectedAddonIds.filter((id) => id !== addonId));
+    } else {
+      setAddons([...selectedAddonIds, addonId]);
+    }
+  };
+
+  const handleContinue = async () => {
+    if (!petId || !productId) return;
+    setQuoting(true);
+    setQuoteError(null);
+    try {
+      const quote = await storeService.quote({
+        pet_id: petId,
+        product_id: productId,
+        addon_ids: selectedAddonIds,
+      });
+      setQuotedTotal(quote.total, quote.currency);
+      router.push("/(tabs)/(user)/service-selected");
+    } catch (e) {
+      setQuoteError("No se pudo calcular el precio. Intenta de nuevo.");
+    } finally {
+      setQuoting(false);
+    }
+  };
 
   const styles = StyleSheet.create({
-    container: {
-      flex: 1,
+    container: { flex: 1 },
+    scrollContent: { padding: Spacing.md, paddingBottom: 140 },
+    sectionTitle: {
+      fontSize: Typography.fontSize.lg,
+      fontFamily: Typography.fontFamily.bold,
+      marginBottom: Spacing.xs,
     },
-    header: {
+    sectionSubtitle: {
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.regular,
+      lineHeight: 20,
+      marginBottom: Spacing.lg,
+      color: colors.textSecondary,
+    },
+    addonCard: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.md,
+      padding: Spacing.md,
+      borderRadius: BorderRadius.lg,
+      backgroundColor: colors.surface,
+      marginBottom: Spacing.sm,
+      borderWidth: 2,
+      borderColor: "transparent",
     },
-    backButton: {
-      padding: Spacing.sm,
-      width: 40,
+    addonCardSelected: {
+      borderColor: colors.primary,
     },
-    headerTitle: {
-      flex: 1,
-      fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.bold,
-      color: "#FFFFFF",
-      textAlign: "center",
-    },
-    content: {
-      flex: 1,
-    },
-    sectionMargin: {
-      marginBottom: Spacing.xl,
-      paddingHorizontal: Spacing.md,
-    },
-    includesContainer: {
-      marginBottom: Spacing.md,
-    },
-    includesTitle: {
+    addonInfo: { flex: 1, marginRight: Spacing.md },
+    addonName: {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.semibold,
-      marginBottom: Spacing.xs,
+      color: colors.text,
     },
-    includesItem: {
+    addonPrice: {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.regular,
-      marginBottom: 2,
-      lineHeight: 18,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    emptyText: {
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.regular,
+      color: colors.textSecondary,
+      textAlign: "center",
+      paddingVertical: Spacing.xl,
     },
     fixedButton: {
       position: "absolute",
@@ -64,129 +122,93 @@ export default function AdditionalServiceScreen() {
       right: 0,
       padding: Spacing.lg,
       backgroundColor: colors.loginButton,
-      borderTopColor: colors.border,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: -4 },
       shadowOpacity: 0.08,
       shadowRadius: 8,
       elevation: 10,
     },
-    priceRow: {
-      flexDirection: "row",
-      justifyContent: "space-between", // Empuja los elementos a los extremos
-      alignItems: "center",
+    errorText: {
+      fontSize: Typography.fontSize.xs,
+      color: "#E53935",
+      textAlign: "center",
+      marginBottom: Spacing.sm,
     },
   });
-
-  const [selectedExtra, setSelectedExtra] = useState<
-    (typeof ADDITIONAL_OPTIONS)[0] | null
-  >(null);
-
-  const ADDITIONAL_OPTIONS = [
-    {
-      id: "1",
-      label: "Deslanado + desmotado",
-      price: 25,
-      description: "Elimina pelo muerto y nudos.",
-    },
-    {
-      id: "2",
-      label: "Deslanado",
-      price: 20,
-      description: "Reduce caída y mejora la piel.",
-    },
-    {
-      id: "3",
-      label: "Desmontado",
-      price: 15,
-      description: "Retira nudos localizados.",
-    },
-    {
-      id: "4",
-      label: "Corte estético",
-      price: 15,
-      description: "Define y empareja el pelaje.",
-    },
-    {
-      id: "5",
-      label: "Mascarilla reconstructora",
-      price: 25,
-      description: "Hidrata y fortalece el pelo.",
-    },
-    {
-      id: "6",
-      label: "Atrevia One",
-      price: 59,
-      description: "Control antipulga mensual.",
-      longDescription:
-        "Tableta masticable de acción mensual (aprox. 30 días), indicada para el control de parásitos externos (ectoparásitos).",
-      image: require("@assets/images/services/atrevia-one.png"),
-    },
-  ];
-
-  const selectedService = packages?.find((pkg) => pkg.code === serviceCode);
-
-  if (!selectedService) return <Text>Servicio no encontrado</Text>;
-
-  const totalAmount = selectedService.price + (selectedExtra?.price || 0);
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Servicios adicionales</Text>
-        <View style={styles.backButton} />
-      </View>
+      <ScreenHeader
+        title="Servicios adicionales"
+        backHref="/(tabs)/(user)/service-details"
+        right={{ type: "none" }}
+      />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.sectionMargin}>
-          {/* El componente ServiceSelect ya debe tener la lógica interna para mostrar
-              la imagen y descripción larga si 'image' existe en la opción */}
-          <ServiceSelect
-            options={ADDITIONAL_OPTIONS}
-            selectedId={selectedExtra?.id}
-            onSelect={(option) => setSelectedExtra(option)}
-          />
-        </View>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+          {productName}
+        </Text>
+        <Text style={styles.sectionSubtitle}>
+          Personaliza el servicio con extras opcionales para tu mascota.
+        </Text>
 
-        <View style={styles.fixedButton}>
-          <View style={styles.priceRow}>
-            <Text style={[styles.includesTitle, { color: colors.primary }]}>
-              Subtotal
-            </Text>
-            <Text style={[styles.includesTitle, { color: colors.primary }]}>
-              S/ {totalAmount}.00
-            </Text>
-          </View>
-
-          <Button
-            // Título dinámico: si eligió algo, ya no es "Omitir"
-            title={selectedExtra ? "Continuar" : "Omitir y Continuar"}
-            textStyle={{ fontSize: Typography.fontSize.sm }}
-            style={{ borderRadius: BorderRadius.xl }}
-            onPress={() => {
-              router.push({
-                pathname: "/(tabs)/(user)/select-address",
-                params: { serviceCode, extraId: selectedExtra?.id },
-              });
-            }}
-            fullWidth
-            // Eliminamos disabled={!location} si no se usa ubicación en esta vista
-          />
-        </View>
+        {isLoading ? (
+          <ActivityIndicator size="large" color={colors.primary} />
+        ) : addons.length === 0 ? (
+          <Text style={styles.emptyText}>
+            Este servicio no tiene adicionales disponibles.
+          </Text>
+        ) : (
+          addons.map((addon: StoreAddon) => {
+            const isSelected = selectedAddonIds.includes(addon.id);
+            return (
+              <TouchableOpacity
+                key={addon.id}
+                style={[
+                  styles.addonCard,
+                  isSelected && styles.addonCardSelected,
+                ]}
+                onPress={() => toggleAddon(addon.id)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.addonInfo}>
+                  <Text style={styles.addonName}>{addon.name}</Text>
+                  <Text style={styles.addonPrice}>
+                    {addon.price
+                      ? `+ ${addon.currency} ${addon.price.toFixed(2)}`
+                      : "Precio incluido"}
+                  </Text>
+                </View>
+                <Icon
+                  name={isSelected ? "check" : "close"}
+                  size={24}
+                  color={isSelected ? colors.primary : colors.textSecondary}
+                />
+              </TouchableOpacity>
+            );
+          })
+        )}
       </ScrollView>
+
+      <View style={styles.fixedButton}>
+        {quoteError && <Text style={styles.errorText}>{quoteError}</Text>}
+        <Button
+          title={
+            selectedAddonIds.length > 0 ? "Continuar" : "Omitir y Continuar"
+          }
+          textStyle={{ fontSize: Typography.fontSize.sm }}
+          style={{ borderRadius: BorderRadius.xl }}
+          onPress={handleContinue}
+          loading={quoting}
+          fullWidth
+        />
+      </View>
     </SafeAreaView>
   );
 }

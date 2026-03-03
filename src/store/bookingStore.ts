@@ -8,21 +8,19 @@ interface InvoiceData {
 
 interface BookingState {
   petId: string | null;
+  petSpecies: string | null; // ← nuevo, necesario para filtros de API
 
-  serviceId: string | null;
-  serviceCode: string | null;
-  serviceName: string | null;
-  servicePrice: number | null;
+  categorySlug: string | null; // ← reemplaza serviceCode
+  productId: string | null; // ← reemplaza serviceId
+  productName: string | null; // ← reemplaza serviceName
+  selectedAddonIds: string[]; // ← nuevo, antes era extraId único
 
-  // Addon — mapeado pero no activo en v1
-  extraId: string | null;
-  extraLabel: string | null;
-  extraPrice: number | null;
+  quotedTotal: number | null; // ← precio real del /store/quote
+  currency: string;
 
   addressId: string | null;
-
   selectedDate: string | null;
-  selectedTime: string | null; // siempre "12:00" por ahora
+  selectedTime: string | null;
 
   appliedCoupon: string | null;
   couponDiscount: number;
@@ -30,18 +28,17 @@ interface BookingState {
   needsInvoice: boolean;
   invoiceData: InvoiceData | null;
 
-  cartId: string | null; // id del carrito backend tras createWithItems
+  cartId: string | null;
 
-  setPet: (petId: string) => void;
-  setService: (data: {
-    serviceId: string;
-    serviceCode: string;
-    serviceName: string;
-    servicePrice: number;
+  // Acciones
+  setPet: (petId: string, species: string) => void;
+  setProduct: (data: {
+    productId: string;
+    productName: string;
+    categorySlug: string;
   }) => void;
-  setExtra: (
-    data: { extraId: string; extraLabel: string; extraPrice: number } | null,
-  ) => void;
+  setAddons: (addonIds: string[]) => void;
+  setQuotedTotal: (total: number, currency: string) => void;
   setAddress: (addressId: string) => void;
   setDate: (date: string) => void;
   setTime: (time: string) => void;
@@ -55,13 +52,13 @@ interface BookingState {
 
 const initialState = {
   petId: null,
-  serviceId: null,
-  serviceCode: null,
-  serviceName: null,
-  servicePrice: null,
-  extraId: null,
-  extraLabel: null,
-  extraPrice: null,
+  petSpecies: null,
+  categorySlug: null,
+  productId: null,
+  productName: null,
+  selectedAddonIds: [],
+  quotedTotal: null,
+  currency: "PEN",
   addressId: null,
   selectedDate: null,
   selectedTime: null,
@@ -74,17 +71,18 @@ const initialState = {
 
 export const useBookingStore = create<BookingState>((set) => ({
   ...initialState,
-  setPet: (petId) => set({ petId }),
-  setService: ({ serviceId, serviceCode, serviceName, servicePrice }) =>
-    set({ serviceId, serviceCode, serviceName, servicePrice }),
-  setExtra: (data) =>
-    data
-      ? set({
-          extraId: data.extraId,
-          extraLabel: data.extraLabel,
-          extraPrice: data.extraPrice,
-        })
-      : set({ extraId: null, extraLabel: null, extraPrice: null }),
+
+  setPet: (petId, species) => set({ petId, petSpecies: species }),
+  setProduct: ({ productId, productName, categorySlug }) =>
+    set({
+      productId,
+      productName,
+      categorySlug,
+      selectedAddonIds: [],
+      quotedTotal: null,
+    }),
+  setAddons: (addonIds) => set({ selectedAddonIds: addonIds }),
+  setQuotedTotal: (total, currency) => set({ quotedTotal: total, currency }),
   setAddress: (addressId) => set({ addressId }),
   setDate: (date) => set({ selectedDate: date }),
   setTime: (time) => set({ selectedTime: time }),

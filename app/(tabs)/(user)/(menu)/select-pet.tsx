@@ -134,7 +134,7 @@ export default function SelectPetForServiceScreen() {
   const { colors } = useTheme();
   const { pets, isLoading, fetchPets } = usePetStore();
   const { setPet, clearBooking } = useBookingStore();
-  const { addresses, fetchAddresses, error } = useAddressStore();
+  const { fetchAddresses } = useAddressStore();
 
   useEffect(() => {
     // Disparamos el fetch al montar el componente
@@ -148,9 +148,8 @@ export default function SelectPetForServiceScreen() {
   }, []);
 
   const handlePetSelect = (pet: Pet) => {
-    // Empezamos un nuevo booking limpio y guardamos la mascota en el store
     clearBooking();
-    setPet(pet.id);
+    setPet(pet.id, pet.species); // ← agregar pet.species
     router.push("/(tabs)/(user)/service-details");
   };
 

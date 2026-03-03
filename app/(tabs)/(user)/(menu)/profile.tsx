@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
 
   // ── Secciones ─────────────────────────────────────────────────────────────
   sectionTitle: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.semibold,
     marginHorizontal: Spacing.md,
     marginTop: Spacing.lg,
