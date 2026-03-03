@@ -114,16 +114,11 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
       }
     });
 
-    // ICE candidates listos para enviar al groomer
+    // ICE candidates listos para enviar al groomer (formato raw según documentación)
     pc.addEventListener("icecandidate", (event: any) => {
       if (isCleanedUpRef.current) return;
       if (event.candidate && ws.readyState === WebSocket.OPEN) {
-        ws.send(
-          JSON.stringify({
-            type: "candidate",
-            candidate: event.candidate,
-          }),
-        );
+        ws.send(JSON.stringify(event.candidate));
       }
     });
 
@@ -200,11 +195,12 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
         if (msg.type === "answer") {
           // Groomer respondió → establecer remote description
           await pc.setRemoteDescription(new RTCSessionDescription(msg));
-        } else if (msg.type === "candidate") {
-          // ICE candidate del groomer
-          if (msg.candidate) {
-            await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-          }
+        } else if (msg.type === "candidate" && msg.candidate) {
+          // ICE candidate del groomer en formato envuelto { type, candidate }
+          await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+        } else if (msg.candidate !== undefined && msg.type === undefined) {
+          // ICE candidate del groomer en formato raw (según documentación del servidor)
+          await pc.addIceCandidate(new RTCIceCandidate(msg));
         }
       } catch (err) {
         console.error("[WebRTC] Error procesando mensaje:", err);

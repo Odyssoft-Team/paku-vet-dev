@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"c:\\\\Users\\\\Dell\\\\Desktop\\\\Odyssoft\\\\paku-vet-dev\\\\app\\\\\\(tabs\\)\\\\\\(groomer\\)\"\")"
+    ]
+  }
+}
