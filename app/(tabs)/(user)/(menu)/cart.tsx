@@ -930,7 +930,7 @@ export default function CartScreen() {
           {paymentMethod === "yape" && (
             <View style={s.form}>
               <Text style={s.yapeAmountLabel}>
-                Monto: S/{subtotal.toFixed(2)}
+                Monto: {currency} {subtotal.toFixed(2)}
               </Text>
               <Text style={s.yapeDesc}>
                 Pagar con Yape{"\n"}Obtén el código de aprobación en la app de
@@ -994,7 +994,7 @@ export default function CartScreen() {
           <Text style={s.addReservaText}>Añadir reserva</Text>
         </TouchableOpacity> */}
         <Button
-          title={`Pagar S/${subtotal.toFixed(2)}`}
+          title={`Pagar ${currency} ${subtotal.toFixed(2)}`}
           onPress={handlePay}
           fullWidth
           loading={paying}
