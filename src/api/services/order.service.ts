@@ -6,10 +6,8 @@ export const orderService = {
   /**
    * Obtiene todas las ordenes del usuario
    */
-  async getOrder(UserId: string): Promise<Order> {
-    const response = await apiClient.get<Order>(
-      API_ENDPOINTS.ORDERS.BY_USER(UserId),
-    );
+  async getOrders(): Promise<Order[]> {
+    const response = await apiClient.get<Order[]>(API_ENDPOINTS.ORDERS.LIST);
     return response.data;
   },
 
@@ -21,6 +19,11 @@ export const orderService = {
       API_ENDPOINTS.ORDERS.CREATE,
       input,
     );
+    return response.data;
+  },
+
+  async getOrderById(id: string): Promise<Order> {
+    const response = await apiClient.get<Order>(API_ENDPOINTS.ORDERS.BY_ID(id));
     return response.data;
   },
 };

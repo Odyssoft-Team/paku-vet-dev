@@ -5,50 +5,133 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
-  TextInput,
+  ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Icon } from "@/components/common";
 import { OrderProgressBar } from "@/components/common/OrdenProgressBar";
 import { useOrderStore } from "@/store/orderStore";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect } from "react";
+import { orderService } from "@/api/services/order.service";
 
-// ... mismos imports
+const ACTIVE_STATUSES = ["created", "accepted", "on_the_way", "in_service"];
 
 export default function TrackingServiceScreen() {
-  const driverImage = null;
-  const driverName = "David";
   const { colors } = useTheme();
-
-  const [testRoomId, setTestRoomId] = useState("");
-
   const router = useRouter();
+  const { order, setOrder } = useOrderStore();
 
-  // Order store
-  const { order } = useOrderStore();
+  // ── Fetch detalle de la orden ──────────────────────────────────────────
+  const loadOrderDetail = async () => {
+    if (!order?.id) return;
+    try {
+      const updated = await orderService.getOrderById(order.id);
+      setOrder(updated);
+      if (updated.status === "done" || updated.status === "cancelled") {
+        router.replace("/(tabs)/(user)/");
+      }
+    } catch (error) {
+      console.log("Error cargando detalle de orden:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadOrderDetail();
+
+    let interval: any;
+    if (order?.id && ACTIVE_STATUSES.includes(order.status)) {
+      interval = setInterval(loadOrderDetail, 10000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [order?.id, order?.status]);
+
+  // ── Datos del snapshot ─────────────────────────────────────────────────
+  const item = order?.items_snapshot?.[0];
+  const address = order?.delivery_address_snapshot;
+  const scheduledDate = item?.meta?.scheduled_date;
+  const scheduledTime = item?.meta?.scheduled_time;
+  const addonCount = item?.meta?.addon_ids?.length ?? 0;
+  const totalFormatted = order
+    ? `${order.currency} ${(order.total_snapshot / 100).toFixed(2)}`
+    : "-";
 
   const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    fixedButton: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      padding: Spacing.lg,
+    container: { flex: 1, backgroundColor: colors.background },
+
+    // Layout principal — dos bloques que se reparten el espacio
+    topSection: { flex: 1 },
+    bottomSection: {
       backgroundColor: colors.loginButton,
+      borderTopWidth: 1,
       borderTopColor: colors.border,
+      padding: Spacing.lg,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: -4 },
       shadowOpacity: 0.08,
       shadowRadius: 8,
       elevation: 10,
     },
+
+    // Mapa placeholder
+    mapContainer: {
+      height: 220,
+      backgroundColor: colors.border,
+      margin: Spacing.md,
+      borderRadius: BorderRadius.lg,
+      overflow: "hidden",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    mapPlaceholderText: {
+      fontSize: Typography.fontSize.sm,
+      color: colors.textSecondary,
+      fontFamily: Typography.fontFamily.regular,
+      marginTop: Spacing.sm,
+    },
+
+    // Cards de info
+    scrollContent: {
+      paddingHorizontal: Spacing.md,
+      paddingBottom: Spacing.lg,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.md,
+      marginBottom: Spacing.md,
+    },
+    cardTitle: {
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.bold,
+      color: colors.primary,
+      marginBottom: Spacing.sm,
+    },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: Spacing.xs,
+    },
+    label: {
+      fontSize: Typography.fontSize.xs,
+      color: colors.textSecondary,
+      fontFamily: Typography.fontFamily.regular,
+    },
+    value: {
+      fontSize: Typography.fontSize.xs,
+      color: colors.text,
+      fontFamily: Typography.fontFamily.semibold,
+      textAlign: "right",
+      flex: 1,
+      paddingLeft: Spacing.sm,
+    },
+
+    // Footer
     driverRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -56,22 +139,16 @@ export default function TrackingServiceScreen() {
       marginBottom: Spacing.md,
     },
     avatarPlaceholder: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      width: 52,
+      height: 52,
+      borderRadius: 26,
       backgroundColor: colors.primary,
       justifyContent: "center",
       alignItems: "center",
       marginRight: Spacing.md,
     },
-    initials: {
-      color: "#FFF",
-      fontSize: 24,
-      fontWeight: "bold",
-    },
-    infoContainer: {
-      flex: 1,
-    },
+    initials: { color: "#FFF", fontSize: 20, fontWeight: "bold" },
+    infoContainer: { flex: 1 },
     titleDriver: {
       fontSize: Typography.fontSize.sm,
       fontWeight: "bold",
@@ -120,6 +197,23 @@ export default function TrackingServiceScreen() {
     },
   });
 
+  if (!order) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <ScreenHeader
+          title="Rastrear"
+          backHref="/(tabs)/(user)/"
+          right={{ type: "none" }}
+        />
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScreenHeader
@@ -128,32 +222,97 @@ export default function TrackingServiceScreen() {
         right={{ type: "none" }}
       />
 
-      {/* Contenido principal (Mapa, etc) */}
-      <View style={{ flex: 1 }} />
+      {/* ── Sección superior scrolleable ─────────────────────────────────── */}
+      <View style={styles.topSection}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Mapa placeholder */}
+          <View style={styles.mapContainer}>
+            <Icon name="gps" size={48} color={colors.textSecondary} />
+            <Text style={styles.mapPlaceholderText}>Mapa de seguimiento</Text>
+          </View>
 
-      {/* Footer Fijo */}
-      <View style={styles.fixedButton}>
-        {/* Sección del Conductor Corregida */}
-        <View style={styles.driverRow}>
-          {driverImage ? (
-            <Image
-              source={{ uri: driverImage }}
-              style={styles.avatarPlaceholder}
-            />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.initials}>
-                {driverName.charAt(0).toUpperCase()}
-              </Text>
+          {/* Detalle del servicio */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Detalle del servicio</Text>
+            <View style={styles.row}>
+              <Text style={styles.label}>Servicio</Text>
+              <Text style={styles.value}>{item?.name ?? "-"}</Text>
+            </View>
+            {addonCount > 0 && (
+              <View style={styles.row}>
+                <Text style={styles.label}>Adicionales</Text>
+                <Text style={styles.value}>
+                  {addonCount} seleccionado{addonCount > 1 ? "s" : ""}
+                </Text>
+              </View>
+            )}
+            <View style={styles.row}>
+              <Text style={styles.label}>Total</Text>
+              <Text style={styles.value}>{totalFormatted}</Text>
+            </View>
+          </View>
+
+          {/* Fecha programada */}
+          {(scheduledDate || scheduledTime) && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Fecha programada</Text>
+              {scheduledDate && (
+                <View style={styles.row}>
+                  <Text style={styles.label}>Fecha</Text>
+                  <Text style={styles.value}>{scheduledDate}</Text>
+                </View>
+              )}
+              {scheduledTime && (
+                <View style={styles.row}>
+                  <Text style={styles.label}>Hora</Text>
+                  <Text style={styles.value}>{scheduledTime}</Text>
+                </View>
+              )}
             </View>
           )}
 
-          <View style={styles.infoContainer}>
-            <Text style={styles.titleDriver}>{driverName}</Text>
-            <Text style={styles.textDriver}>Honda Civic Azul</Text>
-            <Text style={styles.textDriver}>5JFDKLA</Text>
-          </View>
+          {/* Dirección */}
+          {address && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Dirección de atención</Text>
+              <View style={styles.row}>
+                <Text style={styles.label}>Dirección</Text>
+                <Text style={styles.value}>
+                  {address.address_line} {address.building_number}
+                  {address.apartment_number
+                    ? `, ${address.apartment_number}`
+                    : ""}
+                </Text>
+              </View>
+              {address.reference && (
+                <View style={styles.row}>
+                  <Text style={styles.label}>Referencia</Text>
+                  <Text style={styles.value}>{address.reference}</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </ScrollView>
+      </View>
 
+      {/* ── Sección inferior fija ─────────────────────────────────────────── */}
+      <View style={styles.bottomSection}>
+        {/* Groomer info */}
+        <View style={styles.driverRow}>
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.initials}>G</Text>
+          </View>
+          <View style={styles.infoContainer}>
+            <Text style={styles.titleDriver}>Groomer asignado</Text>
+            <Text style={styles.textDriver}>
+              {order.ally_id
+                ? `ID: ${order.ally_id}`
+                : "Pendiente de asignación"}
+            </Text>
+          </View>
           <View style={styles.ratingBadge}>
             <Text style={styles.ratingText}>4.8</Text>
             <Icon name="start" size={14} color="#4ADE80" />
@@ -162,12 +321,13 @@ export default function TrackingServiceScreen() {
 
         {/* Barra de progreso */}
         <View style={{ marginVertical: Spacing.sm }}>
-          {order && order.status !== "done" && order.status !== "cancelled" && (
+          {order.status !== "done" && order.status !== "cancelled" && (
             <OrderProgressBar currentStatus={order.status} />
           )}
         </View>
 
-        {order?.status === "in_service" && (
+        {/* Botón Ver en vivo */}
+        {order.status === "in_service" && (
           <TouchableOpacity
             style={[styles.liveButton, { backgroundColor: "#E53935" }]}
             onPress={() =>
@@ -181,38 +341,6 @@ export default function TrackingServiceScreen() {
             <Text style={styles.liveButtonText}>Ver en vivo</Text>
           </TouchableOpacity>
         )}
-
-        <View style={{ marginBottom: Spacing.sm }}>
-          <TextInput
-            value={testRoomId}
-            onChangeText={setTestRoomId}
-            placeholder="Room ID para pruebas..."
-            placeholderTextColor={colors.textSecondary}
-            style={{
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: BorderRadius.md,
-              padding: Spacing.sm,
-              color: colors.text,
-              fontSize: Typography.fontSize.sm,
-              marginBottom: Spacing.xs,
-            }}
-          />
-          <TouchableOpacity
-            style={[styles.liveButton, { backgroundColor: "#E53935" }]}
-            onPress={() => {
-              if (testRoomId.trim()) {
-                router.push({
-                  pathname: "/(tabs)/(user)/live-view",
-                  params: { orderId: testRoomId.trim() },
-                });
-              }
-            }}
-          >
-            <View style={styles.liveDot} />
-            <Text style={styles.liveButtonText}>Entrar al live (TEST)</Text>
-          </TouchableOpacity>
-        </View>
 
         <Button
           title="Reprogramar"

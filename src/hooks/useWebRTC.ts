@@ -5,39 +5,26 @@ import {
   RTCIceCandidate,
   MediaStream,
 } from "react-native-webrtc";
+import {
+  streamingService,
+  StreamingSession,
+} from "@/api/services/streaming.service";
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-
-const SIGNALING_URL = "wss://stream.dev-qa.site/ws";
-
-const ICE_SERVERS = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    {
-      urls: [
-        "turn:stream.dev-qa.site:3478?transport=udp",
-        "turn:stream.dev-qa.site:3478?transport=tcp",
-      ],
-      username: "webrtc",
-      credential: "webrtc123",
-    },
-  ],
-};
-
-// Tiempo máximo esperando al groomer antes de mostrar "no iniciado"
 const GROOMER_TIMEOUT_MS = 15000;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type WebRTCConnectionState =
-  | "idle" // antes de conectar
-  | "connecting" // WebSocket conectado, esperando groomer
-  | "calling" // offer enviado, esperando answer
-  | "connected" // ICE connected — video activo
+  | "idle"
+  | "fetching_session" // llamando al endpoint /session
+  | "connecting" // WebSocket conectado, esperando
+  | "calling" // ICE checking
+  | "connected" // video activo
   | "disconnected" // caída temporal
-  | "groomer_absent" // timeout: el groomer no está en la sala
-  | "failed" // fallo definitivo
-  | "closed"; // salida limpia
+  | "groomer_absent" // timeout: el ally no está en la sala
+  | "order_not_active" // 409: orden no está en in_service
+  | "failed"
+  | "closed";
 
 export interface UseWebRTCResult {
   remoteStream: MediaStream | null;
@@ -80,33 +67,41 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
     setRemoteStream(null);
   }, []);
 
-  // ── Reconexión — cierra todo y vuelve a conectar ───────────────────────────
-  const reconnect = useCallback(() => {
-    if (isCleanedUpRef.current) return;
-    cleanup();
-    isCleanedUpRef.current = false;
-    setTimeout(() => connect(), 1000);
-  }, [cleanup]);
-
   // ── Conexión principal ─────────────────────────────────────────────────────
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!orderId) return;
     isCleanedUpRef.current = false;
 
-    setConnectionState("connecting");
-    setRemoteStream(null);
+    // PASO 1 — obtener sesión del backend
+    setConnectionState("fetching_session");
 
-    // 1. WebSocket de señalización
-    const ws = new WebSocket(`${SIGNALING_URL}?room=${orderId}`);
+    let session: StreamingSession;
+    try {
+      session = await streamingService.getSession(orderId);
+    } catch (error: any) {
+      if (isCleanedUpRef.current) return;
+      const status = error?.response?.status;
+      if (status === 409) {
+        setConnectionState("order_not_active");
+      } else {
+        setConnectionState("failed");
+      }
+      return;
+    }
+
+    if (isCleanedUpRef.current) return;
+    setConnectionState("connecting");
+
+    // PASO 2 — WebSocket con la URL del backend
+    const ws = new WebSocket(session.ws_url);
     wsRef.current = ws;
 
-    // 2. PeerConnection
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+    // PASO 3 — RTCPeerConnection con ice_servers del backend
+    const pc = new RTCPeerConnection({ iceServers: session.ice_servers });
     pcRef.current = pc;
 
     // ── Eventos del PeerConnection ─────────────────────────────────────────
 
-    // Video remoto llegando del groomer
     pc.addEventListener("track", (event: any) => {
       if (isCleanedUpRef.current) return;
       if (event.streams && event.streams[0]) {
@@ -114,7 +109,6 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
       }
     });
 
-    // ICE candidates listos para enviar al groomer (formato raw según documentación)
     pc.addEventListener("icecandidate", (event: any) => {
       if (isCleanedUpRef.current) return;
       if (event.candidate && ws.readyState === WebSocket.OPEN) {
@@ -122,7 +116,6 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
       }
     });
 
-    // Estado de la conexión ICE
     pc.addEventListener("iceconnectionstatechange", () => {
       if (isCleanedUpRef.current) return;
       const state = pc.iceConnectionState;
@@ -153,32 +146,19 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
 
     // ── Eventos del WebSocket ──────────────────────────────────────────────
 
-    ws.onopen = async () => {
+    ws.onopen = () => {
       if (isCleanedUpRef.current) return;
 
-      // El usuario es el segundo en entrar → genera el offer
-      try {
-        const offer = await pc.createOffer({
-          offerToReceiveVideo: true,
-          offerToReceiveAudio: true,
-        });
-        await pc.setLocalDescription(offer);
-        ws.send(JSON.stringify(offer));
-
-        // Iniciar timeout: si en GROOMER_TIMEOUT_MS no hay answer → groomer ausente
-        groomerTimeoutRef.current = setTimeout(() => {
-          if (
-            !isCleanedUpRef.current &&
-            pc.iceConnectionState !== "connected" &&
-            pc.iceConnectionState !== "completed"
-          ) {
-            setConnectionState("groomer_absent");
-          }
-        }, GROOMER_TIMEOUT_MS);
-      } catch (err) {
-        console.error("[WebRTC] Error creando offer:", err);
-        setConnectionState("failed");
-      }
+      // viewer siempre espera — el timeout empieza aquí
+      groomerTimeoutRef.current = setTimeout(() => {
+        if (
+          !isCleanedUpRef.current &&
+          pc.iceConnectionState !== "connected" &&
+          pc.iceConnectionState !== "completed"
+        ) {
+          setConnectionState("groomer_absent");
+        }
+      }, GROOMER_TIMEOUT_MS);
     };
 
     ws.onmessage = async (event) => {
@@ -192,14 +172,26 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
       }
 
       try {
-        if (msg.type === "answer") {
-          // Groomer respondió → establecer remote description
+        // viewer recibe offer del host (ally)
+        if (msg.type === "offer") {
           await pc.setRemoteDescription(new RTCSessionDescription(msg));
-        } else if (msg.type === "candidate" && msg.candidate) {
-          // ICE candidate del groomer en formato envuelto { type, candidate }
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          ws.send(JSON.stringify(answer));
+        }
+
+        // por si acaso — no debería llegar al viewer
+        if (msg.type === "answer") {
+          await pc.setRemoteDescription(new RTCSessionDescription(msg));
+        }
+
+        // ICE candidate del ally — formato envuelto
+        if (msg.type === "candidate" && msg.candidate) {
           await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-        } else if (msg.candidate !== undefined && msg.type === undefined) {
-          // ICE candidate del groomer en formato raw (según documentación del servidor)
+        }
+
+        // ICE candidate del ally — formato raw
+        if (msg.candidate !== undefined && msg.type === undefined) {
           await pc.addIceCandidate(new RTCIceCandidate(msg));
         }
       } catch (err) {
@@ -207,15 +199,13 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
       }
     };
 
-    ws.onerror = (err) => {
+    ws.onerror = () => {
       if (isCleanedUpRef.current) return;
-      console.error("[WebRTC] WebSocket error:", err);
       setConnectionState("failed");
     };
 
     ws.onclose = () => {
       if (isCleanedUpRef.current) return;
-      // WS cerrado inesperadamente — si no estamos connected, marcar como failed
       if (
         pc.iceConnectionState !== "connected" &&
         pc.iceConnectionState !== "completed"
@@ -225,13 +215,11 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
     };
   }, [orderId, cleanup]);
 
-  // ── Desconexión limpia (llamada por el usuario al salir) ───────────────────
   const disconnect = useCallback(() => {
     cleanup();
     setConnectionState("closed");
   }, [cleanup]);
 
-  // ── Cleanup automático al desmontar el componente ─────────────────────────
   useEffect(() => {
     return () => {
       cleanup();

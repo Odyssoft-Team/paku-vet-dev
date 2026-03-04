@@ -54,6 +54,34 @@ export default function LiveViewScreen() {
           />
         );
 
+      case "fetching_session":
+        return (
+          <StatusOverlay
+            icon={null}
+            title="Verificando sesión..."
+            subtitle="Obteniendo datos de la transmisión."
+            colors={colors}
+            showSpinner
+          />
+        );
+
+      case "order_not_active":
+        return (
+          <StatusOverlay
+            icon="close"
+            title="Servicio no iniciado"
+            subtitle="El servicio aún no está en curso. El live estará disponible cuando el groomer inicie el servicio."
+            colors={colors}
+            action={
+              <Button
+                title="Volver"
+                onPress={handleExit}
+                style={styles.retryButton}
+              />
+            }
+          />
+        );
+
       // Groomer no está en la sala todavía
       case "groomer_absent":
         return (

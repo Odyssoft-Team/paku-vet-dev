@@ -82,7 +82,8 @@ export const API_ENDPOINTS = {
 
   // Órdenes
   ORDERS: {
-    BY_USER: (userId: string) => `/orders/${userId}`,
+    LIST: "/orders",
+    BY_ID: (id: string) => `/orders/${id}`,
     CREATE: "/orders",
   },
 

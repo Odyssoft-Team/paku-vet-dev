@@ -20,13 +20,13 @@ import { OrderProgressBar } from "@/components/common/OrdenProgressBar";
 import { orderService } from "@/api/services/order.service";
 import { useOrderStore } from "@/store/orderStore";
 
+// const ACTIVE_STATUSES = ["created", "accepted", "on_the_way", "in_service"];
+const ACTIVE_STATUSES = ["on_the_way", "in_service"];
+
 export default function UserHomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
-
-  // Servicios
-  const { getOrder } = orderService;
 
   // Address store
   const { addresses, isLoading, fetchAddresses, setDefaultAddress } =
@@ -41,55 +41,38 @@ export default function UserHomeScreen() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Cargar datos al montar
+  // ── Carga de orden activa ──────────────────────────────────────────────────
+  const loadActiveOrder = async () => {
+    try {
+      const orders = await orderService.getOrders();
+      const active = orders.find((o) => ACTIVE_STATUSES.includes(o.status));
+      if (active) {
+        setOrder(active);
+      } else {
+        setOrder(null);
+      }
+    } catch (error) {
+      console.log("Error cargando órdenes:", error);
+    }
+  };
+
+  // ── Carga inicial ──────────────────────────────────────────────────────────
+  const loadInitialData = async () => {
+    await Promise.all([fetchAddresses(), fetchPets(), loadActiveOrder()]);
+  };
+
   useEffect(() => {
     loadInitialData();
   }, []);
 
-  const loadInitialData = async () => {
-    await Promise.all([fetchAddresses(), fetchPets()]);
-  };
-
-  const loadAddresses = async () => {
-    try {
-      await fetchAddresses();
-    } catch (error) {
-      console.log("Error loading addresses:", error);
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadAddresses();
-    setRefreshing(false);
-  };
-
-  const loadDataTracking = async () => {
-    // 1. Si no hay ID en el store, no hacemos nada
-    if (!order?.id) return;
-
-    try {
-      const response = await getOrder(order.id);
-      if (response) {
-        setOrder(response);
-
-        // 2. Si la orden ya terminó, quizás quieras limpiar el store
-        if (response.status === "done" || response.status === "cancelled") {
-          // Opcional: clearOrder();
-        }
-      }
-    } catch (error) {
-      console.log("Error al cargar datos del tracking:", error);
-    }
-  };
-
+  // ── Polling cada 10s mientras haya orden activa ────────────────────────────
   useEffect(() => {
-    // En navegadores/React Native, setInterval devuelve un ID numérico.
+    loadActiveOrder();
+
     let interval: any;
-    if (order?.id && order.status !== "done" && order.status !== "cancelled") {
-      loadDataTracking();
+    if (order?.id && ACTIVE_STATUSES.includes(order.status)) {
       interval = setInterval(() => {
-        loadDataTracking();
+        loadActiveOrder();
       }, 10000);
     }
 
@@ -98,7 +81,14 @@ export default function UserHomeScreen() {
     };
   }, [order?.id, order?.status]);
 
-  // Obtener dirección por defecto
+  // ── Pull to refresh ────────────────────────────────────────────────────────
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchAddresses(), loadActiveOrder()]);
+    setRefreshing(false);
+  };
+
+  // ── Dirección por defecto ──────────────────────────────────────────────────
   const defaultAddress = addresses.find((addr) => addr.is_default);
 
   const handleSelectAddress = async (id: string) => {
@@ -118,8 +108,6 @@ export default function UserHomeScreen() {
   };
 
   const handlePetPress = (pet: any) => {
-    // TODO: Navegar a detalle de mascota
-    // router.push(`/(screens)/pet-detail/${pet.id}`);
     router.push({
       pathname: "/(tabs)/(user)/pet-detail",
       params: { petId: pet.id },
@@ -127,7 +115,7 @@ export default function UserHomeScreen() {
   };
 
   const handleServicePress = () => {
-    router.push("/(tabs)/(user)/select-pet");
+    router.push("/(tabs)/(user)/services");
   };
 
   const handleOfferPress = () => {};
@@ -181,14 +169,20 @@ export default function UserHomeScreen() {
         onAddressPress={() => setDrawerVisible(true)}
       />
 
-      {/* Servicio en camino */}
-      {order && order.status !== "done" && order.status !== "cancelled" && (
+      {/* Banner de orden activa */}
+      {order && ACTIVE_STATUSES.includes(order.status) && (
         <View style={styles.sectionTracking}>
           <Text variant="regular" style={styles.titleTracking}>
-            ¡Tu groomer esta en camino!
+            {order.status === "in_service"
+              ? "¡Tu mascota está siendo atendida!"
+              : order.status === "on_the_way"
+                ? "¡Tu groomer está en camino!"
+                : "Preparando tu servicio..."}
           </Text>
           <Text variant="regular" style={styles.textTracking} numberOfLines={1}>
-            Llegada estimada: 15:30 h
+            {order.status === "in_service"
+              ? "Puedes ver el streaming en vivo"
+              : "Llegada estimada: 15:30 h"}
           </Text>
           <OrderProgressBar currentStatus={order.status} />
           <Button
