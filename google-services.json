@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "551350554084-q8kiubd4fuf82p78epic3hh76i7508ho.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aldoparradev.pakuvet",
+            "certificate_hash": "b9a151a52e8b08a19e082983ef5f30ad9ed7f97c"
+          }
+        },
+        {
           "client_id": "551350554084-tvt4hi0u6k4vu8juhbcqj5pnqu31loh2.apps.googleusercontent.com",
           "client_type": 3
         }
