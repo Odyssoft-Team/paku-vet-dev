@@ -1,14 +1,7 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-} from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-
+import { Text } from "./Text";
 import { Icon } from "./Icon";
 import { useTheme } from "@/hooks/useTheme";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
@@ -21,6 +14,8 @@ interface DatePickerProps {
   placeholder?: string;
   paddingVertical?: number;
   fontWeight?: any;
+  /** Modo auth: estilos blancos sobre fondo azul (pantallas de login/register) */
+  authStyle?: boolean;
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -31,6 +26,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   placeholder = "Selecciona una fecha",
   paddingVertical,
   fontWeight,
+  authStyle = false,
 }) => {
   const { colors } = useTheme();
   const [show, setShow] = useState(false);
@@ -44,22 +40,31 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     });
   };
 
-  const handleChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === "android") {
-      setShow(false);
-    }
-    if (selectedDate) {
-      onChange(selectedDate);
-    }
-  };
+  // Colores según el modo
+  const C = authStyle
+    ? {
+        label: "#FFFFFF",
+        inputBg: "rgba(255,255,255,0.12)",
+        inputBorder: error ? "#FFB3B3" : "rgba(255,255,255,0.35)",
+        dateText: value ? "#FFFFFF" : "rgba(255,255,255,0.5)",
+        icon: "rgba(255,255,255,0.6)",
+        error: "#FFB3B3",
+      }
+    : {
+        label: colors.primary,
+        inputBg: colors.surface,
+        inputBorder: error ? colors.error : colors.border,
+        dateText: value ? colors.text : colors.placeholder,
+        icon: colors.primary + "80",
+        error: colors.error,
+      };
 
   const styles = StyleSheet.create({
     container: {
-      marginBottom: Spacing.md,
+      marginBottom: authStyle ? 0 : Spacing.md,
     },
     label: {
-      // fontSize: Typography.fontSize.md,
-      color: colors.primary,
+      color: C.label,
       marginBottom: Spacing.xs,
       fontWeight: fontWeight || Typography.fontWeight.semibold,
       fontSize: Typography.fontSize.sm,
@@ -68,25 +73,27 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     inputContainer: {
       flexDirection: "row",
       alignItems: "center",
-      borderWidth: 1,
-      borderColor: error ? colors.error : colors.border,
+      borderWidth: authStyle ? 1.5 : 1,
+      borderColor: C.inputBorder,
       borderRadius: BorderRadius.md,
-      backgroundColor: colors.surface,
+      backgroundColor: C.inputBg,
       paddingHorizontal: Spacing.md,
-      paddingVertical: paddingVertical || 10,
+      paddingVertical: paddingVertical ?? 13,
     },
     dateText: {
       flex: 1,
       fontSize: Typography.fontSize.md,
-      color: value ? colors.text : colors.placeholder,
+      fontFamily: Typography.fontFamily.regular,
+      color: C.dateText,
     },
     iconContainer: {
       marginLeft: Spacing.sm,
     },
     errorText: {
       fontSize: Typography.fontSize.xs,
-      color: colors.error,
-      marginTop: Spacing.xs,
+      fontFamily: Typography.fontFamily.regular,
+      color: C.error,
+      marginTop: 4,
     },
   });
 
@@ -101,34 +108,22 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       >
         <Text style={styles.dateText}>{formatDate(value)}</Text>
         <View style={styles.iconContainer}>
-          <Icon name="calendar" size={20} color={colors.primary + "80"} />
+          <Icon name="calendar" size={20} color={C.icon} />
         </View>
       </TouchableOpacity>
 
-      {/* {show && (
-        <DateTimePicker
-          value={value || new Date()}
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={handleChange}
-          maximumDate={new Date()}
-        />
-      )} */}
-
-      {show && (
-        <DateTimePickerModal
-          isVisible={show}
-          mode="date"
-          date={value || new Date(2000, 0, 1)}
-          maximumDate={new Date()}
-          onConfirm={(date) => {
-            setShow(false);
-            onChange(date);
-          }}
-          onCancel={() => setShow(false)}
-          locale="es_ES"
-        />
-      )}
+      <DateTimePickerModal
+        isVisible={show}
+        mode="date"
+        date={value || new Date(2000, 0, 1)}
+        maximumDate={new Date()}
+        onConfirm={(date) => {
+          setShow(false);
+          onChange(date);
+        }}
+        onCancel={() => setShow(false)}
+        locale="es_ES"
+      />
 
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
