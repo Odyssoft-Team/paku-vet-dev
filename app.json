@@ -16,7 +16,7 @@
       "usesCleartextTraffic": true,
       "permissions": ["INTERNET", "CAMERA", "RECORD_AUDIO"],
       "package": "com.aldoparradev.pakuvet",
-      "googleServicesFile": "./android/app/google-services.json",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/app/adaptive-icon.png",
         "backgroundColor": "#ffffff"
