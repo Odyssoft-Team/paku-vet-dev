@@ -311,14 +311,14 @@ export default function ProfileScreen() {
             rightElement={<View />}
           />
           <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
-          <MenuItem
+          {/* <MenuItem
             label="Eliminar cuenta"
             icon="close"
             iconColor={colors.error}
             labelColor={colors.error}
             onPress={handleDeleteAccount}
             rightElement={<View />}
-          />
+          /> */}
         </View>
 
         {/* Versión */}

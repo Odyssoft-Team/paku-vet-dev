@@ -70,6 +70,20 @@ export function getGoogleSignInErrorMessage(error: any): string {
     return error.message;
   }
 
+  // Log detallado para debugging
+  console.log(
+    "🔴 Google Sign-In error completo:",
+    JSON.stringify(
+      {
+        code: error?.code,
+        message: error?.message,
+        name: error?.name,
+      },
+      null,
+      2,
+    ),
+  );
+
   const code = error?.code;
   switch (code) {
     case statusCodes.SIGN_IN_CANCELLED:

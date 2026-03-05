@@ -78,6 +78,10 @@ const forceLogout = async () => {
     isLoading: false,
     error: null,
   });
+
+  // Navegar al login
+  const { router } = await import("expo-router");
+  router.replace("/(auth)/login");
 };
 
 // Interceptor de response
@@ -92,13 +96,25 @@ apiClient.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // No intentar refresh en endpoints de auth
+    // No intentar refresh en endpoints de auth,
+    // pero SÍ hacer forceLogout si el refresh token expiró
     const isAuthEndpoint =
       originalRequest.url?.includes("/auth/login") ||
       originalRequest.url?.includes("/auth/login-form") ||
       originalRequest.url?.includes("/auth/register") ||
-      originalRequest.url?.includes("/auth/refresh") ||
       originalRequest.url?.includes("/auth/social");
+
+    const isRefreshEndpoint = originalRequest.url?.includes("/auth/refresh");
+
+    if (isRefreshEndpoint) {
+      // El refresh token expiró o es inválido → logout forzado
+      if (error.response?.status === 401) {
+        processQueue(error as unknown as Error, null);
+        isRefreshing = false;
+        await forceLogout();
+      }
+      return Promise.reject(error);
+    }
 
     if (isAuthEndpoint) {
       return Promise.reject(error);
