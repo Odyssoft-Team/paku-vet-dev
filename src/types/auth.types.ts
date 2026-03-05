@@ -14,14 +14,17 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   created_at: string;
-  phone: string;
+  // Campos opcionales para usuarios con social login que no completaron perfil
+  phone: string | null;
   first_name: string;
   last_name: string;
-  sex: UserSex;
-  birth_date: string;
-  dni: string;
-  address: Address;
-  profile_photo_url: string;
+  sex: UserSex | null;
+  birth_date: string | null;
+  dni?: string | null;
+  address?: Address;
+  profile_photo_url?: string | null;
+  // Campo nuevo: indica si el perfil está completo
+  profile_completed: boolean;
 }
 
 export interface AuthTokens {
@@ -56,6 +59,33 @@ export interface LoginResponse {
 }
 
 export interface RegisterResponse extends User {}
+
+// Respuesta del endpoint POST /auth/social
+export interface SocialAuthResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  is_new_user: boolean;
+}
+
+// Datos para completar perfil (PUT /users/me/complete)
+export interface CompleteProfileData {
+  phone: string;
+  sex: UserSex;
+  birth_date: string; // formato "YYYY-MM-DD"
+  dni?: string;
+}
+
+// Error específico de social auth (ej: EMAIL_ALREADY_REGISTERED)
+export class SocialAuthError extends Error {
+  constructor(
+    public code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "SocialAuthError";
+  }
+}
 
 export interface AuthState {
   user: User | null;

@@ -4,6 +4,7 @@ import {
   AuthTokens,
   LoginCredentials,
   RegisterData,
+  CompleteProfileData,
 } from "@/types/auth.types";
 import { authService } from "@/api/services/auth.service";
 import { storage } from "@/utils/storage";
@@ -18,6 +19,10 @@ interface AuthState {
 
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  /** Login con Google: Firebase ID Token → backend /auth/social */
+  socialLogin: (idToken: string) => Promise<{ is_new_user: boolean }>;
+  /** Completa perfil usuario social — actualiza tokens nuevos */
+  completeProfile: (data: CompleteProfileData) => Promise<void>;
   logout: () => Promise<void>;
   loadStoredAuth: () => Promise<void>;
   setUser: (user: User) => void;
@@ -34,10 +39,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (credentials: LoginCredentials) => {
     try {
       set({ isLoading: true, error: null });
-
       const loginResponse = await authService.login(credentials);
 
-      // Guardar tokens
       await storage.setItem(
         CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
         loginResponse.access_token,
@@ -48,11 +51,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       );
 
       const user = await authService.getCurrentUser();
-
-      // Guardar usuario
       await storage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, user);
 
-      console.log("Setting auth state...");
       set({
         user,
         tokens: {
@@ -63,8 +63,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       });
-
-      console.log("Auth state updated successfully");
     } catch (error: any) {
       console.log("Login error in store:", error);
       const errorMessage =
@@ -72,11 +70,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         error.response?.data?.message ||
         error.message ||
         "Error al iniciar sesión";
-      set({
-        error: errorMessage,
-        isLoading: false,
-        isAuthenticated: false,
-      });
+      set({ error: errorMessage, isLoading: false, isAuthenticated: false });
       throw error;
     }
   },
@@ -84,17 +78,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   register: async (data: RegisterData) => {
     try {
       set({ isLoading: true, error: null });
-
-      // Registrar usuario
       const user = await authService.register(data);
-
-      // Hacer login automáticamente después del registro
       const loginResponse = await authService.login({
         email: data.email,
         password: data.password,
       });
 
-      // Guardar tokens
       await storage.setItem(
         CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
         loginResponse.access_token,
@@ -121,11 +110,81 @@ export const useAuthStore = create<AuthState>((set) => ({
         error.response?.data?.message ||
         error.message ||
         "Error al registrarse";
+      set({ error: errorMessage, isLoading: false, isAuthenticated: false });
+      throw error;
+    }
+  },
+
+  socialLogin: async (idToken: string) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      const socialResponse = await authService.socialLogin(idToken);
+
+      await storage.setItem(
+        CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+        socialResponse.access_token,
+      );
+      await storage.setItem(
+        CONFIG.STORAGE_KEYS.REFRESH_TOKEN,
+        socialResponse.refresh_token,
+      );
+
+      const user = await authService.getCurrentUser();
+      await storage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, user);
+
       set({
-        error: errorMessage,
+        user,
+        tokens: {
+          access_token: socialResponse.access_token,
+          refresh_token: socialResponse.refresh_token,
+          token_type: socialResponse.token_type,
+        },
+        isAuthenticated: true,
         isLoading: false,
-        isAuthenticated: false,
       });
+
+      return { is_new_user: socialResponse.is_new_user };
+    } catch (error: any) {
+      set({ isLoading: false });
+      throw error; // Re-lanzar para que la pantalla maneje EMAIL_ALREADY_REGISTERED, etc.
+    }
+  },
+
+  completeProfile: async (data: CompleteProfileData) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      // ⚠️ El backend retorna NUEVOS tokens con profile_completed: true
+      const newTokens = await authService.completeProfile(data);
+
+      await storage.setItem(
+        CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+        newTokens.access_token,
+      );
+      await storage.setItem(
+        CONFIG.STORAGE_KEYS.REFRESH_TOKEN,
+        newTokens.refresh_token,
+      );
+
+      const user = await authService.getCurrentUser();
+      await storage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, user);
+
+      set({
+        user,
+        tokens: {
+          access_token: newTokens.access_token,
+          refresh_token: newTokens.refresh_token,
+          token_type: newTokens.token_type,
+        },
+        isLoading: false,
+      });
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Error al completar el perfil";
+      set({ error: errorMessage, isLoading: false });
       throw error;
     }
   },
@@ -135,7 +194,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       await storage.removeItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
       await storage.removeItem(CONFIG.STORAGE_KEYS.REFRESH_TOKEN);
       await storage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
-
       set({
         user: null,
         tokens: null,
@@ -151,7 +209,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   loadStoredAuth: async () => {
     try {
       set({ isLoading: true });
-
       const [accessToken, refreshToken, userData] = await Promise.all([
         storage.getItem<string>(CONFIG.STORAGE_KEYS.ACCESS_TOKEN),
         storage.getItem<string>(CONFIG.STORAGE_KEYS.REFRESH_TOKEN),
@@ -181,7 +238,5 @@ export const useAuthStore = create<AuthState>((set) => ({
     storage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, user);
   },
 
-  clearError: () => {
-    set({ error: null });
-  },
+  clearError: () => set({ error: null }),
 }));

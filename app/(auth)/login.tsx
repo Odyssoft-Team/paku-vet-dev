@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,19 +15,19 @@ import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
 import { SocialButton } from "@/components/auth/SocialButton";
 import { AuthBackground } from "@/components/auth/AuthBackground";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { colors } = useTheme();
 
+  const { isLoading: isGoogleLoading, handleGoogleSignIn } = useGoogleAuth({
+    onError: (message) => Alert.alert("Error", message),
+  });
+
   const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    safeArea: {
-      flex: 1,
-      paddingHorizontal: Spacing.lg,
-    },
+    container: { flex: 1 },
+    safeArea: { flex: 1, paddingHorizontal: Spacing.lg },
     scrollContent: {
       flexGrow: 1,
       justifyContent: "center",
@@ -54,9 +55,7 @@ export default function LoginScreen() {
       paddingHorizontal: Spacing.xl,
       lineHeight: 24,
     },
-    formContainer: {
-      marginTop: Spacing.md,
-    },
+    formContainer: { marginTop: Spacing.md },
     socialContainer: {
       marginTop: Spacing.xl,
       gap: Spacing.md,
@@ -115,12 +114,14 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.socialContainer}>
+            {/* Google Sign-In — activo */}
             <SocialButton
               icon="google"
-              label="Continuar con Google"
-              onPress={() => {}}
-              disabled
+              label={isGoogleLoading ? "Conectando..." : "Continuar con Google"}
+              onPress={handleGoogleSignIn}
+              disabled={isGoogleLoading}
             />
+            {/* Facebook y Apple — próximamente */}
             <SocialButton
               icon="facebook-2"
               label="Continuar con Facebook"

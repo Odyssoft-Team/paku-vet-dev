@@ -4,12 +4,17 @@ export const API_ENDPOINTS = {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
     REFRESH: "/auth/refresh",
+    SOCIAL: "/auth/social",
   },
+
+  // Autenticación social
+  SOCIAL: "/auth/social",
 
   // Usuarios
   USERS: {
     ME: "/users/me",
     UPDATE_ME: "/users/me",
+    COMPLETE_PROFILE: "/users/me/complete",
   },
 
   // Direcciones

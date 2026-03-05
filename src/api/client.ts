@@ -39,7 +39,8 @@ apiClient.interceptors.request.use(
       config.url?.includes("/auth/login") ||
       config.url?.includes("/auth/login-form") ||
       config.url?.includes("/auth/register") ||
-      config.url?.includes("/auth/refresh");
+      config.url?.includes("/auth/refresh") ||
+      config.url?.includes("/auth/social");
 
     // DENTRO DEL INTERCEPTOR DE REQUEST
     if (!isAuthEndpoint) {
@@ -96,10 +97,22 @@ apiClient.interceptors.response.use(
       originalRequest.url?.includes("/auth/login") ||
       originalRequest.url?.includes("/auth/login-form") ||
       originalRequest.url?.includes("/auth/register") ||
-      originalRequest.url?.includes("/auth/refresh");
+      originalRequest.url?.includes("/auth/refresh") ||
+      originalRequest.url?.includes("/auth/social");
 
     if (isAuthEndpoint) {
       return Promise.reject(error);
+    }
+
+    // Guard: perfil incompleto (usuario social que no completó datos)
+    if (error.response?.status === 403) {
+      const body = error.response.data as any;
+      if (body?.detail?.code === "PROFILE_INCOMPLETE") {
+        // Importar dinámico para evitar dependencia circular
+        const { router } = await import("expo-router");
+        router.push("/(auth)/complete-profile");
+        return Promise.reject(error);
+      }
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
