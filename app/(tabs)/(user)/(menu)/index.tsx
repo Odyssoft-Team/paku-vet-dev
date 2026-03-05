@@ -17,10 +17,8 @@ import { usePetStore } from "@/store/petStore";
 import { PetsList } from "@/components/home/PetsList";
 import { Button } from "@/components/common";
 import { OrderProgressBar } from "@/components/common/OrdenProgressBar";
-import { orderService } from "@/api/services/order.service";
-import { useOrderStore } from "@/store/orderStore";
+import { useActiveOrder } from "@/hooks/useActiveOrder";
 
-// const ACTIVE_STATUSES = ["created", "accepted", "on_the_way", "in_service"];
 const ACTIVE_STATUSES = ["on_the_way", "in_service"];
 
 export default function UserHomeScreen() {
@@ -32,8 +30,8 @@ export default function UserHomeScreen() {
   const { addresses, isLoading, fetchAddresses, setDefaultAddress } =
     useAddressStore();
 
-  // Order store
-  const { order, setOrder } = useOrderStore();
+  // Orden activa con polling inteligente (pausa en background, limpia al desmontar)
+  const { order, loadActiveOrder } = useActiveOrder();
 
   // Pet store
   const { pets, isLoading: loadingPets, fetchPets } = usePetStore();
@@ -41,45 +39,11 @@ export default function UserHomeScreen() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // ── Carga de orden activa ──────────────────────────────────────────────────
-  const loadActiveOrder = async () => {
-    try {
-      const orders = await orderService.getOrders();
-      const active = orders.find((o) => ACTIVE_STATUSES.includes(o.status));
-      if (active) {
-        setOrder(active);
-      } else {
-        setOrder(null);
-      }
-    } catch (error) {
-      console.log("Error cargando órdenes:", error);
-    }
-  };
-
   // ── Carga inicial ──────────────────────────────────────────────────────────
-  const loadInitialData = async () => {
-    await Promise.all([fetchAddresses(), fetchPets(), loadActiveOrder()]);
-  };
-
   useEffect(() => {
-    loadInitialData();
+    fetchAddresses();
+    fetchPets();
   }, []);
-
-  // ── Polling cada 10s mientras haya orden activa ────────────────────────────
-  useEffect(() => {
-    loadActiveOrder();
-
-    let interval: any;
-    if (order?.id && ACTIVE_STATUSES.includes(order.status)) {
-      interval = setInterval(() => {
-        loadActiveOrder();
-      }, 10000);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [order?.id, order?.status]);
 
   // ── Pull to refresh ────────────────────────────────────────────────────────
   const onRefresh = async () => {
@@ -144,11 +108,12 @@ export default function UserHomeScreen() {
     },
     titleTracking: {
       color: colors.primary,
-      fontSize: 12,
+      fontSize: Typography.fontSize.xs,
       fontWeight: Typography.fontWeight.bold,
     },
     textTracking: {
-      fontSize: 10,
+      fontSize: Typography.fontSize.xs,
+      opacity: 0.75,
       color: colors.primary,
     },
     buttonTracking: {

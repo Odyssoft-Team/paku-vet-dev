@@ -194,6 +194,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       await storage.removeItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
       await storage.removeItem(CONFIG.STORAGE_KEYS.REFRESH_TOKEN);
       await storage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
+
+      // Limpiar sesión de Google para que vuelva a preguntar qué cuenta usar
+      const { signOutGoogle } =
+        await import("@/api/services/google-auth.service");
+      await signOutGoogle();
+
       set({
         user: null,
         tokens: null,

@@ -19,14 +19,10 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 SplashScreen.preventAutoHideAsync();
 
 // Configurar Google Sign-In al cargar el módulo (una sola vez)
-// webClientId: se obtiene de Firebase Console → Configuración del proyecto
-// → Tus apps → Web app → OAuth client ID (client_type: 3)
 GoogleSignin.configure({
   webClientId:
     "551350554084-tvt4hi0u6k4vu8juhbcqj5pnqu31loh2.apps.googleusercontent.com",
   // ⚠️ REEMPLAZAR con el webClientId real del proyecto Firebase
-  // Se encuentra en google-services.json → oauth_client → client_type: 3
-  // O en Firebase Console → Project Settings → Web apps
 });
 
 export default function RootLayout() {
@@ -64,6 +60,7 @@ export default function RootLayout() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === "(auth)";
+    const inCompleteProfile = (segments as string[])[1] === "complete-profile";
 
     // NO redirigir si hay un error (el usuario está intentando loguearse)
     if (error && !inAuthGroup && !isAuthenticated) {
@@ -74,7 +71,10 @@ export default function RootLayout() {
       // No autenticado y no está en auth -> ir a login
       router.replace("/(auth)/login");
     } else if (isAuthenticated && inAuthGroup && user) {
-      // Autenticado pero está en auth -> ir a su dashboard
+      // Si está completando perfil (usuario social nuevo), no interrumpir
+      if (inCompleteProfile) return;
+
+      // Autenticado pero está en auth -> ir a su dashboard según rol
       switch (user.role) {
         case "admin":
           router.replace("/(tabs)/(admin)");

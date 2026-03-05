@@ -24,6 +24,14 @@ export async function getGoogleIdToken(): Promise<string> {
   // Verificar que Play Services esté disponible (Android)
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
+  // Cerrar sesión silenciosa previa para forzar el selector de cuentas
+  // Así el usuario siempre puede elegir con qué cuenta ingresar
+  try {
+    await GoogleSignin.signOut();
+  } catch {
+    // Ignorar si no había sesión activa
+  }
+
   const signInResult = await GoogleSignin.signIn();
 
   if (!signInResult.data?.idToken) {

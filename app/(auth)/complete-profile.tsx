@@ -1,12 +1,5 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  TouchableOpacity,
-} from "react-native";
+import React from "react";
+import { View, StyleSheet, ScrollView, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -15,10 +8,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthBackground } from "@/components/auth/AuthBackground";
 import { Input } from "@/components/common/Input";
 import { Button } from "@/components/common/Button";
+import { Text } from "@/components/common/Text";
+import { DatePicker } from "@/components/common/DatePicker";
+import { GenderSelector } from "@/components/common/GenderSelector";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
-import { CompleteProfileData } from "@/types/auth.types";
+import { CompleteProfileData, UserSex } from "@/types/auth.types";
 
 const schema = z.object({
   phone: z
@@ -28,17 +24,11 @@ const schema = z.object({
   sex: z.enum(["male", "female", "other"] as const, {
     required_error: "Selecciona tu género",
   }),
-  birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato: YYYY-MM-DD"),
+  birth_date: z.date({ required_error: "Selecciona tu fecha de nacimiento" }),
   dni: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
-
-const SEX_OPTIONS: { label: string; value: FormData["sex"] }[] = [
-  { label: "Masculino", value: "male" },
-  { label: "Femenino", value: "female" },
-  { label: "Otro", value: "other" },
-];
 
 export default function CompleteProfileScreen() {
   const router = useRouter();
@@ -51,19 +41,22 @@ export default function CompleteProfileScreen() {
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { phone: "", birth_date: "", dni: "" },
+    defaultValues: { phone: "", dni: "" },
   });
 
   const onSubmit = async (data: FormData) => {
     try {
+      // Convertir Date a string "YYYY-MM-DD" para el backend
+      const birthDateStr = data.birth_date.toISOString().split("T")[0];
+
       const payload: CompleteProfileData = {
         phone: data.phone,
         sex: data.sex,
-        birth_date: data.birth_date,
+        birth_date: birthDateStr,
         ...(data.dni ? { dni: data.dni } : {}),
       };
+
       await completeProfile(payload);
-      // El store ya actualiza tokens y usuario — redirigir a home
       router.replace("/(tabs)/(user)");
     } catch (error: any) {
       Alert.alert(
@@ -98,33 +91,6 @@ export default function CompleteProfileScreen() {
       lineHeight: 20,
     },
     form: { gap: Spacing.md },
-    label: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.medium,
-      color: "#FFFFFF",
-      marginBottom: Spacing.xs,
-    },
-    sexContainer: { flexDirection: "row", gap: Spacing.sm },
-    sexOption: {
-      flex: 1,
-      paddingVertical: Spacing.sm,
-      borderRadius: BorderRadius.md,
-      borderWidth: 2,
-      borderColor: "#FFFFFF",
-      alignItems: "center",
-    },
-    sexOptionSelected: { backgroundColor: "#FFFFFF" },
-    sexOptionText: {
-      color: "#FFFFFF",
-      fontFamily: Typography.fontFamily.medium,
-      fontSize: Typography.fontSize.sm,
-    },
-    sexOptionTextSelected: { color: colors.primary || "#6C47FF" },
-    errorText: {
-      fontSize: Typography.fontSize.xs,
-      color: "#FFB3B3",
-      marginTop: 2,
-    },
     submitButton: {
       marginTop: Spacing.lg,
       borderRadius: BorderRadius.xl,
@@ -132,7 +98,7 @@ export default function CompleteProfileScreen() {
       backgroundColor: "#FFFFFF",
     },
     submitButtonText: {
-      color: colors.primary || "#6C47FF",
+      color: colors.primary,
       fontFamily: Typography.fontFamily.semibold,
       fontSize: Typography.fontSize.md,
     },
@@ -171,53 +137,30 @@ export default function CompleteProfileScreen() {
               )}
             />
 
-            {/* Género */}
-            <View>
-              <Text style={styles.label}>Género</Text>
-              <Controller
-                control={control}
-                name="sex"
-                render={({ field: { onChange, value } }) => (
-                  <View style={styles.sexContainer}>
-                    {SEX_OPTIONS.map((opt) => (
-                      <TouchableOpacity
-                        key={opt.value}
-                        style={[
-                          styles.sexOption,
-                          value === opt.value && styles.sexOptionSelected,
-                        ]}
-                        onPress={() => onChange(opt.value)}
-                        activeOpacity={0.7}
-                      >
-                        <Text
-                          style={[
-                            styles.sexOptionText,
-                            value === opt.value && styles.sexOptionTextSelected,
-                          ]}
-                        >
-                          {opt.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              />
-              {errors.sex && (
-                <Text style={styles.errorText}>{errors.sex.message}</Text>
+            {/* Género — usa GenderSelector existente */}
+            <Controller
+              control={control}
+              name="sex"
+              render={({ field: { onChange, value } }) => (
+                <GenderSelector
+                  value={value ?? null}
+                  onChange={(val: UserSex) => onChange(val)}
+                  error={errors.sex?.message}
+                />
               )}
-            </View>
+            />
 
-            {/* Fecha de nacimiento */}
+            {/* Fecha de nacimiento — usa DatePicker existente */}
             <Controller
               control={control}
               name="birth_date"
               render={({ field: { onChange, value } }) => (
-                <Input
+                <DatePicker
                   label="Fecha de nacimiento"
-                  placeholder="1995-06-15"
-                  value={value}
-                  onChangeText={onChange}
+                  value={value ?? null}
+                  onChange={onChange}
                   error={errors.birth_date?.message}
+                  placeholder="Selecciona tu fecha de nacimiento"
                 />
               )}
             />
