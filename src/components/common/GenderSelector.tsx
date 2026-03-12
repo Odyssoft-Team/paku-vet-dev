@@ -28,6 +28,7 @@ export const GenderSelector: React.FC<GenderSelectorProps> = ({
       color: colors.primary,
       marginBottom: Spacing.xs,
       fontFamily: Typography.fontFamily.semibold,
+      fontWeight: Typography.fontWeight.bold,
     },
     optionsContainer: {
       flexDirection: "row",

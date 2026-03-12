@@ -8,7 +8,7 @@ import { Spacing, Shadows } from "@/constants/theme";
 
 interface AvatarPickerProps {
   imageUri: string | null;
-  onImageSelected: (uri: string) => void;
+  onImageSelected: (uri: string, mimeType: string) => void;
   size?: number;
 }
 
@@ -44,7 +44,8 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
     });
 
     if (!result.canceled && result.assets[0]) {
-      onImageSelected(result.assets[0].uri);
+      const asset = result.assets[0];
+      onImageSelected(asset.uri, asset.mimeType ?? "image/jpeg");
       setModalVisible(false);
     }
   };
@@ -63,7 +64,8 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
     });
 
     if (!result.canceled && result.assets[0]) {
-      onImageSelected(result.assets[0].uri);
+      const asset = result.assets[0];
+      onImageSelected(asset.uri, asset.mimeType ?? "image/jpeg");
       setModalVisible(false);
     }
   };

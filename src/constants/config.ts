@@ -1,7 +1,14 @@
 // Configuración general de la aplicación
 export const CONFIG = {
   API_URL:
-    process.env.EXPO_PUBLIC_API_URL || "http://34.176.186.167/paku/api/v1",
+    process.env.EXPO_PUBLIC_API_URL || "https://paku.dev-qa.site/paku/api/v1",
+
+  // Base URL para endpoints de media (puede diferir del API_URL principal)
+  // ⚠️ Cambiar este valor cuando el backend confirme la URL correcta
+  MEDIA_API_URL:
+    process.env.EXPO_PUBLIC_MEDIA_API_URL ||
+    "https://paku.dev-qa.site/paku/api/v1",
+
   API_TIMEOUT: 30000,
 
   // Tiempos de expiración (en milisegundos)

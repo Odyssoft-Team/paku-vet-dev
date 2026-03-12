@@ -25,6 +25,7 @@ interface AuthState {
   completeProfile: (data: CompleteProfileData) => Promise<void>;
   logout: () => Promise<void>;
   loadStoredAuth: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   setUser: (user: User) => void;
   clearError: () => void;
 }
@@ -78,7 +79,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   register: async (data: RegisterData) => {
     try {
       set({ isLoading: true, error: null });
-      const user = await authService.register(data);
+      await authService.register(data);
       const loginResponse = await authService.login({
         email: data.email,
         password: data.password,
@@ -92,16 +93,24 @@ export const useAuthStore = create<AuthState>((set) => ({
         CONFIG.STORAGE_KEYS.REFRESH_TOKEN,
         loginResponse.refresh_token,
       );
-      await storage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, user);
 
+      // Guardar tokens en el store ANTES de llamar getCurrentUser
+      // para que el apiClient los incluya en el header
       set({
-        user,
         tokens: {
           access_token: loginResponse.access_token,
           refresh_token: loginResponse.refresh_token,
           token_type: loginResponse.token_type,
         },
         isAuthenticated: true,
+      });
+
+      // Obtener el perfil completo del usuario recién creado
+      const fullUser = await authService.getCurrentUser();
+      await storage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, fullUser);
+
+      set({
+        user: fullUser,
         isLoading: false,
       });
     } catch (error: any) {
@@ -242,6 +251,16 @@ export const useAuthStore = create<AuthState>((set) => ({
   setUser: (user: User) => {
     set({ user });
     storage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, user);
+  },
+
+  refreshUser: async () => {
+    try {
+      const freshUser = await authService.getCurrentUser();
+      set({ user: freshUser });
+      storage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, freshUser);
+    } catch (err) {
+      console.log("Error refreshing user:", err);
+    }
   },
 
   clearError: () => set({ error: null }),

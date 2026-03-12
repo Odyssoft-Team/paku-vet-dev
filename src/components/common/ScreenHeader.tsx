@@ -63,8 +63,9 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
       padding: Spacing.xs,
     },
     title: {
-      fontSize: Typography.fontSize.sm,
+      fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.bold,
+      fontWeight: Typography.fontWeight.bold,
       color: "#FFFFFF",
       textAlign: "center",
       // Evita que el título largo se solape con los botones absolutos
@@ -145,7 +146,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   return (
     <View style={[styles.header, style]}>
       <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-        <Icon name="arrow-back" size={20} color="#FFFFFF" />
+        <Icon name="arrow-back" size={18} color="#FFFFFF" />
       </TouchableOpacity>
 
       <Text style={styles.title} numberOfLines={1}>

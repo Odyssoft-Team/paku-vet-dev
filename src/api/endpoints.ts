@@ -116,4 +116,11 @@ export const API_ENDPOINTS = {
   CLINICAL_HISTORY: {
     BY_PET: (petId: string) => `/pets/${petId}/clinical-history`,
   },
+
+  // Media (fotos de perfil — usuario y mascota)
+  MEDIA: {
+    SIGNED_UPLOAD: "/media/signed-upload",
+    CONFIRM_PHOTO: "/media/confirm-profile-photo",
+    SIGNED_READ: "/media/signed-read",
+  },
 } as const;

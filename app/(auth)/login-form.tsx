@@ -135,12 +135,14 @@ export default function LoginFormScreen() {
       backgroundColor: colors.loginButton,
       borderRadius: BorderRadius.xl,
       paddingVertical: Spacing.sm,
-      height: 38,
+      height: 42,
     },
     loginButtonText: {
       color: colors.loginButtonText,
       fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.semibold,
+      fontWeight: Typography.fontWeight.bold,
+      includeFontPadding: false,
     },
     keyboardAvoid: {
       flex: 1,

@@ -15,6 +15,7 @@ interface DatePickerProps {
   paddingVertical?: number;
   /** Modo auth: estilos blancos sobre fondo azul (pantallas de login/register) */
   authStyle?: boolean;
+  variant?: "default" | "auth";
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -25,6 +26,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   placeholder = "Selecciona una fecha",
   paddingVertical,
   authStyle = false,
+  variant = "default",
 }) => {
   const { colors } = useTheme();
   const [show, setShow] = useState(false);
@@ -43,16 +45,16 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     ? {
         label: "#FFFFFF",
         inputBg: "rgba(255,255,255,0.12)",
-        inputBorder: error ? "#FFB3B3" : "rgba(255,255,255,0.35)",
+        inputBorder: error ? "#FFFFFF" : "rgba(255,255,255,0.35)",
         dateText: value ? "#FFFFFF" : "rgba(255,255,255,0.5)",
         icon: "rgba(255,255,255,0.6)",
-        error: "#FFB3B3",
+        error: colors.error,
       }
     : {
         label: colors.primary,
         inputBg: colors.surface,
         inputBorder: error ? colors.error : colors.border,
-        dateText: value ? colors.text : colors.placeholder,
+        dateText: value ? colors.text : "#66666660",
         icon: colors.primary + "80",
         error: colors.error,
       };
@@ -66,20 +68,21 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       fontFamily: Typography.fontFamily.semibold,
       color: C.label,
       marginBottom: Spacing.xs,
+      fontWeight: Typography.fontWeight.bold,
     },
     inputContainer: {
       flexDirection: "row",
       alignItems: "center",
-      borderWidth: authStyle ? 1.5 : 1,
+      borderWidth: authStyle ? 1 : 1,
       borderColor: C.inputBorder,
-      borderRadius: BorderRadius.md,
+      borderRadius: variant === "auth" ? BorderRadius.xl : BorderRadius.md,
       backgroundColor: C.inputBg,
       paddingHorizontal: Spacing.md,
-      paddingVertical: paddingVertical ?? 10,
+      paddingVertical: paddingVertical ?? 11,
     },
     dateText: {
       flex: 1,
-      fontSize: Typography.fontSize.md,
+      fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.regular,
       color: C.dateText,
     },

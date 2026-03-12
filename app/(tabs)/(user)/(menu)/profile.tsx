@@ -1,16 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
+  Image,
+  RefreshControl,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/common/Text";
 import { Icon, IconName } from "@/components/common/Icon";
-import { AvatarPicker } from "@/components/common/AvatarPicker";
 import { ImagePickerModal } from "@/components/common/ImagePickerModal";
 import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "@/hooks/useTheme";
@@ -19,6 +21,8 @@ import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useAddressStore } from "@/store/addressStore";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { useCartDrawerStore } from "@/store/cartDrawerStore";
+import { mediaService } from "@/api/services/media.service";
+import { useUploadPhoto } from "@/hooks/useUploadPhoto";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -50,17 +54,12 @@ const MenuItem: React.FC<MenuItemProps> = ({
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* Icono izquierdo */}
       <View style={[styles.iconWrapper, { backgroundColor: ic + "18" }]}>
         <Icon name={icon} size={18} color={ic} />
       </View>
-
-      {/* Etiqueta */}
       <Text style={[styles.menuLabel, { color: labelColor ?? colors.text }]}>
         {label}
       </Text>
-
-      {/* Elemento derecho — flecha por defecto */}
       {rightElement ?? (
         <Icon name="arrow-right" size={12} color={colors.border} />
       )}
@@ -84,20 +83,70 @@ const SectionHeader: React.FC<{ title: string }> = ({ title }) => {
 export default function ProfileScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
-  const { user, logout } = useAuthStore();
+  const { user, logout, refreshUser } = useAuthStore();
   const { addresses } = useAddressStore();
   const { open: openCartDrawer } = useCartDrawerStore();
+  const { uploadPhoto, isUploading } = useUploadPhoto();
 
   const [imagePickerVisible, setImagePickerVisible] = useState(false);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const defaultAddress = addresses.find((addr) => addr.is_default);
 
+  // Pull-to-refresh — recarga el user del backend y refresca la foto
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshUser();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Cargar foto al montar — convierte el object_name en signed read URL
+  useEffect(() => {
+    const loadPhoto = async () => {
+      if (!user?.profile_photo_url) return;
+      try {
+        setIsLoadingPhoto(true);
+        const readUrl = await mediaService.getSignedReadUrl(
+          user.profile_photo_url,
+        );
+        setAvatarUri(readUrl);
+      } catch (err) {
+        console.log("Error cargando foto de perfil:", err);
+      } finally {
+        setIsLoadingPhoto(false);
+      }
+    };
+
+    loadPhoto();
+  }, [user?.profile_photo_url]);
+
+  // Subir nueva foto y actualizar la vista
+  const handlePhotoSelected = async (uri: string, mimeType: string) => {
+    setImagePickerVisible(false);
+    if (!user?.id) return;
+
+    try {
+      // Optimistic update — mostrar la foto local de inmediato
+      setAvatarUri(uri);
+      const { readUrl } = await uploadPhoto("user", user.id, uri, mimeType);
+      // Reemplazar con la URL firmada real del servidor
+      setAvatarUri(readUrl);
+    } catch (err) {
+      console.log("Error subiendo foto:", err);
+      setAvatarUri(null);
+      Alert.alert("Error", "No se pudo subir la foto. Intenta de nuevo.");
+    }
+  };
+
   const handleTakePhoto = async () => {
     try {
-      const permissionResult =
-        await ImagePicker.requestCameraPermissionsAsync();
-      if (!permissionResult.granted) {
+      const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+      if (!granted) {
         Alert.alert(
           "Permiso denegado",
           "Necesitas dar permiso para usar la cámara",
@@ -111,8 +160,8 @@ export default function ProfileScreen() {
         quality: 0.8,
       });
       if (!result.canceled && result.assets[0]) {
-        setAvatarUri(result.assets[0].uri);
-        setImagePickerVisible(false);
+        const asset = result.assets[0];
+        await handlePhotoSelected(asset.uri, asset.mimeType ?? "image/jpeg");
       }
     } catch (error) {
       console.error("Error taking photo:", error);
@@ -121,9 +170,9 @@ export default function ProfileScreen() {
 
   const handlePickImage = async () => {
     try {
-      const permissionResult =
+      const { granted } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
+      if (!granted) {
         Alert.alert(
           "Permiso denegado",
           "Necesitas dar permiso para acceder a la galería",
@@ -137,8 +186,8 @@ export default function ProfileScreen() {
         quality: 0.8,
       });
       if (!result.canceled && result.assets[0]) {
-        setAvatarUri(result.assets[0].uri);
-        setImagePickerVisible(false);
+        const asset = result.assets[0];
+        await handlePhotoSelected(asset.uri, asset.mimeType ?? "image/jpeg");
       }
     } catch (error) {
       console.error("Error picking image:", error);
@@ -159,17 +208,6 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      "Eliminar cuenta",
-      "¿Estás seguro? Esta acción no se puede deshacer.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Eliminar", style: "destructive", onPress: () => {} },
-      ],
-    );
-  };
-
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -188,14 +226,42 @@ export default function ProfileScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       >
         {/* ── Tarjeta de usuario ──────────────────────────────────────────── */}
         <View style={[styles.profileCard, { backgroundColor: colors.surface }]}>
-          <AvatarPicker
-            imageUri={avatarUri}
-            onImageSelected={() => setImagePickerVisible(true)}
-            size={72}
-          />
+          {/* Avatar con overlay de carga/upload */}
+          <TouchableOpacity
+            style={styles.avatarWrapper}
+            onPress={() => setImagePickerVisible(true)}
+            activeOpacity={0.8}
+            disabled={isUploading || isLoadingPhoto}
+          >
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.avatar} />
+            ) : (
+              <View
+                style={[
+                  styles.avatarPlaceholder,
+                  { backgroundColor: "#BFD0FE" },
+                ]}
+              >
+                <Icon name="camera" size={28} color={colors.surface} />
+              </View>
+            )}
+            {(isUploading || isLoadingPhoto) && (
+              <View style={styles.avatarOverlay}>
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              </View>
+            )}
+          </TouchableOpacity>
 
           <View style={styles.profileInfo}>
             <Text style={[styles.userName, { color: colors.text }]}>
@@ -238,9 +304,7 @@ export default function ProfileScreen() {
           <MenuItem
             label="Mis direcciones"
             icon="gps"
-            onPress={() => {
-              router.push("/(tabs)/(user)/addresses");
-            }}
+            onPress={() => router.push("/(tabs)/(user)/addresses")}
           />
         </View>
 
@@ -310,18 +374,8 @@ export default function ProfileScreen() {
             onPress={handleLogout}
             rightElement={<View />}
           />
-          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
-          {/* <MenuItem
-            label="Eliminar cuenta"
-            icon="close"
-            iconColor={colors.error}
-            labelColor={colors.error}
-            onPress={handleDeleteAccount}
-            rightElement={<View />}
-          /> */}
         </View>
 
-        {/* Versión */}
         <Text style={[styles.version, { color: colors.border }]}>
           Paku v1.0.0
         </Text>
@@ -356,6 +410,28 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     gap: Spacing.md,
     ...Shadows.sm,
+  },
+  avatarWrapper: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    overflow: "hidden",
+  },
+  avatar: {
+    width: "100%",
+    height: "100%",
+  },
+  avatarPlaceholder: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   profileInfo: {
     flex: 1,

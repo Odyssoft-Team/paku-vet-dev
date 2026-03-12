@@ -107,15 +107,18 @@ export default function CompleteProfileScreen() {
       paddingBottom: Spacing.xl * 1.5,
     },
     title: {
-      fontSize: 32,
+      fontSize: Typography.fontSize.xxxl,
       fontFamily: Typography.fontFamily.bold,
+      fontWeight: Typography.fontWeight.bold,
       color: AUTH.text,
       textAlign: "center",
       marginBottom: Spacing.sm,
+      includeFontPadding: false,
     },
     subtitle: {
       fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.regular,
+      fontFamily: Typography.fontFamily.bold,
+      fontWeight: Typography.fontWeight.medium,
       color: AUTH.textMuted,
       textAlign: "center",
       lineHeight: 24,
@@ -123,11 +126,12 @@ export default function CompleteProfileScreen() {
 
     // Campos
     fieldWrapper: {
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.md,
     },
     sectionLabel: {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.semibold,
+      fontWeight: Typography.fontWeight.bold,
       color: AUTH.text,
       marginBottom: Spacing.xs + 2,
     },
@@ -143,10 +147,10 @@ export default function CompleteProfileScreen() {
       alignItems: "center",
       justifyContent: "center",
       gap: Spacing.sm,
-      paddingVertical: 14,
-      borderRadius: BorderRadius.full,
-      borderWidth: 1.5,
-      borderColor: AUTH.optionBorder,
+      paddingVertical: 12,
+      borderRadius: BorderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.loginInputBorder,
       backgroundColor: AUTH.optionBg,
     },
     sexOptionSelected: {
@@ -210,17 +214,15 @@ export default function CompleteProfileScreen() {
               control={control}
               name="phone"
               render={({ field: { onChange, value } }) => (
-                <View style={styles.fieldWrapper}>
-                  <Text style={styles.sectionLabel}>Teléfono</Text>
-                  <Input
-                    placeholder="+51 987 654 321"
-                    value={value}
-                    onChangeText={onChange}
-                    keyboardType="phone-pad"
-                    error={errors.phone?.message}
-                    variant="auth"
-                  />
-                </View>
+                <Input
+                  label="Teléfono"
+                  placeholder="+51 987 654 321"
+                  value={value}
+                  onChangeText={onChange}
+                  keyboardType="phone-pad"
+                  error={errors.phone?.message}
+                  variant="auth"
+                />
               )}
             />
 
@@ -281,6 +283,7 @@ export default function CompleteProfileScreen() {
                     error={errors.birth_date?.message}
                     placeholder="Selecciona tu fecha de nacimiento"
                     authStyle
+                    variant="auth"
                   />
                 </View>
               )}

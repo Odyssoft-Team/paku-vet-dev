@@ -14,6 +14,7 @@ import { Text } from "./Text";
 
 interface InputProps extends TextInputProps {
   label?: string;
+  placeholder?: string;
   colorLabel?: string;
   error?: string;
   leftIcon?: IconName;
@@ -27,6 +28,7 @@ export const Input = forwardRef<TextInput, InputProps>(
   (
     {
       label,
+      placeholder,
       colorLabel,
       error,
       leftIcon,
@@ -60,7 +62,9 @@ export const Input = forwardRef<TextInput, InputProps>(
       label: {
         fontSize: Typography.fontSize.sm,
         fontFamily: Typography.fontFamily.semibold,
-        color: colorLabel || colors.primary,
+        fontWeight: Typography.fontWeight.bold,
+        color:
+          colorLabel || variant === "auth" ? colors.surface : colors.primary,
         marginBottom: Spacing.xs,
       },
       inputContainer: {
@@ -118,12 +122,15 @@ export const Input = forwardRef<TextInput, InputProps>(
           <TextInput
             ref={ref}
             style={styles.input}
-            placeholderTextColor={colors.placeholder}
+            placeholderTextColor={
+              variant === "auth" ? "#ffffff80" : "#66666660"
+            }
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             secureTextEntry={type === "password" && !isPasswordVisible}
             keyboardType={getKeyboardType()}
             autoCapitalize={type === "email" ? "none" : "sentences"}
+            placeholder={placeholder}
             {...textInputProps}
           />
 

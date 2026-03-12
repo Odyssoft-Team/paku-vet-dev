@@ -24,18 +24,24 @@ import { GenderSelector } from "@/components/common/GenderSelector";
 import { DatePicker } from "@/components/common/DatePicker";
 import { SuccessModal } from "@/components/common/SuccessModal";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/authStore";
+import { useUploadPhoto } from "@/hooks/useUploadPhoto";
 import { useTheme } from "@/hooks/useTheme";
 import { registerSchema, RegisterFormData } from "@/utils/validators";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
 import { UserSex } from "@/types/auth.types";
 import { useLocationStore } from "@/store/locationStore";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const { register, error, clearError } = useAuth();
+  const user = useAuthStore((state) => state.user);
+  const { uploadPhoto, isUploading } = useUploadPhoto();
   const { colors } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileMimeType, setProfileMimeType] = useState<string>("image/jpeg");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -115,6 +121,7 @@ export default function RegisterScreen() {
       setIsLoading(true);
       clearError();
 
+      // Paso 1 — Registrar sin foto (el backend no acepta profile_photo_url en register)
       const registerData = {
         email: data.email,
         password: data.password,
@@ -134,10 +141,43 @@ export default function RegisterScreen() {
                 lng: locationCoords.lng,
               }
             : undefined,
-        profile_photo_url: profileImage || undefined,
       };
 
       await register(registerData);
+      // Después de register() el store ya tiene user + token listos
+
+      // Paso 2 — Subir foto si el usuario seleccionó una
+      if (profileImage) {
+        const registeredUser = useAuthStore.getState().user;
+        console.log(
+          "[Register] user en store:",
+          registeredUser?.id,
+          "| profile_photo_url:",
+          registeredUser?.profile_photo_url,
+        );
+        console.log(
+          "[Register] Iniciando upload — uri:",
+          profileImage,
+          "| mimeType:",
+          profileMimeType,
+        );
+        if (registeredUser?.id) {
+          const result = await uploadPhoto(
+            "user",
+            registeredUser.id,
+            profileImage,
+            profileMimeType,
+          );
+          console.log(
+            "[Register] Upload exitoso — objectName:",
+            result.objectName,
+            "| readUrl:",
+            result.readUrl,
+          );
+        }
+      } else {
+        console.log("[Register] Sin imagen seleccionada, saltando upload");
+      }
 
       clearLocation();
       setShowSuccessModal(true);
@@ -178,6 +218,7 @@ export default function RegisterScreen() {
     welcomeText: {
       fontSize: Typography.fontSize.lg,
       fontFamily: Typography.fontFamily.bold,
+      fontWeight: Typography.fontWeight.bold,
       color: colors.primary,
       marginBottom: Spacing.md,
     },
@@ -193,7 +234,8 @@ export default function RegisterScreen() {
       marginBottom: Spacing.lg,
     },
     fixedButton: {
-      padding: Spacing.lg,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.lg,
       backgroundColor: colors.background,
       borderTopWidth: 1,
       borderTopColor: colors.border,
@@ -209,7 +251,10 @@ export default function RegisterScreen() {
       >
         <AvatarPicker
           imageUri={profileImage}
-          onImageSelected={setProfileImage}
+          onImageSelected={(uri, mimeType) => {
+            setProfileImage(uri);
+            setProfileMimeType(mimeType);
+          }}
         />
 
         <Text style={styles.welcomeText}>Bienvenido/a a Paku</Text>
@@ -287,7 +332,7 @@ export default function RegisterScreen() {
             <Input
               label="Contraseña"
               type="password"
-              placeholder="contraseña"
+              placeholder="Contraseña"
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
@@ -305,7 +350,7 @@ export default function RegisterScreen() {
             <Input
               label="Confirmar contraseña"
               type="password"
-              placeholder="contraseña"
+              placeholder="Contraseña"
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
@@ -351,7 +396,7 @@ export default function RegisterScreen() {
         <Button
           title="Registrarme"
           onPress={handleSubmit(onSubmit)}
-          loading={isLoading}
+          loading={isLoading || isUploading}
           fullWidth
         />
       </View>
@@ -361,15 +406,7 @@ export default function RegisterScreen() {
   return (
     // edges=["top","bottom"] para que SafeAreaView maneje ambos extremos limpiamente
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Icon name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Crear cuenta</Text>
-      </View>
+      <ScreenHeader title="Crear cuenta" backHref="/(auth)/login" />
 
       {/* iOS: KAV nativo funciona perfecto con behavior="padding"
           Android: paddingBottom manual con el listener del teclado, sin KAV */}
