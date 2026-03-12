@@ -147,15 +147,20 @@ export default function TrackingServiceScreen() {
       alignItems: "center",
       marginRight: Spacing.md,
     },
-    initials: { color: "#FFF", fontSize: 20, fontWeight: "bold" },
+    initials: {
+      color: "#FFF",
+      fontSize: 20,
+      fontFamily: Typography.fontFamily.bold,
+    },
     infoContainer: { flex: 1 },
     titleDriver: {
       fontSize: Typography.fontSize.sm,
-      fontWeight: "bold",
+      fontFamily: Typography.fontFamily.bold,
       color: colors.primary,
     },
     textDriver: {
       fontSize: Typography.fontSize.xs,
+      fontFamily: Typography.fontFamily.regular,
       color: colors.primary,
       lineHeight: 18,
     },
@@ -170,7 +175,7 @@ export default function TrackingServiceScreen() {
     },
     ratingText: {
       fontSize: 11,
-      fontWeight: "bold",
+      fontFamily: Typography.fontFamily.bold,
       color: "#4ADE80",
       marginRight: 4,
     },

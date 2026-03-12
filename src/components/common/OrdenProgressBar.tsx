@@ -134,7 +134,10 @@ export const OrderProgressBar = ({ currentStatus }: StatusBar) => {
               <Text
                 style={[
                   styles.stepLabel,
-                  isCompleted && { color: colors.primary, fontWeight: "600" },
+                  isCompleted && {
+                    color: colors.primary,
+                    fontFamily: "Poppins_600SemiBold",
+                  },
                 ]}
               >
                 {step.label}

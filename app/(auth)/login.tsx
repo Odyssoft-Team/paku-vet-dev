@@ -58,7 +58,7 @@ export default function LoginScreen() {
     formContainer: { marginTop: Spacing.md },
     socialContainer: {
       marginTop: Spacing.xl,
-      gap: Spacing.md,
+      gap: Spacing.sm,
     },
     createAccountContainer: {
       marginTop: Spacing.xl,
@@ -69,6 +69,7 @@ export default function LoginScreen() {
       fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.semibold,
       color: "#FFFFFF",
+      includeFontPadding: false,
     },
     loginButton: {
       backgroundColor: colors.loginButton,

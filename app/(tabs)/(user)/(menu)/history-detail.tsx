@@ -177,20 +177,30 @@ const styles = StyleSheet.create({
   cardMainTitle: {
     color: "#2D3FE6",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: Typography.fontFamily.bold,
     marginBottom: 4,
   },
-  dateText: { fontSize: 14, color: "#333", marginBottom: 15 },
+  dateText: {
+    fontSize: 14,
+    fontFamily: Typography.fontFamily.regular,
+    color: "#333",
+    marginBottom: 15,
+  },
   section: { marginTop: 15 },
   sectionTitle: {
     color: "#2D3FE6",
     fontSize: 15,
-    fontWeight: "bold",
+    fontFamily: Typography.fontFamily.bold,
     marginBottom: 10,
   },
   bulletRow: { marginBottom: 6 },
-  itemText: { fontSize: 14, color: "#333", lineHeight: 20 },
-  boldText: { fontWeight: "bold" },
+  itemText: {
+    fontSize: 14,
+    fontFamily: Typography.fontFamily.regular,
+    color: "#333",
+    lineHeight: 20,
+  },
+  boldText: { fontFamily: Typography.fontFamily.bold },
 
   // Estilos para la Grilla de Imágenes
   imageGrid: {

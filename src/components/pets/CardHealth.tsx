@@ -68,14 +68,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    color: "#2D3FE6", // El azul vibrante de tu captura
+    color: "#2D3FE6",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: "Poppins_700Bold",
     marginBottom: 4,
   },
   subtitle: {
     color: "#333333",
     fontSize: 14,
+    fontFamily: "Poppins_400Regular",
     lineHeight: 20,
   },
   doctorContainer: {
@@ -97,6 +98,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "Poppins_600SemiBold",
   },
 });

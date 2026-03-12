@@ -1,5 +1,6 @@
 import React from "react";
-import { TouchableOpacity, Text, StyleSheet, View } from "react-native";
+import { TouchableOpacity, StyleSheet, View } from "react-native";
+import { Text } from "@/components/common/Text";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { Icon, IconName } from "../common";
 
@@ -44,13 +45,14 @@ export const SocialButton: React.FC<SocialButtonProps> = ({
     },
     iconText: {
       fontSize: 16,
-      fontWeight: Typography.fontWeight.bold,
+      fontFamily: Typography.fontFamily.bold,
       color: "#1D2AD8",
     },
     text: {
       color: "#FFFFFF",
       fontSize: Typography.fontSize.md,
-      fontWeight: Typography.fontWeight.medium,
+      fontFamily: Typography.fontFamily.medium,
+      includeFontPadding: false,
     },
     icon: {
       position: "absolute",

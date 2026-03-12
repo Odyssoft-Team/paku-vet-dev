@@ -383,7 +383,6 @@ export default function ComplaintsScreen() {
                     }}
                     error={errors.serviceDate?.message}
                     paddingVertical={7}
-                    fontWeight={"medium"}
                   />
                 )}
               />

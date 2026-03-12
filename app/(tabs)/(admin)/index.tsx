@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Screen } from '@/components/layout/Screen';
-import { Button } from '@/components/common/Button';
-import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/hooks/useTheme';
-import { Typography, Spacing } from '@/constants/theme';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { Screen } from "@/components/layout/Screen";
+import { Button } from "@/components/common/Button";
+import { Text } from "@/components/common/Text";
+import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
+import { Typography, Spacing } from "@/constants/theme";
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -16,12 +17,13 @@ export default function AdminDashboard() {
     },
     title: {
       fontSize: Typography.fontSize.xxl,
-      fontWeight: Typography.fontWeight.bold,
+      fontFamily: Typography.fontFamily.bold,
       color: colors.text,
       marginBottom: Spacing.md,
     },
     subtitle: {
       fontSize: Typography.fontSize.md,
+      fontFamily: Typography.fontFamily.regular,
       color: colors.textSecondary,
       marginBottom: Spacing.xl,
     },
@@ -30,13 +32,13 @@ export default function AdminDashboard() {
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,
       borderRadius: 20,
-      alignSelf: 'flex-start',
+      alignSelf: "flex-start",
       marginBottom: Spacing.lg,
     },
     roleText: {
-      color: '#FFFFFF',
+      color: "#FFFFFF",
       fontSize: Typography.fontSize.sm,
-      fontWeight: Typography.fontWeight.semibold,
+      fontFamily: Typography.fontFamily.semibold,
     },
   });
 
@@ -51,17 +53,13 @@ export default function AdminDashboard() {
         </View>
 
         <Button
-          title={isDark ? 'Modo Claro' : 'Modo Oscuro'}
+          title={isDark ? "Modo Claro" : "Modo Oscuro"}
           onPress={toggleColorScheme}
           variant="outline"
           style={{ marginBottom: Spacing.md }}
         />
 
-        <Button
-          title="Cerrar Sesión"
-          onPress={logout}
-          variant="outline"
-        />
+        <Button title="Cerrar Sesión" onPress={logout} variant="outline" />
       </View>
     </Screen>
   );

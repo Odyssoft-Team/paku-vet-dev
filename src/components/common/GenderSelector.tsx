@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { Text } from "@/components/common/Text";
 import { Icon } from "./Icon";
 import { useTheme } from "@/hooks/useTheme";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
@@ -23,10 +24,10 @@ export const GenderSelector: React.FC<GenderSelectorProps> = ({
       marginBottom: Spacing.md,
     },
     label: {
-      fontSize: Typography.fontSize.md,
+      fontSize: Typography.fontSize.sm,
       color: colors.primary,
       marginBottom: Spacing.xs,
-      fontWeight: Typography.fontWeight.semibold,
+      fontFamily: Typography.fontFamily.semibold,
     },
     optionsContainer: {
       flexDirection: "row",
@@ -37,7 +38,7 @@ export const GenderSelector: React.FC<GenderSelectorProps> = ({
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      paddingVertical: 12,
+      paddingVertical: 10,
       paddingHorizontal: Spacing.sm,
       borderRadius: BorderRadius.md,
       borderWidth: 1,
@@ -49,11 +50,12 @@ export const GenderSelector: React.FC<GenderSelectorProps> = ({
     },
     unselectedOption: {
       borderColor: colors.border,
-      backgroundColor: "transparent",
+      backgroundColor: colors.surface,
     },
     optionText: {
-      fontSize: Typography.fontSize.md,
-      fontWeight: Typography.fontWeight.medium,
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.medium,
+      includeFontPadding: false,
     },
     selectedText: {
       color: colors.surface,
@@ -82,7 +84,7 @@ export const GenderSelector: React.FC<GenderSelectorProps> = ({
         >
           <Icon
             name="male"
-            size={20}
+            size={18}
             color={value === "male" ? colors.surface : colors.textSecondary}
           />
           <Text

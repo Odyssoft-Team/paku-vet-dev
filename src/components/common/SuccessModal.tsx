@@ -1,5 +1,6 @@
 import React from "react";
-import { Modal, View, Text, StyleSheet, Pressable } from "react-native";
+import { Modal, View, StyleSheet, Pressable } from "react-native";
+import { Text } from "@/components/common/Text";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
 import { useTheme } from "@/hooks/useTheme";
@@ -50,13 +51,14 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
     },
     title: {
       fontSize: Typography.fontSize.xl,
-      fontWeight: Typography.fontWeight.bold,
+      fontFamily: Typography.fontFamily.bold,
       color: colors.text,
       textAlign: "center",
       marginBottom: Spacing.sm,
     },
     message: {
       fontSize: Typography.fontSize.md,
+      fontFamily: Typography.fontFamily.regular,
       color: colors.textSecondary,
       textAlign: "center",
       marginBottom: Spacing.xl,

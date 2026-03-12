@@ -59,9 +59,8 @@ export const Input = forwardRef<TextInput, InputProps>(
       },
       label: {
         fontSize: Typography.fontSize.sm,
-        fontFamily: Typography.fontFamily.medium,
-        fontWeight: Typography.fontWeight.medium,
-        color: colorLabel || colors.text,
+        fontFamily: Typography.fontFamily.semibold,
+        color: colorLabel || colors.primary,
         marginBottom: Spacing.xs,
       },
       inputContainer: {
@@ -88,7 +87,6 @@ export const Input = forwardRef<TextInput, InputProps>(
         fontSize: Typography.fontSize.sm,
         fontFamily: Typography.fontFamily.regular,
         color: variant === "auth" ? colors.loginInputText : colors.text,
-        // Garantiza centrado vertical en Android
         textAlignVertical: "center",
         includeFontPadding: false,
       },
@@ -108,11 +106,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 
     return (
       <View style={[styles.container, containerStyle]}>
-        {label && variant === "default" && (
-          <Text variant="medium" style={styles.label}>
-            {label}
-          </Text>
-        )}
+        {label && <Text style={styles.label}>{label}</Text>}
 
         <View style={styles.inputContainer}>
           {leftIcon && (

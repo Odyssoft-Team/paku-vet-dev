@@ -13,7 +13,6 @@ interface DatePickerProps {
   error?: string;
   placeholder?: string;
   paddingVertical?: number;
-  fontWeight?: any;
   /** Modo auth: estilos blancos sobre fondo azul (pantallas de login/register) */
   authStyle?: boolean;
 }
@@ -25,7 +24,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   error,
   placeholder = "Selecciona una fecha",
   paddingVertical,
-  fontWeight,
   authStyle = false,
 }) => {
   const { colors } = useTheme();
@@ -64,11 +62,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       marginBottom: authStyle ? 0 : Spacing.md,
     },
     label: {
+      fontSize: Typography.fontSize.sm, // ← igual que Input
+      fontFamily: Typography.fontFamily.semibold,
       color: C.label,
       marginBottom: Spacing.xs,
-      fontWeight: fontWeight || Typography.fontWeight.semibold,
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.medium,
     },
     inputContainer: {
       flexDirection: "row",
@@ -78,7 +75,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       borderRadius: BorderRadius.md,
       backgroundColor: C.inputBg,
       paddingHorizontal: Spacing.md,
-      paddingVertical: paddingVertical ?? 13,
+      paddingVertical: paddingVertical ?? 10,
     },
     dateText: {
       flex: 1,

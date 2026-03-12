@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Screen } from '@/components/layout/Screen';
-import { useTheme } from '@/hooks/useTheme';
-import { Typography } from '@/constants/theme';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { Screen } from "@/components/layout/Screen";
+import { Text } from "@/components/common/Text";
+import { useTheme } from "@/hooks/useTheme";
+import { Typography } from "@/constants/theme";
 
 export default function GroomersScreen() {
   const { colors } = useTheme();
@@ -13,7 +14,7 @@ export default function GroomersScreen() {
     },
     title: {
       fontSize: Typography.fontSize.xxl,
-      fontWeight: Typography.fontWeight.bold,
+      fontFamily: Typography.fontFamily.bold,
       color: colors.text,
     },
   });

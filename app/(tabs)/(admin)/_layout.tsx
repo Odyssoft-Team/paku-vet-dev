@@ -28,7 +28,7 @@ export default function AdminLayout() {
         },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: "600",
+          fontFamily: "Poppins_600SemiBold",
           marginBottom: 4,
         },
         tabBarIconStyle: {
