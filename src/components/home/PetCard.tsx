@@ -17,6 +17,12 @@ interface PetCardProps {
 
 export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
   const { colors } = useTheme();
+  console.log(
+    "[PetCard]",
+    pet.name,
+    "photo_url:",
+    pet.photo_url?.substring(0, 60),
+  );
 
   const styles = StyleSheet.create({
     card: {

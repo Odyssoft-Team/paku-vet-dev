@@ -5,9 +5,9 @@ import {
   Modal,
   StyleSheet,
   Pressable,
+  FlatList,
   Platform,
 } from "react-native";
-import { Picker as RNPicker } from "@react-native-picker/picker";
 import { Icon } from "./Icon";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
@@ -41,27 +41,22 @@ export const Picker: React.FC<PickerProps> = ({
 }) => {
   const { colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
-  const [tempValue, setTempValue] = useState(value);
 
   const selectedOption = options.find((opt) => opt.id === value);
 
-  const handleConfirm = () => {
-    onSelect(tempValue);
-    setModalVisible(false);
-  };
-
-  const handleCancel = () => {
-    setTempValue(value);
+  const handleSelect = (id: string) => {
+    onSelect(id);
     setModalVisible(false);
   };
 
   const styles = StyleSheet.create({
+    // ── Trigger ───────────────────────────────────────────────────────────────
     container: {
       marginBottom: Spacing.md,
     },
     label: {
       fontSize: Typography.fontSize.sm,
-      // fontFamily: Typography.fontFamily.semibold,
+      fontFamily: Typography.fontFamily.semibold,
       color: labelColor || colors.primary,
       marginBottom: Spacing.xs,
     },
@@ -72,17 +67,16 @@ export const Picker: React.FC<PickerProps> = ({
       borderWidth: 1,
       borderColor: error ? colors.error : colors.border,
       borderRadius: BorderRadius.md,
-      backgroundColor: disabled ? colors.border + "40" : colors.surface,
+      backgroundColor: disabled ? colors.border + "20" : colors.surface,
       paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.md,
-      minHeight: 48,
-      includeFontPadding: false,
+      paddingVertical: 12,
+      minHeight: 40,
     },
     pickerText: {
       flex: 1,
       fontSize: Typography.fontSize.md,
       fontFamily: Typography.fontFamily.regular,
-      color: selectedOption ? colors.text : colors.placeholder,
+      color: selectedOption ? colors.text : colors.textSecondary + "80",
     },
     errorText: {
       fontSize: Typography.fontSize.xs,
@@ -90,172 +84,238 @@ export const Picker: React.FC<PickerProps> = ({
       color: colors.error,
       marginTop: Spacing.xs,
     },
-    // Modal styles para iOS
+
+    // ── Overlay ───────────────────────────────────────────────────────────────
     overlay: {
       flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backgroundColor: "rgba(0,0,0,0.55)",
       justifyContent: "flex-end",
+      alignItems: "center", // centra horizontalmente
     },
-    modalContent: {
-      backgroundColor: colors.surface,
-      borderTopLeftRadius: BorderRadius.xl,
-      borderTopRightRadius: BorderRadius.xl,
-    },
-    modalHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
+
+    // Wrapper que ocupa todo el ancho y añade márgenes laterales + inferior
+    sheetWrapper: {
+      width: "100%",
       alignItems: "center",
-      padding: Spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      paddingHorizontal: Spacing.md,
+      paddingBottom: Spacing.md, // espacio del borde inferior con la pantalla
     },
-    modalTitle: {
-      fontSize: Typography.fontSize.md,
+
+    // El sheet en sí — bordes redondeados en todos los lados
+    sheet: {
+      backgroundColor: colors.surface,
+      borderRadius: 28,
+      maxHeight: "75%",
+      width: "100%", // ocupa el ancho del sheetWrapper (con márgenes)
+      overflow: "hidden",
+      ...Platform.select({
+        ios: {
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.12,
+          shadowRadius: 12,
+        },
+        android: { elevation: 16 },
+      }),
+    },
+
+    // ── Drag handle ───────────────────────────────────────────────────────────
+    handleContainer: {
+      alignItems: "center",
+      paddingTop: Spacing.sm,
+      paddingBottom: Spacing.xs,
+    },
+    handle: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.border + "60",
+    },
+
+    // ── Header ────────────────────────────────────────────────────────────────
+    header: {
+      paddingHorizontal: Spacing.lg,
+      paddingTop: Spacing.xs,
+      paddingBottom: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border + "25",
+    },
+    headerLabel: {
+      fontSize: Typography.fontSize.xs,
       fontFamily: Typography.fontFamily.semibold,
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
+      marginBottom: 2,
+    },
+    headerTitle: {
+      fontSize: Typography.fontSize.lg,
+      fontFamily: Typography.fontFamily.bold,
       color: colors.text,
     },
-    modalButton: {
-      paddingHorizontal: Spacing.md,
+
+    // ── Opciones ──────────────────────────────────────────────────────────────
+    listContent: {
       paddingVertical: Spacing.xs,
-      includeFontPadding: false,
+      paddingBottom: Spacing.xl,
     },
-    modalButtonText: {
+    optionItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: 15,
+      gap: Spacing.md,
+    },
+    optionItemSelected: {},
+    optionCheck: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 2,
+      borderColor: colors.border + "60",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    optionCheckSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    optionText: {
+      flex: 1,
       fontSize: Typography.fontSize.md,
+      fontFamily: Typography.fontFamily.regular,
+      color: colors.text,
+    },
+    optionTextSelected: {
       fontFamily: Typography.fontFamily.semibold,
       color: colors.primary,
     },
-    pickerContainer: {
-      backgroundColor: colors.surface,
+    divider: {
+      height: 1,
+      backgroundColor: colors.border + "18",
+      marginHorizontal: Spacing.lg,
     },
-    // Android picker (inline)
-    androidPickerContainer: {
-      borderWidth: 1,
-      borderColor: error ? colors.error : colors.border,
+
+    // ── Cancelar ──────────────────────────────────────────────────────────────
+    cancelRow: {
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border + "25",
+    },
+    cancelBtn: {
+      alignItems: "center",
+      paddingVertical: Spacing.sm,
       borderRadius: BorderRadius.md,
-      backgroundColor: disabled ? colors.border + "40" : colors.surface,
-      overflow: "hidden",
-      paddingLeft: Spacing.sm,
-      height: 45,
-      justifyContent: "center",
+      backgroundColor: colors.border + "18",
     },
-    androidPicker: {
-      color: colors.text,
+    cancelText: {
+      fontSize: Typography.fontSize.md,
+      fontFamily: Typography.fontFamily.semibold,
+      color: colors.textSecondary,
     },
   });
 
-  // En Android, usar el picker directamente (sin modal)
-  if (Platform.OS === "android") {
-    return (
-      <View style={styles.container}>
-        <Text variant="semibold" style={styles.label}>
-          {label}
-        </Text>
-        <View style={styles.androidPickerContainer}>
-          <RNPicker
-            selectedValue={value}
-            onValueChange={(itemValue) => onSelect(itemValue as string)}
-            enabled={!disabled}
-            style={styles.androidPicker}
-            dropdownIconColor={colors.primary}
-          >
-            {/* AGREGAR ESTO: Item inicial para que no tome el primero de la lista */}
-            <RNPicker.Item
-              label={placeholder}
-              value={null} // O "" según cómo manejes tus datos
-              color={colors.text}
-            />
-            {options.map((option) => (
-              <RNPicker.Item
-                key={option.id}
-                label={option.name}
-                value={option.id}
-                color={colors.text}
-              />
-            ))}
-          </RNPicker>
-        </View>
-        {error && <Text style={styles.errorText}>{error}</Text>}
-      </View>
-    );
-  }
-
-  // En iOS, usar modal con picker tipo rueda
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
+
       <TouchableOpacity
         style={styles.pickerButton}
         onPress={() => {
-          if (!disabled) {
-            setTempValue(value);
-            setModalVisible(true);
-          }
+          if (!disabled) setModalVisible(true);
         }}
         disabled={disabled}
+        activeOpacity={0.7}
       >
         <Text style={styles.pickerText}>
           {selectedOption ? selectedOption.name : placeholder}
         </Text>
         <Icon
           name="arrow-down"
-          size={20}
+          size={18}
           color={disabled ? colors.textSecondary : colors.primary}
         />
       </TouchableOpacity>
+
       {error && <Text style={styles.errorText}>{error}</Text>}
 
-      {/* Modal para iOS */}
       <Modal
         visible={modalVisible}
         transparent
-        animationType="slide"
-        onRequestClose={handleCancel}
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
       >
-        <Pressable style={styles.overlay} onPress={handleCancel}>
-          <Pressable onPress={(e) => e.stopPropagation()}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <TouchableOpacity
-                  style={styles.modalButton}
-                  onPress={handleCancel}
-                >
-                  <Text style={styles.modalButtonText}>Cancelar</Text>
-                </TouchableOpacity>
-                <Text style={styles.modalTitle}>{label}</Text>
-                <TouchableOpacity
-                  style={styles.modalButton}
-                  onPress={handleConfirm}
-                >
-                  <Text style={styles.modalButtonText}>Listo</Text>
-                </TouchableOpacity>
+        <Pressable
+          style={styles.overlay}
+          onPress={() => setModalVisible(false)}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={styles.sheetWrapper}
+          >
+            <View style={styles.sheet}>
+              {/* Drag handle */}
+              <View style={styles.handleContainer}>
+                <View style={styles.handle} />
               </View>
 
-              <View style={styles.pickerContainer}>
-                <RNPicker
-                  selectedValue={tempValue}
-                  onValueChange={(itemValue) =>
-                    setTempValue(itemValue as string)
-                  }
-                  style={{ backgroundColor: colors.surface }}
-                  itemStyle={{
-                    color: colors.text,
-                    fontFamily: Typography.fontFamily.regular,
-                  }}
+              {/* Header */}
+              <View style={styles.header}>
+                <Text style={styles.headerLabel}>Seleccionar</Text>
+                <Text style={styles.headerTitle}>{label}</Text>
+              </View>
+
+              {/* Opciones */}
+              <FlatList
+                data={options}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+                ItemSeparatorComponent={() => <View style={styles.divider} />}
+                renderItem={({ item }) => {
+                  const isSelected = item.id === value;
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.optionItem,
+                        isSelected && styles.optionItemSelected,
+                      ]}
+                      onPress={() => handleSelect(item.id)}
+                      activeOpacity={0.5}
+                    >
+                      <View
+                        style={[
+                          styles.optionCheck,
+                          isSelected && styles.optionCheckSelected,
+                        ]}
+                      >
+                        {isSelected && (
+                          <Icon name="check" size={12} color="#FFFFFF" />
+                        )}
+                      </View>
+                      <Text
+                        style={[
+                          styles.optionText,
+                          isSelected && styles.optionTextSelected,
+                        ]}
+                      >
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+
+              {/* Cancelar */}
+              <View style={styles.cancelRow}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => setModalVisible(false)}
+                  activeOpacity={0.7}
                 >
-                  <RNPicker.Item
-                    label={placeholder}
-                    value={placeholder}
-                    color={colors.placeholder}
-                  />
-                  {options.map((option) => (
-                    <RNPicker.Item
-                      key={option.id}
-                      label={option.name}
-                      value={option.id}
-                      color={colors.text}
-                    />
-                  ))}
-                </RNPicker>
+                  <Text style={styles.cancelText}>Cancelar</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </Pressable>

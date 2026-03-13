@@ -427,7 +427,7 @@ export default function RegisterScreen() {
         buttonText="Ir al inicio"
         onButtonPress={() => {
           setShowSuccessModal(false);
-          router.replace("/(auth)/login-form");
+          router.replace("/(tabs)/(menu)");
         }}
       />
     </SafeAreaView>

@@ -25,7 +25,8 @@ export const YesNoSelector: React.FC<YesNoSelectorProps> = ({
     },
     label: {
       fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.medium,
+      fontFamily: Typography.fontFamily.semibold,
+      fontWeight: Typography.fontWeight.bold,
       color: colors.primary,
       marginBottom: Spacing.xs,
     },
@@ -35,25 +36,26 @@ export const YesNoSelector: React.FC<YesNoSelectorProps> = ({
     },
     option: {
       flex: 1,
-      paddingVertical: 10,
-      borderRadius: BorderRadius.xl,
+      paddingVertical: 12,
+      borderRadius: BorderRadius.md,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface,
       alignItems: "center",
     },
     optionSelected: {
-      backgroundColor: colors.secondary,
-      borderColor: colors.secondary,
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
     },
     optionText: {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.regular,
       color: colors.text,
+      includeFontPadding: false,
     },
     optionTextSelected: {
       fontFamily: Typography.fontFamily.semibold,
-      color: colors.primary,
+      color: colors.surface,
     },
     errorText: {
       fontSize: Typography.fontSize.xs,

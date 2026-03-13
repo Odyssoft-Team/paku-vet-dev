@@ -33,12 +33,15 @@ export const BannerCard: React.FC<BannerCardProps> = ({
     },
     title: {
       fontSize: Typography.fontSize.xxxxl,
+      fontWeight: Typography.fontWeight.bold,
       color: "#FFFFFF",
       marginBottom: Spacing.xs,
       lineHeight: 42,
     },
     subtitle: {
       fontSize: Typography.fontSize.md,
+      fontFamily: Typography.fontFamily.medium,
+      fontWeight: Typography.fontWeight.medium,
       color: "#FFFFFF",
       opacity: 0.9,
     },

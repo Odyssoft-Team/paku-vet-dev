@@ -5,16 +5,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
-  Image,
   RefreshControl,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/common/Text";
 import { Icon, IconName } from "@/components/common/Icon";
-import { ImagePickerModal } from "@/components/common/ImagePickerModal";
-import * as ImagePicker from "expo-image-picker";
+import { AvatarPicker } from "@/components/common/AvatarPicker";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
@@ -84,31 +81,38 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const { user, logout, refreshUser } = useAuthStore();
-  const { addresses } = useAddressStore();
+  const { addresses, fetchAddresses } = useAddressStore();
   const { open: openCartDrawer } = useCartDrawerStore();
   const { uploadPhoto, isUploading } = useUploadPhoto();
 
-  const [imagePickerVisible, setImagePickerVisible] = useState(false);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const defaultAddress = addresses.find((addr) => addr.is_default);
 
+  // Carga inicial — siempre traer datos frescos del servidor al entrar al perfil
+  useEffect(() => {
+    Promise.all([refreshUser(), fetchAddresses()]);
+  }, []);
+
   // Pull-to-refresh — recarga el user del backend y refresca la foto
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refreshUser();
+      await Promise.all([refreshUser(), fetchAddresses()]);
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  // Cargar foto al montar — convierte el object_name en signed read URL
+  // Cargar foto — se dispara cuando llega el user (id) o cambia su foto
   useEffect(() => {
     const loadPhoto = async () => {
-      if (!user?.profile_photo_url) return;
+      if (!user?.profile_photo_url) {
+        setAvatarUri(null);
+        return;
+      }
       try {
         setIsLoadingPhoto(true);
         const readUrl = await mediaService.getSignedReadUrl(
@@ -116,18 +120,17 @@ export default function ProfileScreen() {
         );
         setAvatarUri(readUrl);
       } catch (err) {
-        console.log("Error cargando foto de perfil:", err);
+        console.log("[Profile] Error cargando foto:", err);
       } finally {
         setIsLoadingPhoto(false);
       }
     };
 
     loadPhoto();
-  }, [user?.profile_photo_url]);
+  }, [user?.id, user?.profile_photo_url]);
 
   // Subir nueva foto y actualizar la vista
   const handlePhotoSelected = async (uri: string, mimeType: string) => {
-    setImagePickerVisible(false);
     if (!user?.id) return;
 
     try {
@@ -140,57 +143,6 @@ export default function ProfileScreen() {
       console.log("Error subiendo foto:", err);
       setAvatarUri(null);
       Alert.alert("Error", "No se pudo subir la foto. Intenta de nuevo.");
-    }
-  };
-
-  const handleTakePhoto = async () => {
-    try {
-      const { granted } = await ImagePicker.requestCameraPermissionsAsync();
-      if (!granted) {
-        Alert.alert(
-          "Permiso denegado",
-          "Necesitas dar permiso para usar la cámara",
-        );
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        await handlePhotoSelected(asset.uri, asset.mimeType ?? "image/jpeg");
-      }
-    } catch (error) {
-      console.error("Error taking photo:", error);
-    }
-  };
-
-  const handlePickImage = async () => {
-    try {
-      const { granted } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!granted) {
-        Alert.alert(
-          "Permiso denegado",
-          "Necesitas dar permiso para acceder a la galería",
-        );
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        await handlePhotoSelected(asset.uri, asset.mimeType ?? "image/jpeg");
-      }
-    } catch (error) {
-      console.error("Error picking image:", error);
     }
   };
 
@@ -237,31 +189,14 @@ export default function ProfileScreen() {
       >
         {/* ── Tarjeta de usuario ──────────────────────────────────────────── */}
         <View style={[styles.profileCard, { backgroundColor: colors.surface }]}>
-          {/* Avatar con overlay de carga/upload */}
-          <TouchableOpacity
-            style={styles.avatarWrapper}
-            onPress={() => setImagePickerVisible(true)}
-            activeOpacity={0.8}
-            disabled={isUploading || isLoadingPhoto}
-          >
-            {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.avatar} />
-            ) : (
-              <View
-                style={[
-                  styles.avatarPlaceholder,
-                  { backgroundColor: "#BFD0FE" },
-                ]}
-              >
-                <Icon name="camera" size={28} color={colors.surface} />
-              </View>
-            )}
-            {(isUploading || isLoadingPhoto) && (
-              <View style={styles.avatarOverlay}>
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              </View>
-            )}
-          </TouchableOpacity>
+          {/* Avatar */}
+          <AvatarPicker
+            imageUri={avatarUri}
+            onImageSelected={handlePhotoSelected}
+            size={72}
+            isLoading={isUploading || isLoadingPhoto}
+            containerStyle={{ marginVertical: 0 }}
+          />
 
           <View style={styles.profileInfo}>
             <Text style={[styles.userName, { color: colors.text }]}>
@@ -380,13 +315,6 @@ export default function ProfileScreen() {
           Paku v1.0.0
         </Text>
       </ScrollView>
-
-      <ImagePickerModal
-        visible={imagePickerVisible}
-        onClose={() => setImagePickerVisible(false)}
-        onTakePhoto={handleTakePhoto}
-        onPickImage={handlePickImage}
-      />
     </SafeAreaView>
   );
 }
@@ -411,27 +339,9 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     ...Shadows.sm,
   },
-  avatarWrapper: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    overflow: "hidden",
-  },
   avatar: {
     width: "100%",
     height: "100%",
-  },
-  avatarPlaceholder: {
-    width: "100%",
-    height: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    alignItems: "center",
-    justifyContent: "center",
   },
   profileInfo: {
     flex: 1,

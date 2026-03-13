@@ -3,6 +3,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { Icon } from "@/components/common/Icon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CartDrawer } from "@/components/common/CartDrawer";
+import { Typography } from "@/constants/theme";
 
 export default function MenuLayout() {
   const { colors } = useTheme();
@@ -45,6 +46,12 @@ export default function MenuLayout() {
             height: 60 + insets.bottom,
             paddingBottom: insets.bottom,
             paddingTop: 8,
+          },
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontFamily: Typography.fontFamily.semibold,
+            fontWeight: Typography.fontWeight.bold,
+            marginBottom: 4,
           },
         }}
       >

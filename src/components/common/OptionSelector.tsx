@@ -33,8 +33,9 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
       marginBottom: Spacing.md,
     },
     label: {
-      fontSize: Typography.fontSize.xs,
-      fontFamily: Typography.fontFamily.medium,
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.semibold,
+      fontWeight: Typography.fontWeight.bold,
       color: colors.primary,
       marginBottom: Spacing.xs,
     },
@@ -45,9 +46,9 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
     },
     option: {
       flex: columns === 2 ? 0.48 : 0.31,
-      paddingVertical: 9,
+      paddingVertical: 12,
       paddingHorizontal: Spacing.sm,
-      borderRadius: BorderRadius.xl,
+      borderRadius: BorderRadius.md,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface,
@@ -55,18 +56,19 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
       includeFontPadding: false,
     },
     optionSelected: {
-      backgroundColor: colors.secondary,
-      borderColor: colors.secondary,
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
     },
     optionText: {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.regular,
       color: colors.text,
       textAlign: "center",
+      includeFontPadding: false,
     },
     optionTextSelected: {
       fontFamily: Typography.fontFamily.semibold,
-      color: colors.primary,
+      color: colors.surface,
     },
     errorText: {
       fontSize: Typography.fontSize.xs,

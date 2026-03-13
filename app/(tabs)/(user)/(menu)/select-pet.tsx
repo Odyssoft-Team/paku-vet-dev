@@ -184,8 +184,9 @@ export default function SelectPetForServiceScreen() {
       padding: Spacing.md,
     },
     question: {
-      fontSize: Typography.fontSize.md,
+      fontSize: Typography.fontSize.lg,
       fontFamily: Typography.fontFamily.bold,
+      fontWeight: Typography.fontWeight.bold,
       marginBottom: Spacing.lg,
     },
     petsGrid: {

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ImageBackground,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,6 +19,7 @@ import { ImagePickerModal } from "@/components/common/ImagePickerModal";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { usePetStore } from "@/store/petStore";
+import { useUploadPhoto } from "@/hooks/useUploadPhoto";
 import { Pet } from "@/types/pet.types";
 import { SALUD_LIST } from "@/constants/appointment";
 import CardHistory from "@/components/pets/CardHistory";
@@ -32,7 +34,8 @@ export default function PetDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { colors } = useTheme();
-  const { pets } = usePetStore();
+  const { pets, updatePetPhoto } = usePetStore();
+  const { uploadPhoto, isUploading } = useUploadPhoto();
 
   const [pet, setPet] = useState<Pet | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("salud");
@@ -77,67 +80,76 @@ export default function PetDetailScreen() {
     }
   };
 
-  // Handlers de imagen
+  // Handler genérico — sube la foto a GCS y actualiza el store
+  const handlePhotoSelected = async (uri: string, mimeType: string) => {
+    if (!pet) return;
+    setImagePickerVisible(false);
+
+    // Optimistic update — muestra la foto local de inmediato
+    setPet((prev) => (prev ? { ...prev, photo_url: uri } : prev));
+
+    try {
+      const { readUrl } = await uploadPhoto("pet", pet.id, uri, mimeType);
+      // Actualizar con la signed read URL definitiva
+      setPet((prev) => (prev ? { ...prev, photo_url: readUrl } : prev));
+      updatePetPhoto(pet.id, readUrl);
+    } catch {
+      // Revertir al valor previo del store si falla
+      const original = pets.find((p) => p.id === pet.id);
+      setPet((prev) =>
+        prev ? { ...prev, photo_url: original?.photo_url } : prev,
+      );
+      Alert.alert("Error", "No se pudo actualizar la foto. Intenta de nuevo.");
+    }
+  };
+
   const handleTakePhoto = async () => {
     try {
-      const permissionResult =
-        await ImagePicker.requestCameraPermissionsAsync();
-
-      if (permissionResult.granted === false) {
+      const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+      if (!granted) {
         Alert.alert(
           "Permiso denegado",
           "Necesitas dar permiso para usar la cámara",
         );
         return;
       }
-
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets[0]) {
-        const imageUri = result.assets[0].uri;
-        // console.log("Photo taken:", imageUri);
-        // TODO: Actualizar foto de mascota en la API
-        setImagePickerVisible(false);
+        const asset = result.assets[0];
+        handlePhotoSelected(asset.uri, asset.mimeType ?? "image/jpeg");
       }
-    } catch (error) {
-      console.error("Error taking photo:", error);
+    } catch {
       Alert.alert("Error", "No se pudo tomar la foto");
     }
   };
 
   const handlePickImage = async () => {
     try {
-      const permissionResult =
+      const { granted } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (permissionResult.granted === false) {
+      if (!granted) {
         Alert.alert(
           "Permiso denegado",
           "Necesitas dar permiso para acceder a la galería",
         );
         return;
       }
-
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets[0]) {
-        const imageUri = result.assets[0].uri;
-        // console.log("Image selected:", imageUri);
-        // TODO: Actualizar foto de mascota en la API
-        setImagePickerVisible(false);
+        const asset = result.assets[0];
+        handlePhotoSelected(asset.uri, asset.mimeType ?? "image/jpeg");
       }
-    } catch (error) {
-      console.error("Error picking image:", error);
+    } catch {
       Alert.alert("Error", "No se pudo seleccionar la imagen");
     }
   };
@@ -362,9 +374,14 @@ export default function PetDetailScreen() {
         {/* Edit button */}
         <TouchableOpacity
           style={styles.editButton}
-          onPress={() => setImagePickerVisible(true)}
+          onPress={() => !isUploading && setImagePickerVisible(true)}
+          disabled={isUploading}
         >
-          <Icon name="pencil" size={24} color="#FFFFFF" />
+          {isUploading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Icon name="pencil" size={24} color="#FFFFFF" />
+          )}
         </TouchableOpacity>
       </View>
       {/* Tabs */}

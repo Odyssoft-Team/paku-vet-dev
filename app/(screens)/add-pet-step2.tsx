@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
-  TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -16,7 +16,6 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/common/Input";
 import { Button } from "@/components/common/Button";
-import { Icon } from "@/components/common/Icon";
 import { Text } from "@/components/common/Text";
 import { Picker } from "@/components/common/Picker";
 import { OptionSelector } from "@/components/common/OptionSelector";
@@ -32,6 +31,22 @@ export default function AddPetStep2Screen() {
   const { colors } = useTheme();
   const formData = useAddPetStore();
   const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Android: listener manual para evitar el hueco residual del KAV
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const {
     control,
@@ -62,53 +77,24 @@ export default function AddPetStep2Screen() {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      marginBottom: insets.bottom,
-    },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.md,
-      backgroundColor: colors.primary,
-    },
-    backButton: {
-      padding: Spacing.sm,
-    },
-    headerTitle: {
-      flex: 1,
-      fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.bold,
-      color: "#FFFFFF",
-      textAlign: "center",
-    },
-    cancelButton: {
-      padding: Spacing.sm,
-    },
-    cancelText: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.semibold,
-      color: "#FFFFFF",
     },
     scrollContent: {
       padding: Spacing.lg,
-      paddingBottom: 100,
+      paddingBottom: Spacing.lg,
     },
     sectionTitle: {
-      fontSize: Typography.fontSize.md,
+      fontSize: Typography.fontSize.lg,
       fontFamily: Typography.fontFamily.bold,
       color: colors.primary,
+      marginBottom: Spacing.sm,
     },
     sectionSubtitle: {
       fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.bold,
       color: colors.primary,
       marginBottom: Spacing.xs,
     },
     fixedButton: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
       padding: Spacing.lg,
       backgroundColor: colors.background,
       borderTopWidth: 1,
@@ -116,138 +102,109 @@ export default function AddPetStep2Screen() {
     },
   });
 
-  return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header */}
-
-      <ScreenHeader
-        title="Registro de mascota"
-        backHref="/(screens)/add-pet-step1"
-        right={{
-          type: "text",
-          label: "Cancelar",
-          onPress: handleCancel,
-        }}
-      />
-
-      {/* Formulario */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+  const formContent = (
+    <>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.sectionTitle}>Datos para un mejor cuidado</Text>
-          <Text variant="bold" style={styles.sectionSubtitle}>
-            Tamaño
-          </Text>
+        <Text style={styles.sectionTitle}>Datos para un mejor cuidado</Text>
 
-          {/* Tamaño */}
-          <Controller
-            control={control}
-            name="size"
-            render={({ field: { onChange, value } }) => (
-              <Picker
-                label="Selecciona el tamaño"
-                value={value}
-                options={[
-                  { id: "small", name: "Pequeño (hasta 10 kg)" },
-                  { id: "medium", name: "Mediano (11 a 25 kg)" },
-                  { id: "large", name: "Grande (26 a 44 kg)" },
-                  { id: "big", name: "Gigantes (+45 kg)" },
-                ]}
-                placeholder="Selecciona el tamaño"
-                onSelect={onChange}
-                error={errors.size?.message}
-              />
-            )}
-          />
+        <Controller
+          control={control}
+          name="size"
+          render={({ field: { onChange, value } }) => (
+            <Picker
+              label="Tamaño"
+              value={value}
+              options={[
+                { id: "small", name: "Pequeño (hasta 10 kg)" },
+                { id: "medium", name: "Mediano (11 a 25 kg)" },
+                { id: "large", name: "Grande (26 a 44 kg)" },
+                { id: "big", name: "Gigantes (+45 kg)" },
+              ]}
+              placeholder="Selecciona el tamaño"
+              onSelect={onChange}
+              error={errors.size?.message}
+            />
+          )}
+        />
 
-          {/* Peso */}
-          <Controller
-            control={control}
-            name="weight_kg"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Peso actual (opcional si aún no lo sabes)"
-                placeholder="Especificar peso"
-                value={value?.toString() || ""}
-                onChangeText={(text) => {
-                  const num = parseFloat(text);
-                  onChange(isNaN(num) ? undefined : num);
-                }}
-                onBlur={onBlur}
-                keyboardType="decimal-pad"
-                returnKeyType="next"
-                colorLabel={colors.primary}
-              />
-            )}
-          />
+        <Controller
+          control={control}
+          name="weight_kg"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <Input
+              label="Peso actual (opcional si aún no lo sabes)"
+              placeholder="Especificar peso"
+              value={value?.toString() || ""}
+              onChangeText={(text) => {
+                const num = parseFloat(text);
+                onChange(isNaN(num) ? undefined : num);
+              }}
+              onBlur={onBlur}
+              keyboardType="decimal-pad"
+              returnKeyType="next"
+            />
+          )}
+        />
 
-          {/* Nivel de actividad */}
-          <Controller
-            control={control}
-            name="activity_level"
-            render={({ field: { onChange, value } }) => (
-              <OptionSelector
-                label="Nivel de actividad"
-                options={[
-                  { value: "low", label: "Bajo" },
-                  { value: "medium", label: "Medio" },
-                  { value: "high", label: "Alto" },
-                ]}
-                value={value}
-                onSelect={onChange}
-                error={errors.activity_level?.message}
-                columns={3}
-              />
-            )}
-          />
+        <Controller
+          control={control}
+          name="activity_level"
+          render={({ field: { onChange, value } }) => (
+            <OptionSelector
+              label="Nivel de actividad"
+              options={[
+                { value: "low", label: "Bajo" },
+                { value: "medium", label: "Medio" },
+                { value: "high", label: "Alto" },
+              ]}
+              value={value}
+              onSelect={onChange}
+              error={errors.activity_level?.message}
+              columns={3}
+            />
+          )}
+        />
 
-          <Text style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>
-            Adaptamos el servicio a su necesidad real
-          </Text>
+        <Text style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>
+          Adaptamos el servicio a su necesidad real
+        </Text>
 
-          {/* Tipo de pelaje */}
-          <Controller
-            control={control}
-            name="coat_type"
-            render={({ field: { onChange, value } }) => (
-              <OptionSelector
-                label="Tipo de pelaje"
-                options={[
-                  { value: "short", label: "Corto" },
-                  { value: "medium", label: "Mediano" },
-                  { value: "long", label: "Largo" },
-                ]}
-                value={value}
-                onSelect={onChange}
-                error={errors.coat_type?.message}
-                columns={3}
-              />
-            )}
-          />
+        <Controller
+          control={control}
+          name="coat_type"
+          render={({ field: { onChange, value } }) => (
+            <OptionSelector
+              label="Tipo de pelaje"
+              options={[
+                { value: "short", label: "Corto" },
+                { value: "medium", label: "Mediano" },
+                { value: "long", label: "Largo" },
+              ]}
+              value={value}
+              onSelect={onChange}
+              error={errors.coat_type?.message}
+              columns={3}
+            />
+          )}
+        />
 
-          {/* Sensibilidad de piel */}
-          <Controller
-            control={control}
-            name="skin_sensitivity"
-            render={({ field: { onChange, value } }) => (
-              <YesNoSelector
-                label="¿Presenta sensibilidad de piel?"
-                value={value}
-                onSelect={onChange}
-              />
-            )}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <Controller
+          control={control}
+          name="skin_sensitivity"
+          render={({ field: { onChange, value } }) => (
+            <YesNoSelector
+              label="¿Presenta sensibilidad de piel?"
+              value={value}
+              onSelect={onChange}
+            />
+          )}
+        />
+      </ScrollView>
 
-      {/* Botón Continuar fijo */}
       <View style={styles.fixedButton}>
         <Button
           title="Continuar"
@@ -255,6 +212,25 @@ export default function AddPetStep2Screen() {
           fullWidth
         />
       </View>
+    </>
+  );
+
+  return (
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <ScreenHeader
+        title="Registro de mascota"
+        backHref="/(screens)/add-pet-step1"
+        right={{ type: "text", label: "Cancelar", onPress: handleCancel }}
+      />
+      {Platform.OS === "ios" ? (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+          {formContent}
+        </KeyboardAvoidingView>
+      ) : (
+        <View style={{ flex: 1, paddingBottom: keyboardHeight }}>
+          {formContent}
+        </View>
+      )}
     </SafeAreaView>
   );
 }

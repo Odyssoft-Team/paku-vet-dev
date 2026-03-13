@@ -9,6 +9,7 @@ interface AddPetFormData {
   birth_date: string;
   sterilized: boolean;
   photo_url?: string;
+  photo_mime_type?: string; // mimeType de la foto local (para el upload a GCS)
 
   // Paso 2
   size: "small" | "medium" | "large" | "";
@@ -48,6 +49,7 @@ const initialState = {
   birth_date: "",
   sterilized: false,
   photo_url: undefined,
+  photo_mime_type: undefined,
 
   // Paso 2
   size: "" as const,

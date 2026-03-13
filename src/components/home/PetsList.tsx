@@ -32,8 +32,9 @@ export const PetsList: React.FC<PetsListProps> = ({
       marginBottom: Spacing.sm,
     },
     title: {
-      fontSize: Typography.fontSize.md,
+      fontSize: Typography.fontSize.lg,
       fontFamily: Typography.fontFamily.bold,
+      fontWeight: Typography.fontWeight.bold,
       color: colors.primary,
     },
     scrollContainer: {

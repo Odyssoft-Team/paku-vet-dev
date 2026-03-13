@@ -48,7 +48,7 @@ export default function UserHomeScreen() {
   // ── Pull to refresh ────────────────────────────────────────────────────────
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchAddresses(), loadActiveOrder()]);
+    await Promise.all([fetchAddresses(), loadActiveOrder(), fetchPets()]);
     setRefreshing(false);
   };
 
@@ -93,7 +93,9 @@ export default function UserHomeScreen() {
       flex: 1,
     },
     sectionTitle: {
-      fontSize: Typography.fontSize.md,
+      fontSize: Typography.fontSize.lg,
+      fontFamily: Typography.fontFamily.bold,
+      fontWeight: Typography.fontWeight.bold,
       color: colors.primary,
       marginBottom: Spacing.sm,
     },
