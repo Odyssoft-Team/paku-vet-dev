@@ -234,8 +234,8 @@ export default function ProfileScreen() {
             onPress={() => router.push("/(tabs)/(user)/pets")}
           />
           <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
-          <MenuItem label="Mis reservas" icon="calendar" onPress={() => {}} />
-          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
+          {/* <MenuItem label="Mis reservas" icon="calendar" onPress={() => {}} />
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} /> */}
           <MenuItem
             label="Mis direcciones"
             icon="gps"
@@ -252,13 +252,19 @@ export default function ProfileScreen() {
             onPress={() => router.push("/(tabs)/(user)/payments")}
           />
           <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
-          <MenuItem label="Mis cupones" icon="ticket" onPress={() => {}} />
-          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
           <MenuItem
+            label="Mis tarjetas"
+            icon="wallet"
+            onPress={() => router.push("/(tabs)/(user)/my-cards")}
+          />
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
+          {/* <MenuItem label="Mis cupones" icon="ticket" onPress={() => {}} />
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} /> */}
+          {/* <MenuItem
             label="Notificaciones"
             icon="notification"
             onPress={() => router.push("/(tabs)/(user)/notifications")}
-          />
+          /> */}
         </View>
 
         {/* ── Sección: Configuración ──────────────────────────────────────── */}

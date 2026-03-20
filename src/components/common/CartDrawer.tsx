@@ -23,15 +23,21 @@ export const CartDrawer: React.FC = () => {
   const router = useRouter();
   const { colors } = useTheme();
   const { isOpen, close } = useCartDrawerStore();
-  const { serviceName, servicePrice, extraLabel, extraPrice, couponDiscount } =
-    useBookingStore();
+  const {
+    productName,
+    quotedTotal,
+    currency,
+    selectedAddonIds,
+    couponDiscount,
+    appliedCoupon,
+  } = useBookingStore();
 
   const slideAnim = useRef(new Animated.Value(DRAWER_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const hasCart = serviceName != null;
+  const hasCart = productName != null && quotedTotal != null;
 
-  const subtotal = (servicePrice ?? 0) + (extraPrice ?? 0) - couponDiscount;
+  const subtotal = (quotedTotal ?? 0) - couponDiscount;
 
   useEffect(() => {
     if (isOpen) {
@@ -238,28 +244,31 @@ export const CartDrawer: React.FC = () => {
                 <View style={s.cartContainer}>
                   {/* Servicio principal */}
                   <View style={s.itemRow}>
-                    <Text style={s.itemLabel}>PAKU Spa · {serviceName}</Text>
+                    <Text style={s.itemLabel}>PAKU Spa · {productName}</Text>
                     <Text style={s.itemPrice}>
-                      S/{servicePrice?.toFixed(2)}
+                      {currency} {quotedTotal?.toFixed(2)}
                     </Text>
                   </View>
 
-                  {/* Complemento (si existe) */}
-                  {extraLabel && extraPrice != null && (
+                  {/* Addons (si existen) */}
+                  {selectedAddonIds.length > 0 && (
                     <View style={s.itemRow}>
-                      <Text style={s.itemLabel}>{extraLabel}</Text>
-                      <Text style={s.itemPrice}>S/{extraPrice.toFixed(2)}</Text>
+                      <Text style={s.itemLabel}>
+                        {selectedAddonIds.length} adicional
+                        {selectedAddonIds.length > 1 ? "es" : ""}
+                      </Text>
+                      <Text style={s.itemPrice}>Incluido</Text>
                     </View>
                   )}
 
                   {/* Descuento cupón */}
-                  {couponDiscount > 0 && (
+                  {couponDiscount > 0 && appliedCoupon && (
                     <View style={s.itemRow}>
                       <Text style={[s.itemLabel, { color: colors.primary }]}>
-                        Cupón aplicado
+                        Cupón {appliedCoupon}
                       </Text>
                       <Text style={[s.itemPrice, { color: colors.primary }]}>
-                        -S/{couponDiscount.toFixed(2)}
+                        -{currency} {couponDiscount.toFixed(2)}
                       </Text>
                     </View>
                   )}
@@ -269,7 +278,9 @@ export const CartDrawer: React.FC = () => {
                   {/* Total */}
                   <View style={s.totalRow}>
                     <Text style={s.totalLabel}>Total</Text>
-                    <Text style={s.totalValue}>S/{subtotal.toFixed(2)}</Text>
+                    <Text style={s.totalValue}>
+                      {currency} {subtotal.toFixed(2)}
+                    </Text>
                   </View>
 
                   {/* Botón ir al carrito */}

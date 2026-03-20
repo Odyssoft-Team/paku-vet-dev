@@ -27,6 +27,51 @@ import { CreateCartItemInput } from "@/types/cart.types";
 import { cartService } from "@/api/services/cart.service";
 import { orderService } from "@/api/services/order.service";
 
+// ─── Tipos de tarjeta guardada (mock mientras llega el backend) ────────────────
+
+interface SavedCard {
+  id: string;
+  last4: string;
+  brand: "visa" | "mastercard" | "amex";
+  holderName: string;
+  expiryMonth: string;
+  expiryYear: string;
+  isDefault: boolean;
+}
+
+const SAVED_CARDS: SavedCard[] = [
+  {
+    id: "card_1",
+    last4: "4242",
+    brand: "visa",
+    holderName: "Juan Pérez",
+    expiryMonth: "08",
+    expiryYear: "27",
+    isDefault: true,
+  },
+  {
+    id: "card_2",
+    last4: "5555",
+    brand: "mastercard",
+    holderName: "Juan Pérez",
+    expiryMonth: "12",
+    expiryYear: "26",
+    isDefault: false,
+  },
+];
+
+function getBrandColor(brand: SavedCard["brand"]): string {
+  if (brand === "visa") return "#1D2AD8";
+  if (brand === "mastercard") return "#EB001B";
+  return "#007B5E";
+}
+
+function getBrandLabel(brand: SavedCard["brand"]): string {
+  if (brand === "visa") return "VISA";
+  if (brand === "mastercard") return "Mastercard";
+  return "Amex";
+}
+
 type PaymentMethod = "card" | "yape" | null;
 
 const COUPON_DISCOUNT = 20;
@@ -249,6 +294,9 @@ export default function CartScreen() {
     needsInvoice ? "si" : "no",
   );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(
+    SAVED_CARDS.find((c) => c.isDefault)?.id ?? null,
+  );
   const [successVisible, setSuccessVisible] = useState(false);
   const [paying, setPaying] = useState(false);
   const [saveCard, setSaveCard] = useState(false);
@@ -606,6 +654,68 @@ export default function CartScreen() {
       marginBottom: Spacing.sm,
       gap: Spacing.xs,
     },
+    // ── Tarjetas guardadas ────────────────────────────────────────────────
+    savedCardsLabel: {
+      fontSize: Typography.fontSize.xs,
+      fontFamily: Typography.fontFamily.semibold,
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
+      marginBottom: Spacing.sm,
+    },
+    savedCardRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.md,
+      marginBottom: Spacing.sm,
+      gap: Spacing.md,
+      backgroundColor: colors.background,
+    },
+    cardBrandBadge: {
+      width: 40,
+      height: 28,
+      borderRadius: 6,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cardBrandText: {
+      fontSize: Typography.fontSize.xs,
+      fontFamily: Typography.fontFamily.bold,
+      color: "#FFFFFF",
+      letterSpacing: 0.5,
+    },
+    cardRowNumber: {
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.semibold,
+      letterSpacing: 0.5,
+    },
+    cardRowExpiry: {
+      fontSize: Typography.fontSize.xs,
+      fontFamily: Typography.fontFamily.regular,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    addNewCardRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.md,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.md,
+      marginTop: Spacing.xs,
+      backgroundColor: colors.primary + "0D",
+      borderWidth: 1,
+      borderColor: colors.primary + "30",
+      borderStyle: "dashed",
+    },
+    addNewCardIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primary + "20",
+      alignItems: "center",
+      justifyContent: "center",
+    },
     addReservaText: {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.semibold,
@@ -728,6 +838,7 @@ export default function CartScreen() {
         <View style={[s.card, { marginBottom: Spacing.xl }]}>
           <Text style={s.paymentTitle}>Medio de pago</Text>
 
+          {/* Selector tarjeta / yape */}
           <View style={s.paymentOptions}>
             <TouchableOpacity
               style={[
@@ -738,9 +849,22 @@ export default function CartScreen() {
                 setPaymentMethod(paymentMethod === "card" ? null : "card")
               }
             >
-              <Icon name="wallet" size={18} color={colors.textSecondary} />
-              <Text style={s.payCardLabel}>
-                Agregar tarjeta{"\n"}Débito o crédito
+              <Icon
+                name="wallet"
+                size={18}
+                color={
+                  paymentMethod === "card"
+                    ? colors.primary
+                    : colors.textSecondary
+                }
+              />
+              <Text
+                style={[
+                  s.payCardLabel,
+                  paymentMethod === "card" && { color: colors.primary },
+                ]}
+              >
+                Tarjeta{"\n"}Débito / Crédito
               </Text>
             </TouchableOpacity>
 
@@ -757,172 +881,109 @@ export default function CartScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* ── Formulario Tarjeta ──────────────────────────────────────────── */}
+          {/* ── Tarjetas guardadas ──────────────────────────────────────────── */}
           {paymentMethod === "card" && (
             <View style={s.form}>
-              {/* Número */}
-              <Controller
-                control={cardControl}
-                name="cardNumber"
-                rules={{
-                  required: "Requerido",
-                  minLength: { value: 16, message: "Número inválido" },
-                }}
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    label="Número de tarjeta"
-                    placeholder="Añadir número"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    keyboardType="numeric"
-                    maxLength={19}
-                    leftIcon="wallet"
-                    error={cardErrors.cardNumber?.message}
-                    containerStyle={{ marginBottom: Spacing.xs }}
-                  />
-                )}
-              />
+              {SAVED_CARDS.length > 0 ? (
+                <>
+                  <Text style={s.savedCardsLabel}>Mis tarjetas</Text>
+                  {SAVED_CARDS.map((card) => {
+                    const isSelected = selectedCardId === card.id;
+                    return (
+                      <TouchableOpacity
+                        key={card.id}
+                        style={[
+                          s.savedCardRow,
+                          isSelected && {
+                            borderColor: colors.primary,
+                            borderWidth: 2,
+                          },
+                          !isSelected && {
+                            borderColor: colors.border + "40",
+                            borderWidth: 1,
+                          },
+                        ]}
+                        onPress={() => setSelectedCardId(card.id)}
+                        activeOpacity={0.7}
+                      >
+                        {/* Indicador de marca */}
+                        <View
+                          style={[
+                            s.cardBrandBadge,
+                            { backgroundColor: getBrandColor(card.brand) },
+                          ]}
+                        >
+                          <Text style={s.cardBrandText}>
+                            {card.brand === "mastercard"
+                              ? "MC"
+                              : getBrandLabel(card.brand).slice(0, 2)}
+                          </Text>
+                        </View>
 
-              {/* Válida hasta + CVV */}
-              <View style={s.formRow}>
-                <View style={s.halfField}>
-                  <Controller
-                    control={cardControl}
-                    name="cardExpiry"
-                    rules={{
-                      required: "Requerido",
-                      pattern: {
-                        value: /^\d{2}\/\d{2}$/,
-                        message: "Formato: 00/00",
-                      },
-                    }}
-                    render={({ field: { onChange, onBlur, value } }) => (
-                      <Input
-                        label="Válida hasta"
-                        placeholder="00/00"
-                        value={value}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        keyboardType="numeric"
-                        maxLength={5}
-                        error={cardErrors.cardExpiry?.message}
-                        containerStyle={{ marginBottom: Spacing.xs }}
-                      />
-                    )}
-                  />
-                </View>
-                <View style={s.halfField}>
-                  <Controller
-                    control={cardControl}
-                    name="cardCvv"
-                    rules={{
-                      required: "Requerido",
-                      minLength: { value: 3, message: "Mín. 3 dígitos" },
-                    }}
-                    render={({ field: { onChange, onBlur, value } }) => (
-                      <Input
-                        label="CVV"
-                        placeholder="•••"
-                        value={value}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        keyboardType="numeric"
-                        maxLength={4}
-                        type="password"
-                        error={cardErrors.cardCvv?.message}
-                        containerStyle={{ marginBottom: Spacing.xs }}
-                      />
-                    )}
-                  />
-                </View>
-              </View>
+                        {/* Info */}
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[s.cardRowNumber, { color: colors.text }]}
+                          >
+                            {getBrandLabel(card.brand)} •••• {card.last4}
+                          </Text>
+                          <Text style={s.cardRowExpiry}>
+                            Vence {card.expiryMonth}/{card.expiryYear}
+                            {card.isDefault ? "  ·  Predeterminada" : ""}
+                          </Text>
+                        </View>
 
-              {/* Nombre + Apellido */}
-              <View style={s.formRow}>
-                <View style={s.halfField}>
-                  <Controller
-                    control={cardControl}
-                    name="cardName"
-                    rules={{ required: "Requerido" }}
-                    render={({ field: { onChange, onBlur, value } }) => (
-                      <Input
-                        label="Nombre"
-                        placeholder=""
-                        value={value}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        error={cardErrors.cardName?.message}
-                        containerStyle={{ marginBottom: Spacing.xs }}
-                      />
-                    )}
-                  />
-                </View>
-                <View style={s.halfField}>
-                  <Controller
-                    control={cardControl}
-                    name="cardLastName"
-                    rules={{ required: "Requerido" }}
-                    render={({ field: { onChange, onBlur, value } }) => (
-                      <Input
-                        label="Apellido"
-                        placeholder=""
-                        value={value}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        error={cardErrors.cardLastName?.message}
-                        containerStyle={{ marginBottom: Spacing.xs }}
-                      />
-                    )}
-                  />
-                </View>
-              </View>
+                        {/* Radio */}
+                        <View
+                          style={[
+                            s.radioOuter,
+                            {
+                              borderColor: isSelected
+                                ? colors.primary
+                                : colors.border,
+                            },
+                          ]}
+                        >
+                          {isSelected && <View style={s.radioInner} />}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
 
-              {/* Correo */}
-              <Controller
-                control={cardControl}
-                name="cardEmail"
-                rules={{
-                  required: "Requerido",
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Correo inválido",
-                  },
-                }}
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    label="Correo"
-                    placeholder="Correo"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    type="email"
-                    error={cardErrors.cardEmail?.message}
-                    containerStyle={{ marginBottom: Spacing.xs }}
-                  />
-                )}
-              />
-
-              {/* Recordar tarjeta */}
-              <TouchableOpacity
-                style={s.rememberRow}
-                onPress={() => setSaveCard(!saveCard)}
-              >
-                <View
-                  style={[
-                    s.checkbox,
-                    {
-                      borderColor: saveCard ? colors.primary : colors.border,
-                      backgroundColor: saveCard
-                        ? colors.primary
-                        : "transparent",
-                    },
-                  ]}
+                  {/* Agregar nueva tarjeta */}
+                  <TouchableOpacity
+                    style={s.addNewCardRow}
+                    onPress={() => router.push("/(screens)/add-card")}
+                    activeOpacity={0.7}
+                  >
+                    <View style={s.addNewCardIcon}>
+                      <Icon name="plus" size={16} color={colors.primary} />
+                    </View>
+                    <Text style={[s.rememberLabel, { color: colors.primary }]}>
+                      Agregar nueva tarjeta
+                    </Text>
+                    <Icon name="arrow-right" size={14} color={colors.primary} />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                /* Sin tarjetas guardadas */
+                <TouchableOpacity
+                  style={s.addNewCardRow}
+                  onPress={() => router.push("/(screens)/add-card")}
+                  activeOpacity={0.7}
                 >
-                  {saveCard && <Icon name="check" size={12} color="#FFF" />}
-                </View>
-                <Text style={s.rememberLabel}>Recordar tarjeta</Text>
-              </TouchableOpacity>
+                  <View style={s.addNewCardIcon}>
+                    <Icon name="plus" size={16} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.rememberLabel, { color: colors.primary }]}>
+                      Agregar tarjeta
+                    </Text>
+                    <Text style={s.cardRowExpiry}>Débito o crédito</Text>
+                  </View>
+                  <Icon name="arrow-right" size={14} color={colors.primary} />
+                </TouchableOpacity>
+              )}
             </View>
           )}
 

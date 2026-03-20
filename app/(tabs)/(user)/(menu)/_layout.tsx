@@ -32,6 +32,7 @@ export default function MenuLayout() {
     "addresses",
     "tracking-service",
     "live-view",
+    "my-cards",
   ];
 
   return (
