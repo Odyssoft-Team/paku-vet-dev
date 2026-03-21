@@ -123,4 +123,11 @@ export const API_ENDPOINTS = {
     CONFIRM_PHOTO: "/media/confirm-profile-photo",
     SIGNED_READ: "/media/signed-read",
   },
+
+  // Tracking en tiempo real (on_the_way / in_service)
+  // Base URL: https://<dominio> — sin /paku/api/v1
+  TRACKING: {
+    CURRENT: (orderId: string) => `/tracking/orders/${orderId}/current`,
+    ROUTE: (orderId: string) => `/tracking/orders/${orderId}/route`,
+  },
 } as const;

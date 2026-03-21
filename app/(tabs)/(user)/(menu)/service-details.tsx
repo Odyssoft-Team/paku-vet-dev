@@ -4,8 +4,8 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  TouchableOpacity,
   ImageBackground,
+  ImageSourcePropType,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,11 +21,51 @@ import { StoreProduct } from "@/types/store.types";
 
 const CATEGORY_SLUG = "paku-spa";
 
-const BADGES = [
-  { text: "Recomendado", color: "#FFB6C1" },
-  { text: "Más lujo", color: "#FFB6C1" },
-  { text: "Cachorro", color: "#FFB6C1" },
+// ─── Contenido estático por posición de producto ─────────────────────────────
+// El backend entrega nombre, precio y descripción.
+// Los bullets y badge se mapean por índice (0 = clásico, 1 = premium, 2 = express).
+
+interface ServiceMeta {
+  badge: string;
+  badgeColor: string;
+  includes: string[];
+  image: ImageSourcePropType;
+}
+
+const SERVICE_META: ServiceMeta[] = [
+  {
+    badge: "Recomendado",
+    badgeColor: "#FFB6C1",
+    includes: [
+      "Limpieza completa y segura.",
+      "Cuidado básico de uñas y oídos.",
+      "Brillo y frescura inmediata.",
+    ],
+    image: require("@assets/images/profile/profile-pet.png"),
+  },
+  {
+    badge: "Pelo largo",
+    badgeColor: "#B6D4FF",
+    includes: [
+      "Hidratación profunda del pelaje.",
+      "Mascarilla nutritiva y acabado superior.",
+      "Suavidad y brillo prolongado.",
+    ],
+    image: require("@assets/images/services/banner-service-1.png"),
+  },
+  {
+    badge: "Cachorros",
+    badgeColor: "#B6FFD4",
+    includes: [
+      "Shampoo en seco hipoalergénico.",
+      "Ideal entre baños o para cachorros hasta los 4 meses.",
+      "Frescura inmediata.",
+    ],
+    image: require("@assets/images/services/banner-service-1.png"),
+  },
 ];
+
+// ─── Card de servicio ─────────────────────────────────────────────────────────
 
 const ProductCard: React.FC<{
   product: StoreProduct;
@@ -33,53 +73,76 @@ const ProductCard: React.FC<{
   onPress: () => void;
 }> = ({ product, index, onPress }) => {
   const { colors } = useTheme();
-  const badge = BADGES[index] ?? null;
+  const meta = SERVICE_META[index] ?? SERVICE_META[0];
 
   return (
-    <View style={[styles.packageCard, { backgroundColor: colors.surface }]}>
+    <View style={[styles.card, { backgroundColor: colors.surface }]}>
+      {/* Imagen de fondo con overlay suave */}
       <ImageBackground
-        source={require("@assets/images/profile/profile-pet.png")}
-        style={styles.packageBackground}
-        imageStyle={styles.packageBackgroundImage}
+        source={meta.image}
+        style={styles.cardImage}
+        imageStyle={styles.cardImageStyle}
+        resizeMode="cover"
       >
-        <View style={styles.packageOverlay} />
+        <View style={styles.imageOverlay} />
       </ImageBackground>
 
-      <View style={styles.packageContent}>
-        {/* Header */}
-        <View style={styles.packageHeader}>
-          <View style={styles.packageTitleContainer}>
-            <Text style={[styles.packageTitle, { color: colors.primary }]}>
-              {product.name}
+      {/* Contenido */}
+      <View style={styles.cardBody}>
+        {/* Título + badge */}
+        <View style={styles.titleRow}>
+          <Text style={[styles.title, { color: colors.primary }]}>
+            {product.name}
+          </Text>
+          <View style={[styles.badge, { backgroundColor: meta.badgeColor }]}>
+            <Text style={[styles.badgeText, { color: colors.primary }]}>
+              {meta.badge}
             </Text>
-            {badge && (
-              <View style={[styles.badge, { backgroundColor: badge.color }]}>
-                <Text style={[styles.badgeText, { color: colors.primary }]}>
-                  {badge.text}
-                </Text>
-              </View>
-            )}
           </View>
-          {product.description && (
-            <Text style={[styles.packageSubtitle, { color: colors.text }]}>
-              {product.description}
-            </Text>
-          )}
         </View>
 
-        {/* Price */}
-        <Text style={[styles.packagePrice, { color: colors.primary }]}>
-          {product.price
-            ? `Costo: ${product.currency} ${product.price.toFixed(2)}`
+        {/* Descripción del backend */}
+        {product.description ? (
+          <Text style={[styles.description, { color: colors.text }]}>
+            {product.description}
+          </Text>
+        ) : null}
+
+        {/* Precio */}
+        <Text style={[styles.price, { color: colors.primary }]}>
+          {product.price != null
+            ? `Costo: ${product.currency ?? "S/"} ${product.price.toFixed(2)}`
             : "Precio según cotización"}
         </Text>
 
-        {/* Button */}
-        <Button title="Elegir este spa" onPress={onPress} fullWidth />
+        {/* Incluye */}
+        <Text style={[styles.includesLabel, { color: colors.primary }]}>
+          Incluye:
+        </Text>
+        {meta.includes.map((item, i) => (
+          <View key={i} style={styles.bulletRow}>
+            <Text style={[styles.bullet, { color: colors.text }]}>•</Text>
+            <Text style={[styles.bulletText, { color: colors.text }]}>
+              {item}
+            </Text>
+          </View>
+        ))}
+
+        {/* Botón */}
+        <View style={styles.buttonWrapper}>
+          <Button
+            title="Elegir este spa"
+            onPress={onPress}
+            fullWidth
+            style={styles.button}
+          />
+        </View>
       </View>
     </View>
   );
 };
+
+// ─── Pantalla ─────────────────────────────────────────────────────────────────
 
 export default function ServiceDetailsScreen() {
   const router = useRouter();
@@ -161,9 +224,12 @@ export default function ServiceDetailsScreen() {
   );
 }
 
+// ─── Estilos ──────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: Spacing.md, paddingBottom: Spacing.xl },
+
   sectionTitle: {
     fontSize: Typography.fontSize.xl,
     fontFamily: Typography.fontFamily.bold,
@@ -175,98 +241,99 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: Spacing.lg,
   },
-  card: {
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    ...Shadows.md,
-  },
-  cardContent: { flex: 1, marginRight: Spacing.md },
-  cardTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamily.bold,
-    marginBottom: Spacing.xs,
-  },
-  cardDescription: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    marginBottom: Spacing.xs,
-    lineHeight: 18,
-  },
-  cardPrice: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.semibold,
-  },
   centered: {
     paddingVertical: Spacing.xl,
     alignItems: "center",
   },
-  serviceInfo: {
-    marginBottom: Spacing.lg,
-  },
-  serviceMainTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontFamily: Typography.fontFamily.bold,
-    marginBottom: Spacing.xs,
-  },
-  serviceDescription: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    lineHeight: 20,
-  },
-  packageCard: {
+
+  // ── Card ──────────────────────────────────────────────────────────────────
+  card: {
     borderRadius: BorderRadius.xl,
     overflow: "hidden",
     marginBottom: Spacing.lg,
     ...Shadows.md,
   },
-  packageBackground: {
+  cardImage: {
     width: "100%",
-    height: 120,
+    height: 130,
   },
-  packageBackgroundImage: {
-    opacity: 1,
+  cardImageStyle: {
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
   },
-  packageOverlay: {
+  imageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255, 255, 255, 0.5)",
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
-  packageContent: {
+  cardBody: {
     padding: Spacing.lg,
   },
-  packageHeader: {
-    marginBottom: Spacing.sm,
-  },
-  packageTitleContainer: {
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  titleRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: Spacing.xs,
-    flexWrap: "wrap",
+    gap: Spacing.sm,
   },
-  packageTitle: {
+  title: {
     fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
-    marginRight: Spacing.sm,
+    flex: 1,
   },
   badge: {
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
   },
   badgeText: {
     fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.semibold,
   },
-  packageSubtitle: {
+  description: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.regular,
+    marginBottom: Spacing.sm,
+    lineHeight: 20,
   },
-  packagePrice: {
+
+  // ── Precio ────────────────────────────────────────────────────────────────
+  price: {
     fontSize: Typography.fontSize.md,
     fontFamily: Typography.fontFamily.bold,
     marginBottom: Spacing.sm,
+  },
+
+  // ── Incluye ───────────────────────────────────────────────────────────────
+  includesLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    marginBottom: Spacing.xs,
+  },
+  bulletRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 4,
+    gap: Spacing.xs,
+  },
+  bullet: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    lineHeight: 20,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    lineHeight: 20,
+  },
+
+  // ── Botón ─────────────────────────────────────────────────────────────────
+  buttonWrapper: {
+    marginTop: Spacing.md,
+  },
+  button: {
+    borderRadius: BorderRadius.full,
   },
 });
