@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "groomer" | "user";
+export type UserRole = "admin" | "ally" | "user";
 export type UserSex = "male" | "female" | "other";
 
 export interface Address {

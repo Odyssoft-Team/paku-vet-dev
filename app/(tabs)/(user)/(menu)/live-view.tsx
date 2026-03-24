@@ -21,9 +21,8 @@ export default function LiveViewScreen() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
   const { colors } = useTheme();
 
-  const { remoteStream, connectionState, connect, disconnect } = useWebRTC(
-    orderId ?? "",
-  );
+  const { remoteStream, connectionState, retryCount, connect, disconnect } =
+    useWebRTC(orderId ?? "");
 
   // Conectar automáticamente al entrar
   useEffect(() => {
@@ -118,13 +117,25 @@ export default function LiveViewScreen() {
           />
         );
 
+      // Reconectando automáticamente con backoff
+      case "reconnecting":
+        return (
+          <StatusOverlay
+            icon={null}
+            title={`Reconectando... (${retryCount}/4)`}
+            subtitle="Se perdió la conexión. Intentando restablecer automáticamente."
+            colors={colors}
+            showSpinner
+          />
+        );
+
       // Caída temporal
       case "disconnected":
         return (
           <StatusOverlay
             icon="visualize"
             title="Conexión inestable"
-            subtitle="Reconectando automáticamente..."
+            subtitle="Detectando reconexión automática..."
             colors={colors}
             showSpinner
           />

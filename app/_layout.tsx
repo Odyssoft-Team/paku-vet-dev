@@ -79,7 +79,7 @@ export default function RootLayout() {
         case "admin":
           router.replace("/(tabs)/(admin)");
           break;
-        case "groomer":
+        case "ally":
           router.replace("/(tabs)/(groomer)");
           break;
         case "user":

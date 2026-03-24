@@ -54,6 +54,12 @@ export default function GroomerLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen
+        key={"live-stream"}
+        name={"live-stream"}
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }
