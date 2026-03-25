@@ -9,6 +9,7 @@ export interface StreamingSession {
   role: "host" | "viewer";
   ws_url: string;
   ice_servers: RTCIceServer[];
+  stream_token: string | null; // JWT firmado por el backend para autenticar en el signaling
 }
 
 export const streamingService = {

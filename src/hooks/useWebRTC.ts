@@ -9,7 +9,6 @@ import {
   streamingService,
   StreamingSession,
 } from "@/api/services/streaming.service";
-
 // ─── Configuración ────────────────────────────────────────────────────────────
 
 const GROOMER_TIMEOUT_MS = 15_000; // tiempo máx esperando que el ally aparezca
@@ -183,10 +182,19 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
     const session = sessionRef.current!;
     setConnectionState("connecting");
 
-    // PASO 2 — WebSocket
+    // PASO 2 — WebSocket con stream_token del backend
+    const streamToken = session.stream_token;
+    let wsUrl = session.ws_url;
+
+    // Opción A: token como query param
+    if (streamToken && !wsUrl.includes("token=")) {
+      const separator = wsUrl.includes("?") ? "&" : "?";
+      wsUrl = `${wsUrl}${separator}token=${streamToken}`;
+    }
+
     let ws: WebSocket;
     try {
-      ws = new WebSocket(session.ws_url);
+      ws = new WebSocket(wsUrl);
     } catch {
       scheduleReconnect();
       return;
@@ -194,7 +202,27 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
     wsRef.current = ws;
 
     // PASO 3 — RTCPeerConnection con STUN/TURN del backend
-    const pc = new RTCPeerConnection({ iceServers: session.ice_servers });
+    // react-native-webrtc crashea si cualquier servidor ICE tiene username/credential null
+    const safeIceServers = (session.ice_servers ?? []).map((srv: any) => {
+      const clean: any = { urls: srv.urls };
+      if (srv.username != null && srv.username !== "")
+        clean.username = srv.username;
+      if (srv.credential != null && srv.credential !== "")
+        clean.credential = srv.credential;
+      return clean;
+    });
+
+    console.log(
+      "[WebRTC] ICE servers saneados:",
+      JSON.stringify(safeIceServers),
+    );
+
+    const pc = new RTCPeerConnection({
+      iceServers:
+        safeIceServers.length > 0
+          ? safeIceServers
+          : [{ urls: "stun:stun.l.google.com:19302" }],
+    });
     pcRef.current = pc;
 
     // ── Eventos del PeerConnection ─────────────────────────────────────────
@@ -266,6 +294,12 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
     ws.onopen = () => {
       if (isCleanedUpRef.current) return;
       console.log("[WebRTC] WS conectado");
+
+      // Opción B: enviar token como primer mensaje
+      if (streamToken) {
+        ws.send(JSON.stringify({ type: "auth", token: streamToken }));
+        console.log("[WebRTC] Token enviado como primer mensaje");
+      }
 
       // Timeout: si el groomer no aparece en GROOMER_TIMEOUT_MS → groomer_absent
       // Solo activar si es la primera vez (no en reconexiones)

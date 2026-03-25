@@ -134,21 +134,33 @@ export function useGroomerStreaming(
     const session = sessionRef.current!;
     setStreamState("connecting");
 
-    // PASO 2 — WebSocket
-    let ws: WebSocket;
-    try {
-      ws = new WebSocket(session.ws_url);
-    } catch {
-      scheduleReconnect();
-      return;
-    }
-    wsRef.current = ws;
+    // PASO 2 — RTCPeerConnection (ANTES del WS para que el offer incluya los tracks)
+    // react-native-webrtc crashea si cualquier servidor ICE tiene username/credential null
+    // Solución: remover esas keys si son null en lugar de filtrar el servidor entero
+    const safeIceServers = (session.ice_servers ?? []).map((srv: any) => {
+      const clean: any = { urls: srv.urls };
+      if (srv.username != null && srv.username !== "")
+        clean.username = srv.username;
+      if (srv.credential != null && srv.credential !== "")
+        clean.credential = srv.credential;
+      return clean;
+    });
 
-    // PASO 3 — RTCPeerConnection
-    const pc = new RTCPeerConnection({ iceServers: session.ice_servers });
+    console.log(
+      "[Groomer] ICE servers saneados:",
+      JSON.stringify(safeIceServers),
+    );
+
+    const pc = new RTCPeerConnection({
+      iceServers:
+        safeIceServers.length > 0
+          ? safeIceServers
+          : [{ urls: "stun:stun.l.google.com:19302" }],
+    });
     pcRef.current = pc;
 
-    // Agregar todos los tracks del stream local
+    // Agregar tracks al PC ANTES de abrir el WS
+    // Así cuando se cree el offer ya tendrá los tracks incluidos
     const stream = localStreamRef.current;
     if (!stream) {
       setStreamState("failed");
@@ -157,6 +169,35 @@ export function useGroomerStreaming(
     stream.getTracks().forEach((track: any) => {
       pc.addTrack(track, stream);
     });
+
+    // PASO 3 — WebSocket con autenticación
+    // El signaling server requiere el stream_token.
+    // Estrategia: intentar query param primero, y también enviarlo como primer mensaje
+    // al abrir el WS (el signaling acepta cualquiera de las dos).
+    const streamToken = session.stream_token;
+    let wsUrl = session.ws_url;
+
+    // Opción A: token como query param (si el signaling lo acepta así)
+    if (streamToken && !wsUrl.includes("token=")) {
+      const separator = wsUrl.includes("?") ? "&" : "?";
+      wsUrl = `${wsUrl}${separator}token=${streamToken}`;
+    }
+
+    console.log("[Groomer] Conectando WS — tiene stream_token:", !!streamToken);
+    console.log("[Groomer] ws_url original:", session.ws_url);
+    console.log(
+      "[Groomer] ws_url final:",
+      wsUrl.replace(streamToken ?? "", "***TOKEN***"),
+    );
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch (e: any) {
+      console.error("[Groomer] Error creando WS:", e?.message);
+      scheduleReconnect();
+      return;
+    }
+    wsRef.current = ws;
 
     // ── Eventos PC ────────────────────────────────────────────────────────
 
@@ -191,30 +232,28 @@ export function useGroomerStreaming(
       }
     });
 
-    // Renegociación — si se agrega/cambia track (ej: flip cámara)
-    pc.addEventListener("negotiationneeded", async () => {
-      if (isStoppedRef.current) return;
-      // Re-enviar offer con el nuevo estado
-      try {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "offer", sdp: pc.localDescription }));
-        }
-      } catch (err) {
-        console.error("[Groomer] Error en renegociación:", err);
-      }
-    });
-
     // ── Eventos WS ────────────────────────────────────────────────────────
 
     ws.onopen = async () => {
       if (isStoppedRef.current) return;
+      console.log("[Groomer] WS conectado");
+
+      // Opción B: enviar token como primer mensaje (el signaling puede requerir esto)
+      if (streamToken) {
+        ws.send(JSON.stringify({ type: "auth", token: streamToken }));
+        console.log("[Groomer] Token enviado como primer mensaje");
+      }
+
+      console.log("[Groomer] Creando offer...");
       try {
-        // Crear y enviar offer
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-        ws.send(JSON.stringify({ type: "offer", sdp: pc.localDescription }));
+        const payload = JSON.stringify({
+          type: "offer",
+          sdp: pc.localDescription,
+        });
+        console.log("[Groomer] Enviando offer, tamaño SDP:", payload.length);
+        ws.send(payload);
       } catch (err) {
         console.error("[Groomer] Error creando offer:", err);
         scheduleReconnect();
@@ -230,11 +269,15 @@ export function useGroomerStreaming(
         return;
       }
 
+      console.log("[Groomer] Mensaje WS recibido — type:", msg.type);
+
       try {
         // Answer del viewer
         if (msg.type === "answer") {
+          console.log("[Groomer] Answer recibido — aplicando...");
           const sdp = msg.sdp ?? msg;
           await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+          console.log("[Groomer] Answer aplicado OK");
         }
 
         // ICE candidate del viewer — formato doc
@@ -251,11 +294,19 @@ export function useGroomerStreaming(
       }
     };
 
-    ws.onerror = () => {
-      /* onclose siempre sigue */
+    ws.onerror = (err: any) => {
+      console.error("[Groomer] WS error:", JSON.stringify(err?.message ?? err));
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event: any) => {
+      console.warn(
+        "[Groomer] WS cerrado — code:",
+        event?.code,
+        "reason:",
+        event?.reason,
+        "wasClean:",
+        event?.wasClean,
+      );
       if (isStoppedRef.current) return;
       sessionRef.current = null;
       scheduleReconnect();
