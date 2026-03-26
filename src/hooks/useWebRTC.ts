@@ -93,7 +93,7 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
     if (wsRef.current) {
       wsRef.current.onclose = null; // evitar que dispare reconexión doble
       wsRef.current.onerror = null;
-      wsRef.current.close();
+      wsRef.current.close(1000, "closing"); // cierre limpio
       wsRef.current = null;
     }
     setRemoteStream(null);
@@ -162,34 +162,31 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
     closePeerAndSocket();
 
     // PASO 1 — Sesión del backend
-    // Si ya tenemos sesión (reintento por caída de WS), reutilizarla
-    if (!sessionRef.current) {
-      setConnectionState("fetching_session");
-      try {
-        sessionRef.current = await streamingService.getSession(orderId);
-      } catch (error: any) {
-        if (isCleanedUpRef.current) return;
-        if (error?.response?.status === 409) {
-          setConnectionState("order_not_active");
-          return; // no reintentar — la orden no está activa
-        }
-        scheduleReconnect();
+    // Siempre pedir sesión nueva — el stream_token expira en 5 min
+    setConnectionState("fetching_session");
+    try {
+      sessionRef.current = await streamingService.getSession(orderId);
+    } catch (error: any) {
+      if (isCleanedUpRef.current) return;
+      if (error?.response?.status === 409) {
+        setConnectionState("order_not_active");
         return;
       }
+      scheduleReconnect();
+      return;
     }
 
     if (isCleanedUpRef.current) return;
     const session = sessionRef.current!;
     setConnectionState("connecting");
 
-    // PASO 2 — WebSocket con stream_token del backend
+    // PASO 2 — WebSocket con nueva ruta del signaling: /ws/realtime?token=<JWT>
     const streamToken = session.stream_token;
     let wsUrl = session.ws_url;
 
-    // Opción A: token como query param
-    if (streamToken && !wsUrl.includes("token=")) {
-      const separator = wsUrl.includes("?") ? "&" : "?";
-      wsUrl = `${wsUrl}${separator}token=${streamToken}`;
+    if (streamToken) {
+      const baseUrl = wsUrl.replace(/\/ws.*$/, "");
+      wsUrl = `${baseUrl}/ws/realtime?token=${streamToken}`;
     }
 
     let ws: WebSocket;
@@ -222,7 +219,8 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
         safeIceServers.length > 0
           ? safeIceServers
           : [{ urls: "stun:stun.l.google.com:19302" }],
-    });
+      // iceTransportPolicy: "relay", // activar cuando el TURN esté estable en OCI
+    } as any);
     pcRef.current = pc;
 
     // ── Eventos del PeerConnection ─────────────────────────────────────────
@@ -264,8 +262,14 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
           break;
 
         case "disconnected":
-          // Puede ser transitorio (ej. cambio de red) — esperar antes de actuar
           setConnectionState("disconnected");
+          // ICE Restart — reabrir puertos sin reconectar todo el WS
+          console.log("[WebRTC] ICE disconnected — intentando ICE restart...");
+          try {
+            pc.restartIce();
+          } catch (err) {
+            console.warn("[WebRTC] restartIce no soportado:", err);
+          }
           break;
 
         case "failed":
@@ -295,14 +299,6 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
       if (isCleanedUpRef.current) return;
       console.log("[WebRTC] WS conectado");
 
-      // Opción B: enviar token como primer mensaje
-      if (streamToken) {
-        ws.send(JSON.stringify({ type: "auth", token: streamToken }));
-        console.log("[WebRTC] Token enviado como primer mensaje");
-      }
-
-      // Timeout: si el groomer no aparece en GROOMER_TIMEOUT_MS → groomer_absent
-      // Solo activar si es la primera vez (no en reconexiones)
       if (retryCountRef.current === 0) {
         groomerTimerRef.current = setTimeout(() => {
           if (isCleanedUpRef.current || isConnectedRef.current) return;

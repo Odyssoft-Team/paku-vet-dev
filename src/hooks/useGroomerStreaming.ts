@@ -71,7 +71,7 @@ export function useGroomerStreaming(
     if (wsRef.current) {
       wsRef.current.onclose = null;
       wsRef.current.onerror = null;
-      wsRef.current.close();
+      wsRef.current.close(1000, "closing"); // cierre limpio code 1000
       wsRef.current = null;
     }
   }, []);
@@ -112,22 +112,25 @@ export function useGroomerStreaming(
     closeWsAndPc();
 
     // PASO 1 — Sesión del backend
-    if (!sessionRef.current) {
-      setStreamState("fetching_session");
-      try {
-        sessionRef.current = await streamingService.getSession(orderId);
-        if (sessionRef.current.role !== "host") {
-          console.error(
-            "[Groomer] El backend asignó rol viewer — esperando host",
-          );
-          setStreamState("failed");
-          return;
-        }
-      } catch (err: any) {
-        if (isStoppedRef.current) return;
-        scheduleReconnect();
+    // Siempre pedir sesión nueva — el stream_token expira en 5 min
+    setStreamState("fetching_session");
+    try {
+      sessionRef.current = await streamingService.getSession(orderId);
+      if (sessionRef.current.role !== "host") {
+        console.error(
+          "[Groomer] El backend asignó rol viewer — esperando host",
+        );
+        setStreamState("failed");
         return;
       }
+      console.log(
+        "[Groomer] Sesión obtenida, token:",
+        !!sessionRef.current.stream_token,
+      );
+    } catch (err: any) {
+      if (isStoppedRef.current) return;
+      scheduleReconnect();
+      return;
     }
 
     if (isStoppedRef.current) return;
@@ -156,7 +159,8 @@ export function useGroomerStreaming(
         safeIceServers.length > 0
           ? safeIceServers
           : [{ urls: "stun:stun.l.google.com:19302" }],
-    });
+      // iceTransportPolicy: "relay", // activar cuando el TURN esté estable en OCI
+    } as any);
     pcRef.current = pc;
 
     // Agregar tracks al PC ANTES de abrir el WS
@@ -171,24 +175,18 @@ export function useGroomerStreaming(
     });
 
     // PASO 3 — WebSocket con autenticación
-    // El signaling server requiere el stream_token.
-    // Estrategia: intentar query param primero, y también enviarlo como primer mensaje
-    // al abrir el WS (el signaling acepta cualquiera de las dos).
+    // El signaling cambió la ruta a wss://stream.dev-qa.site/ws/realtime?token=<JWT>
+    // El token va como query param — el room está en los claims del JWT
     const streamToken = session.stream_token;
     let wsUrl = session.ws_url;
 
-    // Opción A: token como query param (si el signaling lo acepta así)
-    if (streamToken && !wsUrl.includes("token=")) {
-      const separator = wsUrl.includes("?") ? "&" : "?";
-      wsUrl = `${wsUrl}${separator}token=${streamToken}`;
+    if (streamToken) {
+      // Construir URL correcta: extraer host base y usar /ws/realtime
+      const baseUrl = wsUrl.replace(/\/ws.*$/, "");
+      wsUrl = `${baseUrl}/ws/realtime?token=${streamToken}`;
     }
 
-    console.log("[Groomer] Conectando WS — tiene stream_token:", !!streamToken);
-    console.log("[Groomer] ws_url original:", session.ws_url);
-    console.log(
-      "[Groomer] ws_url final:",
-      wsUrl.replace(streamToken ?? "", "***TOKEN***"),
-    );
+    console.log("[Groomer] WS URL:", wsUrl.split("token=")[0] + "token=***");
     let ws: WebSocket;
     try {
       ws = new WebSocket(wsUrl);
@@ -224,6 +222,26 @@ export function useGroomerStreaming(
           break;
         case "disconnected":
           setStreamState("reconnecting");
+          // ICE Restart — reabrir puertos sin reconectar todo el WS
+          console.log("[Groomer] ICE disconnected — intentando ICE restart...");
+          try {
+            pc.restartIce();
+            (pc.createOffer({ iceRestart: true } as any) as Promise<any>)
+              .then((offer: any) => pc.setLocalDescription(offer))
+              .then(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                  ws.send(
+                    JSON.stringify({ type: "offer", sdp: pc.localDescription }),
+                  );
+                  console.log("[Groomer] ICE restart offer enviado");
+                }
+              })
+              .catch((err: any) =>
+                console.warn("[Groomer] ICE restart falló:", err),
+              );
+          } catch (err) {
+            console.warn("[Groomer] restartIce no soportado:", err);
+          }
           break;
         case "failed":
           sessionRef.current = null;
@@ -236,15 +254,7 @@ export function useGroomerStreaming(
 
     ws.onopen = async () => {
       if (isStoppedRef.current) return;
-      console.log("[Groomer] WS conectado");
-
-      // Opción B: enviar token como primer mensaje (el signaling puede requerir esto)
-      if (streamToken) {
-        ws.send(JSON.stringify({ type: "auth", token: streamToken }));
-        console.log("[Groomer] Token enviado como primer mensaje");
-      }
-
-      console.log("[Groomer] Creando offer...");
+      console.log("[Groomer] WS conectado — creando offer...");
       try {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -270,6 +280,14 @@ export function useGroomerStreaming(
       }
 
       console.log("[Groomer] Mensaje WS recibido — type:", msg.type);
+
+      // Responder pong al ping del signaling para mantener la conexión viva
+      if (msg.type === "ping") {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "pong" }));
+        }
+        return;
+      }
 
       try {
         // Answer del viewer
