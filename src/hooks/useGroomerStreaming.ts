@@ -268,26 +268,14 @@ export function useGroomerStreaming(
           break;
         case "disconnected":
           setStreamState("reconnecting");
-          // ICE Restart — reabrir puertos sin reconectar todo el WS
-          console.log("[Groomer] ICE disconnected — intentando ICE restart...");
-          try {
-            pc.restartIce();
-            (pc.createOffer({ iceRestart: true } as any) as Promise<any>)
-              .then((offer: any) => pc.setLocalDescription(offer))
-              .then(() => {
-                if (ws.readyState === WebSocket.OPEN) {
-                  ws.send(
-                    JSON.stringify({ type: "offer", sdp: pc.localDescription }),
-                  );
-                  console.log("[Groomer] ICE restart offer enviado");
-                }
-              })
-              .catch((err: any) =>
-                console.warn("[Groomer] ICE restart falló:", err),
-              );
-          } catch (err) {
-            console.warn("[Groomer] restartIce no soportado:", err);
-          }
+          // En lugar de ICE restart (que reutiliza credenciales viejas del TURN),
+          // hacer reconexión completa pidiendo nueva sesión con credenciales frescas.
+          // Esto evita los intentos con username=<> en coturn.
+          console.log(
+            "[Groomer] ICE disconnected — reconexión completa con nueva sesión...",
+          );
+          sessionRef.current = null; // forzar nueva sesión y nuevas credenciales TURN
+          scheduleReconnect();
           break;
         case "failed":
           sessionRef.current = null;
@@ -331,6 +319,24 @@ export function useGroomerStreaming(
       if (msg.type === "ping") {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: "pong" }));
+        }
+        return;
+      }
+
+      // Nuevo viewer entró a la sala — reenviar offer fresco para que pueda conectar
+      if (msg.type === "viewer_joined") {
+        console.log("[Groomer] viewer_joined — reenviando offer fresco...");
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(
+              JSON.stringify({ type: "offer", sdp: pc.localDescription }),
+            );
+            console.log("[Groomer] Offer reenviado al nuevo viewer");
+          }
+        } catch (err) {
+          console.error("[Groomer] Error reenviando offer:", err);
         }
         return;
       }

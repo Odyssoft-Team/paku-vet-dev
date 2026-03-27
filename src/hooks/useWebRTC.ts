@@ -263,13 +263,10 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
 
         case "disconnected":
           setConnectionState("disconnected");
-          // ICE Restart — reabrir puertos sin reconectar todo el WS
-          console.log("[WebRTC] ICE disconnected — intentando ICE restart...");
-          try {
-            pc.restartIce();
-          } catch (err) {
-            console.warn("[WebRTC] restartIce no soportado:", err);
-          }
+          // Reconexión completa con nueva sesión para obtener credenciales TURN frescas
+          console.log("[WebRTC] ICE disconnected — reconexión completa...");
+          sessionRef.current = null;
+          scheduleReconnect();
           break;
 
         case "failed":
@@ -336,10 +333,14 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
 
       // Señalización WebRTC
       try {
-        // Offer del ally (host) → crear y enviar answer
+        // Offer del ally (host) — puede llegar más de uno:
+        // 1. Offer buffered al conectar (sala ya activa)
+        // 2. Offer nuevo tras viewer_joined (groomer reenvía para viewers tardíos)
+        // Ambos se tratan igual — siempre responder con answer
         if (msg.type === "offer") {
-          // el SDP puede venir como msg.sdp.sdp o directo en msg.sdp
+          console.log("[WebRTC] Offer recibido — creando answer...");
           const sdpPayload = msg.sdp ?? msg;
+          // Si ya hay remote description, igual procesamos el nuevo offer
           await pc.setRemoteDescription(new RTCSessionDescription(sdpPayload));
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
@@ -347,6 +348,7 @@ export const useWebRTC = (orderId: string): UseWebRTCResult => {
             ws.send(
               JSON.stringify({ type: "answer", sdp: pc.localDescription }),
             );
+            console.log("[WebRTC] Answer enviado");
           }
         }
 
