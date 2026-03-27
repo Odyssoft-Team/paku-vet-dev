@@ -16,7 +16,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { Spacing, Typography, BorderRadius } from "@/constants/theme";
 import { useWebRTC } from "@/hooks/useWebRTC";
 
-export default function LiveViewScreen() {
+function LiveViewScreen() {
   const router = useRouter();
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
   const { colors } = useTheme();
@@ -317,3 +317,10 @@ const styles = StyleSheet.create({
     minWidth: 160,
   },
 });
+
+// Wrapper con key=ts para forzar remount completo cada vez que el usuario entra
+// Resuelve el problema de refs sucios del intento anterior
+export default function LiveViewWrapper() {
+  const { ts } = useLocalSearchParams<{ ts: string }>();
+  return <LiveViewScreen key={ts ?? "default"} />;
+}

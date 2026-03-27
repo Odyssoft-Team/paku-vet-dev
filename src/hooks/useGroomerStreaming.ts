@@ -60,7 +60,10 @@ export function useGroomerStreaming(
   const localStreamRef = useRef<MediaStream | null>(null);
   const retryCountRef = useRef(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isStoppedRef = useRef(false); // true = groomer detuvo manualmente
+  const isStoppedRef = useRef(false);
+  const processingAnswerRef = useRef(false);
+  const iceConnectedAtRef = useRef<number | null>(null);
+  const viewerLeftRef = useRef(false); // true = el viewer salió voluntariamente
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -149,6 +152,63 @@ export function useGroomerStreaming(
       if (!isStoppedRef.current) setStreamState("failed");
     }
   }, [isFrontCamera]);
+
+  // ── Reinicializar solo el PC (mantener WS abierto) ────────────────────────
+  // Se usa cuando el viewer sale y queremos quedar listos para el próximo
+
+  const _reinitPC = useCallback((ws: WebSocket, stream: MediaStream) => {
+    if (isStoppedRef.current) return;
+
+    const safeIceServers = (sessionRef.current?.ice_servers ?? []).map(
+      (srv: any) => {
+        const clean: any = { urls: srv.urls };
+        if (srv.username != null && srv.username !== "")
+          clean.username = srv.username;
+        if (srv.credential != null && srv.credential !== "")
+          clean.credential = srv.credential;
+        return clean;
+      },
+    );
+
+    const pc = new RTCPeerConnection({
+      iceServers:
+        safeIceServers.length > 0
+          ? safeIceServers
+          : [{ urls: "stun:stun.l.google.com:19302" }],
+    } as any);
+    pcRef.current = pc;
+
+    stream.getTracks().forEach((track: any) => pc.addTrack(track, stream));
+
+    pc.addEventListener("icecandidate", (event: any) => {
+      if (isStoppedRef.current || !event.candidate) return;
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(
+          JSON.stringify({ type: "ice-candidate", candidate: event.candidate }),
+        );
+      }
+    });
+
+    // Enviar offer fresco para el próximo viewer
+    pc.createOffer()
+      .then((offer: any) => {
+        return pc.setLocalDescription(offer).then(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(
+              JSON.stringify({ type: "offer", sdp: pc.localDescription }),
+            );
+            console.log(
+              "[Groomer] Nuevo PC listo — offer enviado para próximo viewer",
+            );
+          }
+        });
+      })
+      .catch((err: any) => {
+        console.error("[Groomer] Error en _reinitPC:", err);
+      });
+
+    setStreamState("live");
+  }, []);
 
   // ── Lógica principal de conexión ──────────────────────────────────────────
 
@@ -265,21 +325,58 @@ export function useGroomerStreaming(
           setStreamState("live");
           retryCountRef.current = 0;
           setRetryCount(0);
+          iceConnectedAtRef.current = Date.now();
+          processingAnswerRef.current = false;
           break;
-        case "disconnected":
-          setStreamState("reconnecting");
-          // En lugar de ICE restart (que reutiliza credenciales viejas del TURN),
-          // hacer reconexión completa pidiendo nueva sesión con credenciales frescas.
-          // Esto evita los intentos con username=<> en coturn.
+
+        case "disconnected": {
+          const connectedDuration = iceConnectedAtRef.current
+            ? Date.now() - iceConnectedAtRef.current
+            : 0;
           console.log(
-            "[Groomer] ICE disconnected — reconexión completa con nueva sesión...",
+            `[Groomer] ICE disconnected — duración: ${connectedDuration}ms`,
           );
-          sessionRef.current = null; // forzar nueva sesión y nuevas credenciales TURN
-          scheduleReconnect();
+
+          if (connectedDuration > 5000) {
+            // Viewer salió voluntariamente → marcar y mantener sala activa
+            console.log("[Groomer] Viewer salió — manteniendo sala activa...");
+            setStreamState("live");
+            iceConnectedAtRef.current = null;
+            viewerLeftRef.current = true; // marcar que fue el viewer quien salió
+          } else {
+            console.log("[Groomer] Posible fallo de red — esperando failed...");
+            setStreamState("reconnecting");
+            viewerLeftRef.current = false;
+          }
           break;
+        }
+
         case "failed":
-          sessionRef.current = null;
-          scheduleReconnect();
+          processingAnswerRef.current = false;
+
+          if (viewerLeftRef.current) {
+            // El viewer salió → el TURN libera la allocation y da failed
+            // Esto es esperado — NO reconectar, el WS sigue abierto
+            // El signaling enviará viewer_joined cuando llegue el próximo viewer
+            console.log(
+              "[Groomer] ICE failed esperado (viewer salió) — sala sigue activa",
+            );
+            viewerLeftRef.current = false;
+            iceConnectedAtRef.current = null;
+            // Solo cerrar el PC viejo, mantener el WS
+            if (pcRef.current) {
+              pcRef.current.close();
+              pcRef.current = null;
+            }
+            // Crear nuevo PC listo para el próximo viewer
+            _reinitPC(ws, stream);
+          } else {
+            // Fallo real de red → reconectar todo
+            console.log("[Groomer] ICE failed — reconexión completa");
+            sessionRef.current = null;
+            iceConnectedAtRef.current = null;
+            scheduleReconnect();
+          }
           break;
       }
     });
@@ -325,6 +422,29 @@ export function useGroomerStreaming(
 
       // Nuevo viewer entró a la sala — reenviar offer fresco para que pueda conectar
       if (msg.type === "viewer_joined") {
+        const currentIceState = (pc as any).iceConnectionState;
+        const currentSigState = (pc as any).signalingState;
+        console.log(
+          "[Groomer] viewer_joined — ICE:",
+          currentIceState,
+          "signaling:",
+          currentSigState,
+        );
+
+        // Si ya hay conexión activa y estable, ignorar — el viewer tardío
+        // recibirá el offer buffered del signaling directamente
+        if (
+          currentIceState === "connected" ||
+          currentIceState === "completed"
+        ) {
+          console.log(
+            "[Groomer] viewer_joined ignorado — ya hay conexión activa",
+          );
+          return;
+        }
+
+        // Si el ICE está disconnected (viewer anterior salió) o new/checking,
+        // reenviar offer fresco para el nuevo viewer
         console.log("[Groomer] viewer_joined — reenviando offer fresco...");
         try {
           const offer = await pc.createOffer();
@@ -342,12 +462,31 @@ export function useGroomerStreaming(
       }
 
       try {
-        // Answer del viewer
+        // Answer del viewer — con mutex para evitar race condition de answers simultáneos
         if (msg.type === "answer") {
+          // Si ya estamos procesando un answer, descartar este
+          if (processingAnswerRef.current) {
+            console.log("[Groomer] Answer descartado — ya procesando otro");
+            return;
+          }
+          // Solo aceptar si el PC está esperando un answer
+          const signalingState = (pc as any).signalingState;
+          if (signalingState !== "have-local-offer") {
+            console.log(
+              "[Groomer] Answer ignorado — PC en estado:",
+              signalingState,
+            );
+            return;
+          }
+          processingAnswerRef.current = true;
           console.log("[Groomer] Answer recibido — aplicando...");
-          const sdp = msg.sdp ?? msg;
-          await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-          console.log("[Groomer] Answer aplicado OK");
+          try {
+            const sdp = msg.sdp ?? msg;
+            await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+            console.log("[Groomer] Answer aplicado OK");
+          } finally {
+            processingAnswerRef.current = false;
+          }
         }
 
         // ICE candidate del viewer — formato doc

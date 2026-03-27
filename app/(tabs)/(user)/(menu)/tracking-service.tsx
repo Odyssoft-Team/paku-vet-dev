@@ -71,7 +71,7 @@ const PulsingPin: React.FC = () => {
           borderColor: "#FFFFFF",
         }}
       >
-        <Text style={{ fontSize: 16 }}>🚗</Text>
+        <Text style={{ fontSize: 16 }}>🐾</Text>
       </View>
     </View>
   );
@@ -570,7 +570,7 @@ export default function TrackingServiceScreen() {
             onPress={() =>
               router.push({
                 pathname: "/(tabs)/(user)/live-view",
-                params: { orderId: order.id },
+                params: { orderId: order.id, ts: Date.now() },
               })
             }
           >

@@ -14,7 +14,6 @@ import { Button } from "@/components/common/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
 import { useAvailabilityStore } from "@/store/availabilityStore";
-import { useSpaServices } from "@/hooks/useSpaceServices";
 import { useBookingStore } from "@/store/bookingStore";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 
@@ -38,8 +37,7 @@ export default function SelectDateScreen() {
   const router = useRouter();
   const { colors } = useTheme();
 
-  const { data: packages } = useSpaServices();
-  const { serviceCode, setDate, setTime } = useBookingStore();
+  const { categorySlug, productName, setDate, setTime } = useBookingStore();
 
   const { availability, isLoading, fetchAvailability } = useAvailabilityStore();
 
@@ -47,7 +45,7 @@ export default function SelectDateScreen() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // Encontrar el servicio seleccionado desde el store
-  const selectedService = packages?.find((pkg) => pkg.code === serviceCode);
+  // categorySlug y productName vienen del bookingStore
 
   useEffect(() => {
     loadAvailability();
@@ -410,7 +408,7 @@ export default function SelectDateScreen() {
         <View style={styles.titleContainer}>
           <Text style={styles.title}>Selecciona tu fecha</Text>
           <Text style={styles.serviceTitle}>
-            PAKU Spa - {selectedService?.name || "Clásico"}
+            PAKU Spa - {productName ?? "Clásico"}
           </Text>
         </View>
 

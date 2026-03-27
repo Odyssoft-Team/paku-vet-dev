@@ -26,8 +26,9 @@ import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { CreateCartItemInput } from "@/types/cart.types";
 import { cartService } from "@/api/services/cart.service";
 import { orderService } from "@/api/services/order.service";
+import { useStoreProduct } from "@/hooks/useStoreProduct";
 
-// ─── Tipos de tarjeta guardada (mock mientras llega el backend) ────────────────
+// ─── Tipos ────────────────────────────────────────────────────────────────────
 
 interface SavedCard {
   id: string;
@@ -73,7 +74,6 @@ function getBrandLabel(brand: SavedCard["brand"]): string {
 }
 
 type PaymentMethod = "card" | "yape" | null;
-
 const COUPON_DISCOUNT = 20;
 
 type CardFormValues = {
@@ -90,7 +90,7 @@ type YapeFormValues = {
   yapeCode: string;
 };
 
-// ─── Coupon Modal ──────────────────────────────────────────────────────────────
+// ─── Coupon Modal ─────────────────────────────────────────────────────────────
 
 const CouponModal = ({ visible, onClose, onApply, colors }: any) => {
   const [code, setCode] = useState("");
@@ -114,7 +114,6 @@ const CouponModal = ({ visible, onClose, onApply, colors }: any) => {
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
         >
           <TouchableOpacity activeOpacity={1}>
             <View
@@ -125,46 +124,36 @@ const CouponModal = ({ visible, onClose, onApply, colors }: any) => {
                 width: 320,
               }}
             >
-              <View
+              <Text
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
+                  fontFamily: Typography.fontFamily.bold,
+                  fontSize: Typography.fontSize.md,
+                  color: colors.primary,
                   marginBottom: Spacing.md,
-                  gap: Spacing.md,
                 }}
               >
-                <Text
-                  style={{
-                    fontFamily: Typography.fontFamily.semibold,
-                    fontSize: Typography.fontSize.md,
-                    color: colors.primary,
-                    flex: 1,
-                  }}
-                >
-                  Agregar cupón
-                </Text>
-                <TextInput
-                  style={{
-                    flex: 1,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: BorderRadius.md,
-                    paddingHorizontal: Spacing.md,
-                    paddingVertical: 10,
-                    fontSize: Typography.fontSize.sm,
-                    fontFamily: Typography.fontFamily.regular,
-                    color: colors.text,
-                    backgroundColor: colors.background,
-                    includeFontPadding: false,
-                    textAlignVertical: "center",
-                  }}
-                  value={code}
-                  onChangeText={setCode}
-                  autoCapitalize="characters"
-                  autoFocus
-                  placeholderTextColor={colors.textSecondary}
-                />
-              </View>
+                🎟 Agregar cupón
+              </Text>
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: BorderRadius.lg,
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: 12,
+                  fontSize: Typography.fontSize.sm,
+                  fontFamily: Typography.fontFamily.regular,
+                  color: colors.text,
+                  backgroundColor: colors.background,
+                  marginBottom: Spacing.md,
+                }}
+                value={code}
+                onChangeText={setCode}
+                autoCapitalize="characters"
+                autoFocus
+                placeholder="Ej: PAKU20"
+                placeholderTextColor={colors.textSecondary}
+              />
               <TouchableOpacity
                 style={{
                   backgroundColor: colors.primary,
@@ -217,16 +206,40 @@ const SuccessModal = ({ visible, onGoHome, colors }: any) => (
           alignItems: "center",
         }}
       >
+        <View
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            backgroundColor: "#E8F5E9",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: Spacing.md,
+          }}
+        >
+          <Text style={{ fontSize: 32 }}>✓</Text>
+        </View>
         <Text
           style={{
             fontFamily: Typography.fontFamily.bold,
             fontSize: Typography.fontSize.lg,
             color: colors.primary,
             textAlign: "center",
+            marginBottom: Spacing.xs,
+          }}
+        >
+          ¡Pago exitoso!
+        </Text>
+        <Text
+          style={{
+            fontFamily: Typography.fontFamily.regular,
+            fontSize: Typography.fontSize.sm,
+            color: colors.textSecondary,
+            textAlign: "center",
             marginBottom: Spacing.lg,
           }}
         >
-          ¡Tu pago se realizó con éxito!
+          Tu reserva fue confirmada correctamente.
         </Text>
         <TouchableOpacity
           style={{
@@ -281,6 +294,19 @@ export default function CartScreen() {
     setCartId,
   } = useBookingStore();
 
+  // Cargar detalles del producto para mostrar nombre y precio de cada addon
+  const { data: productDetail } = useStoreProduct(
+    productId ?? "",
+    petId ?? undefined,
+  );
+  const selectedAddons = useMemo(
+    () =>
+      (productDetail?.available_addons ?? []).filter((a) =>
+        selectedAddonIds.includes(a.id),
+      ),
+    [productDetail, selectedAddonIds],
+  );
+
   const { addresses } = useAddressStore();
   const selectedAddress = addressId
     ? addresses.find((a) => a.id === addressId)
@@ -299,25 +325,7 @@ export default function CartScreen() {
   );
   const [successVisible, setSuccessVisible] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [saveCard, setSaveCard] = useState(false);
 
-  // RHF — tarjeta
-  const {
-    control: cardControl,
-    handleSubmit: handleCardSubmit,
-    formState: { errors: cardErrors },
-  } = useForm<CardFormValues>({
-    defaultValues: {
-      cardNumber: "",
-      cardExpiry: "",
-      cardCvv: "",
-      cardName: "",
-      cardLastName: "",
-      cardEmail: "",
-    },
-  });
-
-  // RHF — yape
   const {
     control: yapeControl,
     handleSubmit: handleYapeSubmit,
@@ -326,17 +334,15 @@ export default function CartScreen() {
     defaultValues: { yapePhone: "", yapeCode: "" },
   });
 
-  const subtotal = useMemo(() => {
-    return (quotedTotal ?? 0) - couponDiscount;
-  }, [quotedTotal, couponDiscount]);
+  const subtotal = useMemo(
+    () => (quotedTotal ?? 0) - couponDiscount,
+    [quotedTotal, couponDiscount],
+  );
 
   const handleInvoiceToggle = (option: "si" | "no") => {
     setInvoiceOption(option);
-    if (option === "si") {
-      router.push("/(tabs)/(user)/invoice-form");
-    } else {
-      removeInvoice();
-    }
+    if (option === "si") router.push("/(tabs)/(user)/invoice-form");
+    else removeInvoice();
   };
 
   const processPayment = async () => {
@@ -353,31 +359,23 @@ export default function CartScreen() {
             pet_id: petId!,
             scheduled_date: selectedDate!,
             scheduled_time: selectedTime ?? "12:00",
-            addon_ids: selectedAddonIds, // ← addons viajan en meta
+            addon_ids: selectedAddonIds,
           },
         },
       ];
-
       const cartResponse = await cartService.createWithItems({ items });
       const newCartId = cartResponse.cart.id;
       setCartId(newCartId);
-
       await cartService.checkout(newCartId);
-
       const newOrder = await orderService.createOrder({
         cart_id: newCartId,
         address_id: addressId!,
       });
-
       setOrder(newOrder);
       setSuccessVisible(true);
     } catch (error: any) {
       const message =
-        error.response?.data?.detail ||
-        (Array.isArray(error.response?.data?.errors)
-          ? error.response.data.errors.join("\n")
-          : null) ||
-        "Ocurrió un error al procesar tu pago. Intenta nuevamente.";
+        error.response?.data?.detail || "Ocurrió un error al procesar tu pago.";
       Alert.alert("Error al procesar", message);
     } finally {
       setPaying(false);
@@ -386,432 +384,209 @@ export default function CartScreen() {
 
   const handlePay = () => {
     if (!paymentMethod) return;
-    if (paymentMethod === "card") {
-      handleCardSubmit(() => processPayment())();
-    } else {
-      handleYapeSubmit(() => processPayment())();
-    }
+    if (paymentMethod === "yape") handleYapeSubmit(() => processPayment())();
+    else processPayment();
   };
-
-  const handleGoHome = () => {
-    setSuccessVisible(false);
-    clearBooking();
-    router.replace("/(tabs)/(user)/");
-  };
-
-  const s = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.md,
-      position: "relative",
-      backgroundColor: colors.primary,
-    },
-    backButton: {
-      position: "absolute",
-      left: Spacing.md,
-      width: 40,
-    },
-    headerTitle: {
-      color: "#FFFFFF",
-      fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.bold,
-      textAlign: "center",
-    },
-    scroll: { flex: 1 },
-    scrollContent: { paddingBottom: 150 },
-    addressBar: {
-      backgroundColor: colors.surface,
-      marginHorizontal: Spacing.md,
-      marginTop: Spacing.md,
-      borderRadius: BorderRadius.lg,
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.sm + 2,
-      ...Shadows.sm,
-    },
-    addressText: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.text,
-    },
-    card: {
-      backgroundColor: colors.surface,
-      marginHorizontal: Spacing.md,
-      marginTop: Spacing.md,
-      borderRadius: BorderRadius.lg,
-      padding: Spacing.md,
-      ...Shadows.sm,
-    },
-    sectionTitle: {
-      fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.bold,
-      color: colors.primary,
-      marginBottom: Spacing.sm,
-    },
-    summaryRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: Spacing.xs,
-    },
-    summaryLabel: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.text,
-      flex: 1,
-      paddingRight: Spacing.sm,
-    },
-    summaryValue: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.text,
-    },
-    couponRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "flex-end",
-      marginBottom: Spacing.xs,
-      gap: Spacing.xs,
-    },
-    couponText: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.textSecondary,
-    },
-    couponApplied: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.medium,
-      color: colors.primary,
-    },
-    couponLink: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.medium,
-      color: colors.textSecondary,
-    },
-    couponRemove: {
-      fontSize: Typography.fontSize.xs,
-      color: colors.error,
-    },
-    divider: {
-      height: 1,
-      backgroundColor: colors.border + "40",
-      marginVertical: Spacing.sm,
-    },
-    subtotalRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-    },
-    subtotalLabel: {
-      fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.bold,
-      color: colors.primary,
-    },
-    subtotalValue: {
-      fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.bold,
-      color: colors.primary,
-    },
-    invoiceRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    invoiceLabel: {
-      fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.bold,
-      color: colors.primary,
-    },
-    radioGroup: { flexDirection: "row", gap: Spacing.md },
-    radioOption: { flexDirection: "row", alignItems: "center", gap: 6 },
-    radioOuter: {
-      width: 18,
-      height: 18,
-      borderRadius: 9,
-      borderWidth: 2,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    radioInner: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: colors.primary,
-    },
-    radioLabel: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.text,
-    },
-    invoiceData: {
-      fontSize: Typography.fontSize.xs,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.textSecondary,
-      marginTop: Spacing.xs,
-    },
-    paymentTitle: {
-      fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.bold,
-      color: colors.primary,
-      marginBottom: Spacing.sm,
-    },
-    paymentOptions: { flexDirection: "row", gap: Spacing.sm },
-    payCard: {
-      flex: 1,
-      borderRadius: BorderRadius.lg,
-      paddingVertical: Spacing.md,
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 72,
-      borderWidth: 2,
-    },
-    payCardSel: { borderColor: colors.primary },
-    payCardUnsel: { borderColor: colors.border + "50", borderStyle: "dashed" },
-    payCardLabel: {
-      fontSize: Typography.fontSize.xs,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.textSecondary,
-      textAlign: "center",
-      marginTop: Spacing.xs,
-    },
-    yapeCard: {
-      flex: 1,
-      borderRadius: BorderRadius.lg,
-      backgroundColor: "#6B21A8",
-      minHeight: 72,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 2,
-    },
-    yapeCardSel: { borderColor: "#FFF" },
-    yapeCardUnsel: { borderColor: "transparent" },
-    yapeText: {
-      color: "#FFF",
-      fontSize: Typography.fontSize.xl,
-      fontFamily: Typography.fontFamily.bold,
-      fontStyle: "italic",
-    },
-    form: { marginTop: Spacing.md },
-    formRow: { flexDirection: "row", gap: Spacing.sm },
-    halfField: { flex: 1 },
-    rememberRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: Spacing.xs,
-      gap: Spacing.sm,
-      backgroundColor: colors.primary + "12",
-      borderRadius: BorderRadius.lg,
-      padding: Spacing.md,
-    },
-    checkbox: {
-      width: 20,
-      height: 20,
-      borderRadius: BorderRadius.sm,
-      borderWidth: 2,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    rememberLabel: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.text,
-      flex: 1,
-    },
-    yapeAmountLabel: {
-      fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.bold,
-      color: colors.primary,
-      marginBottom: Spacing.xs,
-    },
-    yapeDesc: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.textSecondary,
-      marginBottom: Spacing.md,
-      lineHeight: 20,
-    },
-    fixedBottom: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: colors.surface,
-      padding: Spacing.lg,
-      borderTopWidth: 1,
-      borderTopColor: colors.border + "30",
-      ...Shadows.lg,
-    },
-    addReservaBtn: {
-      borderWidth: 1,
-      borderColor: colors.secondary,
-      backgroundColor: colors.secondary + "25",
-      borderRadius: BorderRadius.full,
-      paddingVertical: Spacing.md,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: Spacing.sm,
-      gap: Spacing.xs,
-    },
-    // ── Tarjetas guardadas ────────────────────────────────────────────────
-    savedCardsLabel: {
-      fontSize: Typography.fontSize.xs,
-      fontFamily: Typography.fontFamily.semibold,
-      color: colors.textSecondary,
-      textTransform: "uppercase",
-      letterSpacing: 0.8,
-      marginBottom: Spacing.sm,
-    },
-    savedCardRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      borderRadius: BorderRadius.lg,
-      padding: Spacing.md,
-      marginBottom: Spacing.sm,
-      gap: Spacing.md,
-      backgroundColor: colors.background,
-    },
-    cardBrandBadge: {
-      width: 40,
-      height: 28,
-      borderRadius: 6,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    cardBrandText: {
-      fontSize: Typography.fontSize.xs,
-      fontFamily: Typography.fontFamily.bold,
-      color: "#FFFFFF",
-      letterSpacing: 0.5,
-    },
-    cardRowNumber: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.semibold,
-      letterSpacing: 0.5,
-    },
-    cardRowExpiry: {
-      fontSize: Typography.fontSize.xs,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.textSecondary,
-      marginTop: 2,
-    },
-    addNewCardRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.md,
-      borderRadius: BorderRadius.lg,
-      padding: Spacing.md,
-      marginTop: Spacing.xs,
-      backgroundColor: colors.primary + "0D",
-      borderWidth: 1,
-      borderColor: colors.primary + "30",
-      borderStyle: "dashed",
-    },
-    addNewCardIcon: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: colors.primary + "20",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    addReservaText: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.semibold,
-      color: colors.primary,
-    },
-  });
 
   return (
-    <SafeAreaView style={s.container} edges={["top"]}>
-      {/* Header */}
-
-      <ScreenHeader
-        title="Tu carrito"
-        backHref="/(tabs)/(user)/"
-        // right={{
-        //   type: "icon",
-        //   name: "cart",
-        //   onPress: () => router.push("/(tabs)/(user)/cart"),
-        // }}
-      />
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top"]}
+    >
+      <ScreenHeader title="Tu carrito" right={{ type: "none" }} hideBack />
 
       <ScrollView
-        style={s.scroll}
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Dirección */}
-        <View style={s.addressBar}>
-          <Text style={s.addressText}>{addressLabel}</Text>
-        </View>
+        {/* ── Dirección ─────────────────────────────────────────────────────── */}
+        <TouchableOpacity
+          style={[styles.addressBar, { backgroundColor: colors.surface }]}
+          onPress={() => router.push("/(tabs)/(user)/select-address")}
+          activeOpacity={0.8}
+        >
+          <View
+            style={[
+              styles.addressIcon,
+              { backgroundColor: colors.primary + "15" },
+            ]}
+          >
+            <Icon name="gps" size={16} color={colors.primary} />
+          </View>
+          <Text
+            style={[styles.addressText, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {addressLabel}
+          </Text>
+          <Icon name="arrow-right" size={14} color={colors.textSecondary} />
+        </TouchableOpacity>
 
-        {/* ── Resumen ──────────────────────────────────────────────────────── */}
-        <View style={s.card}>
-          <Text style={s.sectionTitle}>Resumen</Text>
-
-          {productName && quotedTotal != null && (
-            <View style={s.summaryRow}>
-              <Text style={s.summaryLabel}>• PAKU Spa - {productName}</Text>
-              <Text style={s.summaryValue}>
-                {currency} {quotedTotal.toFixed(2)}
+        {/* ── Resumen del pedido ────────────────────────────────────────────── */}
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <View style={styles.sectionTitleRow}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: colors.text, marginBottom: 0 },
+              ]}
+            >
+              Resumen del pedido
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.editBtn,
+                {
+                  borderColor: colors.primary + "40",
+                  backgroundColor: colors.primary + "08",
+                },
+              ]}
+              onPress={() => router.push("/(tabs)/(user)/additional-service")}
+              activeOpacity={0.7}
+            >
+              <Icon name="pencil" size={12} color={colors.primary} />
+              <Text style={[styles.editBtnText, { color: colors.primary }]}>
+                Editar
               </Text>
-            </View>
-          )}
-
-          {selectedAddonIds.length > 0 && (
-            <View style={s.summaryRow}>
-              <Text style={s.summaryLabel}>
-                • {selectedAddonIds.length} adicional
-                {selectedAddonIds.length > 1 ? "es" : ""}
-              </Text>
-              <Text style={s.summaryValue}>Incluido</Text>
-            </View>
-          )}
-
-          <View style={s.couponRow}>
-            <Icon name="ticket" size={16} color={colors.textSecondary} />
-            <Text style={s.couponText}>¿Tienes un cupón?</Text>
-            {appliedCoupon ? (
-              <>
-                <Text style={s.couponApplied}>
-                  {appliedCoupon} (-S/{COUPON_DISCOUNT})
-                </Text>
-                <TouchableOpacity onPress={removeCoupon}>
-                  <Text style={s.couponRemove}>✕</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity onPress={() => setCouponVisible(true)}>
-                <Text style={s.couponLink}>Agregar</Text>
-              </TouchableOpacity>
-            )}
+            </TouchableOpacity>
           </View>
 
-          <View style={s.divider} />
+          {/* Servicio base */}
+          {productName && (
+            <View style={styles.lineRow}>
+              <Text
+                style={[styles.lineLabel, { color: colors.text }]}
+                numberOfLines={1}
+              >
+                PAKU Spa — {productName}
+              </Text>
+              <Text style={[styles.lineValue, { color: colors.text }]}>
+                {productDetail?.price != null
+                  ? `${currency} ${productDetail.price.toFixed(2)}`
+                  : quotedTotal != null
+                    ? `${currency} ${quotedTotal.toFixed(2)}`
+                    : "—"}
+              </Text>
+            </View>
+          )}
 
-          <View style={s.subtotalRow}>
-            <Text style={s.subtotalLabel}>Subtotal</Text>
-            <Text style={s.subtotalValue}>S/{subtotal.toFixed(2)}</Text>
+          {/* Addons con nombre y precio individual */}
+          {selectedAddons.length > 0 ? (
+            selectedAddons.map((addon) => (
+              <View key={addon.id} style={styles.lineRow}>
+                <View style={styles.addonLabelRow}>
+                  <View
+                    style={[
+                      styles.addonDot,
+                      { backgroundColor: colors.primary + "60" },
+                    ]}
+                  />
+                  <Text
+                    style={[styles.addonLabel, { color: colors.textSecondary }]}
+                    numberOfLines={1}
+                  >
+                    {addon.name}
+                  </Text>
+                </View>
+                <Text
+                  style={[styles.lineValue, { color: colors.textSecondary }]}
+                >
+                  {addon.price != null && addon.price > 0
+                    ? `${addon.currency} ${addon.price.toFixed(2)}`
+                    : "Incluido"}
+                </Text>
+              </View>
+            ))
+          ) : selectedAddonIds.length > 0 ? (
+            // Fallback si aún no cargaron los detalles
+            <View style={styles.lineRow}>
+              <Text
+                style={[styles.addonLabel, { color: colors.textSecondary }]}
+              >
+                {selectedAddonIds.length} adicional
+                {selectedAddonIds.length > 1 ? "es" : ""}
+              </Text>
+              <Text style={[styles.lineValue, { color: colors.textSecondary }]}>
+                Incluido
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Cupón */}
+          {appliedCoupon ? (
+            <View style={styles.lineRow}>
+              <View style={styles.addonLabelRow}>
+                <View
+                  style={[styles.couponBadge, { backgroundColor: "#E8F5E9" }]}
+                >
+                  <Text style={[styles.couponBadgeText, { color: "#2E7D32" }]}>
+                    🎟 {appliedCoupon}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={removeCoupon}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={[styles.removeText, { color: colors.error }]}>
+                    Quitar
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={[styles.lineValue, { color: "#2E7D32" }]}>
+                -{currency} {COUPON_DISCOUNT.toFixed(2)}
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.couponRow}
+              onPress={() => setCouponVisible(true)}
+            >
+              <Icon name="ticket" size={13} color={colors.textSecondary} />
+              <Text
+                style={[styles.couponText, { color: colors.textSecondary }]}
+              >
+                ¿Tienes un cupón?
+              </Text>
+              <Text style={[styles.couponLink, { color: colors.primary }]}>
+                Agregar
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+          <View style={styles.totalRow}>
+            <Text style={[styles.totalLabel, { color: colors.text }]}>
+              Total
+            </Text>
+            <Text style={[styles.totalValue, { color: colors.primary }]}>
+              {currency} {subtotal.toFixed(2)}
+            </Text>
           </View>
         </View>
 
         {/* ── Factura ───────────────────────────────────────────────────────── */}
-        <View style={s.card}>
-          <View style={s.invoiceRow}>
-            <Text style={s.invoiceLabel}>¿Necesitas factura?</Text>
-            <View style={s.radioGroup}>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <View style={styles.invoiceRow}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: colors.text, marginBottom: 0 },
+              ]}
+            >
+              ¿Necesitas factura?
+            </Text>
+            <View style={styles.radioGroup}>
               {(["si", "no"] as const).map((opt) => (
                 <TouchableOpacity
                   key={opt}
-                  style={s.radioOption}
+                  style={styles.radioOption}
                   onPress={() => handleInvoiceToggle(opt)}
                 >
                   <View
                     style={[
-                      s.radioOuter,
+                      styles.radioOuter,
                       {
                         borderColor:
                           invoiceOption === opt
@@ -820,38 +595,58 @@ export default function CartScreen() {
                       },
                     ]}
                   >
-                    {invoiceOption === opt && <View style={s.radioInner} />}
+                    {invoiceOption === opt && (
+                      <View
+                        style={[
+                          styles.radioInner,
+                          { backgroundColor: colors.primary },
+                        ]}
+                      />
+                    )}
                   </View>
-                  <Text style={s.radioLabel}>{opt === "si" ? "Sí" : "No"}</Text>
+                  <Text style={[styles.radioLabel, { color: colors.text }]}>
+                    {opt === "si" ? "Sí" : "No"}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
           {invoiceOption === "si" && invoiceData && (
-            <Text style={s.invoiceData}>
+            <Text style={[styles.invoiceData, { color: colors.textSecondary }]}>
               RUC: {invoiceData.ruc} · {invoiceData.razonSocial}
             </Text>
           )}
         </View>
 
         {/* ── Medio de pago ─────────────────────────────────────────────────── */}
-        <View style={[s.card, { marginBottom: Spacing.xl }]}>
-          <Text style={s.paymentTitle}>Medio de pago</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Medio de pago
+          </Text>
 
-          {/* Selector tarjeta / yape */}
-          <View style={s.paymentOptions}>
+          {/* Opciones — ahora ambas sin color de fondo cuando no están seleccionadas */}
+          <View style={styles.paymentOptions}>
+            {/* Tarjeta */}
             <TouchableOpacity
               style={[
-                s.payCard,
-                paymentMethod === "card" ? s.payCardSel : s.payCardUnsel,
+                styles.payOption,
+                {
+                  borderColor:
+                    paymentMethod === "card" ? colors.primary : colors.border,
+                  backgroundColor:
+                    paymentMethod === "card"
+                      ? colors.primary + "08"
+                      : colors.background,
+                },
               ]}
               onPress={() =>
                 setPaymentMethod(paymentMethod === "card" ? null : "card")
               }
+              activeOpacity={0.8}
             >
               <Icon
                 name="wallet"
-                size={18}
+                size={22}
                 color={
                   paymentMethod === "card"
                     ? colors.primary
@@ -860,165 +655,204 @@ export default function CartScreen() {
               />
               <Text
                 style={[
-                  s.payCardLabel,
-                  paymentMethod === "card" && { color: colors.primary },
+                  styles.payOptionLabel,
+                  {
+                    color:
+                      paymentMethod === "card"
+                        ? colors.primary
+                        : colors.textSecondary,
+                  },
                 ]}
               >
                 Tarjeta{"\n"}Débito / Crédito
               </Text>
+              {paymentMethod === "card" && (
+                <View
+                  style={[
+                    styles.payCheckDot,
+                    { backgroundColor: colors.primary },
+                  ]}
+                />
+              )}
             </TouchableOpacity>
 
+            {/* Yape — sin color morado cuando no está seleccionado */}
             <TouchableOpacity
               style={[
-                s.yapeCard,
-                paymentMethod === "yape" ? s.yapeCardSel : s.yapeCardUnsel,
+                styles.payOption,
+                paymentMethod === "yape"
+                  ? { borderColor: "#6B21A8", backgroundColor: "#6B21A8" }
+                  : {
+                      borderColor: colors.border,
+                      backgroundColor: colors.background,
+                    },
               ]}
               onPress={() =>
                 setPaymentMethod(paymentMethod === "yape" ? null : "yape")
               }
+              activeOpacity={0.8}
             >
-              <Text style={s.yapeText}>yape</Text>
+              {paymentMethod === "yape" ? (
+                <>
+                  <Text style={styles.yapeTextActive}>yape</Text>
+                  <View
+                    style={[styles.payCheckDot, { backgroundColor: "#FFF" }]}
+                  />
+                </>
+              ) : (
+                <>
+                  <Text
+                    style={[
+                      styles.yapeTextInactive,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    yape
+                  </Text>
+                  <Text
+                    style={[
+                      styles.payOptionLabel,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    Pagar con Yape
+                  </Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
 
-          {/* ── Tarjetas guardadas ──────────────────────────────────────────── */}
+          {/* ── Tarjetas guardadas ─────────────────────────────────────────── */}
           {paymentMethod === "card" && (
-            <View style={s.form}>
-              {SAVED_CARDS.length > 0 ? (
-                <>
-                  <Text style={s.savedCardsLabel}>Mis tarjetas</Text>
-                  {SAVED_CARDS.map((card) => {
-                    const isSelected = selectedCardId === card.id;
-                    return (
-                      <TouchableOpacity
-                        key={card.id}
-                        style={[
-                          s.savedCardRow,
-                          isSelected && {
-                            borderColor: colors.primary,
-                            borderWidth: 2,
-                          },
-                          !isSelected && {
-                            borderColor: colors.border + "40",
-                            borderWidth: 1,
-                          },
-                        ]}
-                        onPress={() => setSelectedCardId(card.id)}
-                        activeOpacity={0.7}
-                      >
-                        {/* Indicador de marca */}
-                        <View
-                          style={[
-                            s.cardBrandBadge,
-                            { backgroundColor: getBrandColor(card.brand) },
-                          ]}
-                        >
-                          <Text style={s.cardBrandText}>
-                            {card.brand === "mastercard"
-                              ? "MC"
-                              : getBrandLabel(card.brand).slice(0, 2)}
-                          </Text>
-                        </View>
-
-                        {/* Info */}
-                        <View style={{ flex: 1 }}>
-                          <Text
-                            style={[s.cardRowNumber, { color: colors.text }]}
-                          >
-                            {getBrandLabel(card.brand)} •••• {card.last4}
-                          </Text>
-                          <Text style={s.cardRowExpiry}>
-                            Vence {card.expiryMonth}/{card.expiryYear}
-                            {card.isDefault ? "  ·  Predeterminada" : ""}
-                          </Text>
-                        </View>
-
-                        {/* Radio */}
-                        <View
-                          style={[
-                            s.radioOuter,
-                            {
-                              borderColor: isSelected
-                                ? colors.primary
-                                : colors.border,
-                            },
-                          ]}
-                        >
-                          {isSelected && <View style={s.radioInner} />}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-
-                  {/* Agregar nueva tarjeta */}
+            <View style={styles.cardSection}>
+              <Text
+                style={[
+                  styles.savedCardsLabel,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                MIS TARJETAS
+              </Text>
+              {SAVED_CARDS.map((card) => {
+                const isSel = selectedCardId === card.id;
+                return (
                   <TouchableOpacity
-                    style={s.addNewCardRow}
-                    onPress={() => router.push("/(screens)/add-card")}
+                    key={card.id}
+                    style={[
+                      styles.savedCardRow,
+                      { backgroundColor: colors.background },
+                      isSel
+                        ? { borderColor: colors.primary, borderWidth: 2 }
+                        : { borderColor: colors.border, borderWidth: 1 },
+                    ]}
+                    onPress={() => setSelectedCardId(card.id)}
                     activeOpacity={0.7}
                   >
-                    <View style={s.addNewCardIcon}>
-                      <Icon name="plus" size={16} color={colors.primary} />
+                    <View
+                      style={[
+                        styles.brandBadge,
+                        { backgroundColor: getBrandColor(card.brand) },
+                      ]}
+                    >
+                      <Text style={styles.brandText}>
+                        {card.brand === "mastercard"
+                          ? "MC"
+                          : getBrandLabel(card.brand).slice(0, 2)}
+                      </Text>
                     </View>
-                    <Text style={[s.rememberLabel, { color: colors.primary }]}>
-                      Agregar nueva tarjeta
-                    </Text>
-                    <Icon name="arrow-right" size={14} color={colors.primary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.cardNumber, { color: colors.text }]}>
+                        {getBrandLabel(card.brand)} •••• {card.last4}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.cardExpiry,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        Vence {card.expiryMonth}/{card.expiryYear}
+                        {card.isDefault ? "  ·  Predeterminada" : ""}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        { borderColor: isSel ? colors.primary : colors.border },
+                      ]}
+                    >
+                      {isSel && (
+                        <View
+                          style={[
+                            styles.radioInner,
+                            { backgroundColor: colors.primary },
+                          ]}
+                        />
+                      )}
+                    </View>
                   </TouchableOpacity>
-                </>
-              ) : (
-                /* Sin tarjetas guardadas */
-                <TouchableOpacity
-                  style={s.addNewCardRow}
-                  onPress={() => router.push("/(screens)/add-card")}
-                  activeOpacity={0.7}
+                );
+              })}
+
+              <TouchableOpacity
+                style={[
+                  styles.addCardRow,
+                  {
+                    backgroundColor: colors.primary + "0D",
+                    borderColor: colors.primary + "40",
+                  },
+                ]}
+                onPress={() => router.push("/(screens)/add-card")}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={[
+                    styles.addCardIcon,
+                    { backgroundColor: colors.primary + "20" },
+                  ]}
                 >
-                  <View style={s.addNewCardIcon}>
-                    <Icon name="plus" size={16} color={colors.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.rememberLabel, { color: colors.primary }]}>
-                      Agregar tarjeta
-                    </Text>
-                    <Text style={s.cardRowExpiry}>Débito o crédito</Text>
-                  </View>
-                  <Icon name="arrow-right" size={14} color={colors.primary} />
-                </TouchableOpacity>
-              )}
+                  <Icon name="plus" size={16} color={colors.primary} />
+                </View>
+                <Text style={[styles.addCardText, { color: colors.primary }]}>
+                  Agregar nueva tarjeta
+                </Text>
+                <Icon name="arrow-right" size={14} color={colors.primary} />
+              </TouchableOpacity>
             </View>
           )}
 
-          {/* ── Formulario Yape ─────────────────────────────────────────────── */}
+          {/* ── Formulario Yape ────────────────────────────────────────────── */}
           {paymentMethod === "yape" && (
-            <View style={s.form}>
-              <Text style={s.yapeAmountLabel}>
-                Monto: {currency} {subtotal.toFixed(2)}
-              </Text>
-              <Text style={s.yapeDesc}>
-                Pagar con Yape{"\n"}Obtén el código de aprobación en la app de
-                Yape para terminar tu compra.
-              </Text>
+            <View style={styles.cardSection}>
+              <View
+                style={[styles.yapeInfoBox, { backgroundColor: "#F3E8FF" }]}
+              >
+                <Text style={[styles.yapeInfoTitle, { color: "#6B21A8" }]}>
+                  {currency} {subtotal.toFixed(2)}
+                </Text>
+                <Text style={[styles.yapeInfoDesc, { color: "#7C3AED" }]}>
+                  Obtén el código de aprobación en tu app Yape para completar el
+                  pago.
+                </Text>
+              </View>
 
               <Controller
                 control={yapeControl}
                 name="yapePhone"
                 rules={{
                   required: "Requerido",
-                  minLength: {
-                    value: 9,
-                    message: "Ingresa un número válido",
-                  },
+                  minLength: { value: 9, message: "Número inválido" },
                 }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
-                    placeholder="Ingresa tu celular Yape"
-                    placeholderTextColor={colors.text}
+                    placeholder="Número de celular Yape"
+                    placeholderTextColor={colors.textSecondary}
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     type="phone"
                     maxLength={9}
                     error={yapeErrors.yapePhone?.message}
-                    containerStyle={{ marginBottom: Spacing.xs }}
+                    containerStyle={{ marginBottom: Spacing.sm }}
                   />
                 )}
               />
@@ -1029,31 +863,36 @@ export default function CartScreen() {
                 rules={{ required: "Requerido", minLength: 4 }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
-                    placeholder="Pega tu código de aprobación"
-                    placeholderTextColor={colors.text}
+                    placeholder="Código de aprobación (4 dígitos)"
+                    placeholderTextColor={colors.textSecondary}
                     value={value}
                     maxLength={4}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     error={yapeErrors.yapeCode?.message}
-                    containerStyle={{ marginBottom: Spacing.xs }}
+                    containerStyle={{ marginBottom: Spacing.sm }}
                   />
                 )}
               />
             </View>
           )}
         </View>
+
+        <View style={{ height: 110 }} />
       </ScrollView>
 
-      {/* ── Botones fijos ──────────────────────────────────────────────────── */}
-      <View style={s.fixedBottom}>
-        {/* <TouchableOpacity
-          style={s.addReservaBtn}
-          onPress={() => router.push("/(tabs)/(user)/select-pet")}
-        >
-          <Icon name="plus" size={16} color={colors.primary} />
-          <Text style={s.addReservaText}>Añadir reserva</Text>
-        </TouchableOpacity> */}
+      {/* ── Footer fijo ───────────────────────────────────────────────────── */}
+      <View
+        style={[
+          styles.fixedFooter,
+          { backgroundColor: colors.background, borderTopColor: colors.border },
+        ]}
+      >
+        {!paymentMethod && (
+          <Text style={[styles.selectPayHint, { color: colors.textSecondary }]}>
+            Selecciona un medio de pago para continuar
+          </Text>
+        )}
         <Button
           title={`Pagar ${currency} ${subtotal.toFixed(2)}`}
           onPress={handlePay}
@@ -1075,9 +914,350 @@ export default function CartScreen() {
       />
       <SuccessModal
         visible={successVisible}
-        onGoHome={handleGoHome}
+        onGoHome={() => {
+          setSuccessVisible(false);
+          clearBooking();
+          router.replace("/(tabs)/(user)/");
+        }}
         colors={colors}
       />
     </SafeAreaView>
   );
 }
+
+// ─── Estilos ──────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  scrollContent: { padding: Spacing.md, paddingBottom: Spacing.xl },
+
+  // Dirección
+  addressBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+    marginBottom: Spacing.sm,
+    gap: Spacing.sm,
+    ...Shadows.sm,
+  },
+  addressIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addressText: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+  },
+
+  // Cards
+  card: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    ...Shadows.sm,
+  },
+  sectionTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    marginBottom: Spacing.sm,
+  },
+
+  // Resumen compacto
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.sm,
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  editBtnText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+  },
+  lineRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 5,
+  },
+  lineLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    flex: 1,
+    paddingRight: Spacing.sm,
+  },
+  lineValue: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+    flexShrink: 0,
+  },
+  addonLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 6,
+    paddingRight: Spacing.sm,
+  },
+  addonDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    flexShrink: 0,
+  },
+  addonLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    flex: 1,
+  },
+
+  // Resumen (mantener para compatibilidad)
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.sm,
+  },
+  summaryLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    flex: 1,
+    paddingRight: Spacing.sm,
+  },
+  summaryValue: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+  },
+
+  // Cupón
+  couponRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: 4,
+  },
+  couponText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+  },
+  couponLink: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+    marginLeft: "auto",
+  },
+  couponAppliedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    flex: 1,
+  },
+  couponBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  couponBadgeText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+  },
+  removeText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+  },
+  divider: { height: 1, marginVertical: Spacing.sm - 2 },
+  totalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  totalLabel: {
+    fontSize: Typography.fontSize.md,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  totalValue: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+  },
+
+  // Factura
+  invoiceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  radioGroup: { flexDirection: "row", gap: Spacing.md },
+  radioOption: { flexDirection: "row", alignItems: "center", gap: 6 },
+  radioOuter: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioInner: { width: 8, height: 8, borderRadius: 4 },
+  radioLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+  },
+  invoiceData: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    marginTop: Spacing.sm,
+  },
+
+  // Medios de pago
+  paymentOptions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  payOption: {
+    flex: 1,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1.5,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 80,
+    gap: 4,
+    position: "relative",
+  },
+  payOptionLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    textAlign: "center",
+    lineHeight: 16,
+  },
+  payCheckDot: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  yapeTextActive: {
+    color: "#FFF",
+    fontSize: Typography.fontSize.xl,
+    fontFamily: Typography.fontFamily.bold,
+    fontStyle: "italic",
+  },
+  yapeTextInactive: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    fontStyle: "italic",
+  },
+
+  // Tarjetas guardadas
+  cardSection: { marginTop: Spacing.sm },
+  savedCardsLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    letterSpacing: 0.8,
+    marginBottom: Spacing.sm,
+  },
+  savedCardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    gap: Spacing.md,
+  },
+  brandBadge: {
+    width: 40,
+    height: 26,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.bold,
+    color: "#FFF",
+  },
+  cardNumber: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+    letterSpacing: 0.3,
+  },
+  cardExpiry: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    marginTop: 2,
+  },
+  addCardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderStyle: "dashed",
+  },
+  addCardIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addCardText: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+  },
+
+  // Yape form
+  yapeInfoBox: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  yapeInfoTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    marginBottom: 4,
+  },
+  yapeInfoDesc: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    lineHeight: 20,
+  },
+
+  // Footer
+  fixedFooter: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: Spacing.md,
+    borderTopWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  selectPayHint: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    textAlign: "center",
+    marginBottom: Spacing.sm,
+  },
+});

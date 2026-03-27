@@ -329,11 +329,16 @@ export default function NotificationsScreen() {
       borderRadius: BorderRadius.full,
       paddingHorizontal: Spacing.sm,
       paddingVertical: 2,
+      width: 24,
+      height: 24,
+      alignItems: "center",
+      justifyContent: "center",
     },
     unreadBadgeText: {
       fontSize: Typography.fontSize.xs,
       fontFamily: Typography.fontFamily.semibold,
       color: "#FFF",
+      includeFontPadding: false,
     },
   });
 

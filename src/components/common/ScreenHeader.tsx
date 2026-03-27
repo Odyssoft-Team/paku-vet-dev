@@ -17,6 +17,8 @@ interface ScreenHeaderProps {
   title: string;
   /** Ruta exacta a la que navega el botón atrástyles. Si se omite usa router.back() */
   backHref?: string;
+  /** Ocultar el botón back completamente */
+  hideBack?: boolean;
   /** Qué mostrar a la derecha. Por defecto "none" (spacer invisible) */
   right?: RightAction;
   /** Override del color de fondo. Por defecto colorstyles.primary */
@@ -29,6 +31,7 @@ interface ScreenHeaderProps {
 export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   title,
   backHref,
+  hideBack = false,
   right = { type: "none" },
   backgroundColor,
   style,
@@ -145,9 +148,13 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
 
   return (
     <View style={[styles.header, style]}>
-      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-        <Icon name="arrow-back" size={18} color="#FFFFFF" />
-      </TouchableOpacity>
+      {hideBack ? (
+        <View style={styles.backButton} />
+      ) : (
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <Icon name="arrow-back" size={18} color="#FFFFFF" />
+        </TouchableOpacity>
+      )}
 
       <Text style={styles.title} numberOfLines={1}>
         {title}

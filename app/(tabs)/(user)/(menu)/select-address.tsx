@@ -238,7 +238,7 @@ export default function SelectAddressScreen() {
       borderColor: colors.secondary,
       backgroundColor: colors.secondary + "25",
       borderRadius: BorderRadius.full,
-      paddingVertical: Spacing.md,
+      paddingVertical: 14,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
@@ -249,6 +249,7 @@ export default function SelectAddressScreen() {
       fontSize: Typography.fontSize.sm,
       fontFamily: Typography.fontFamily.semibold,
       color: colors.primary,
+      includeFontPadding: false,
     },
   });
 
@@ -335,6 +336,7 @@ export default function SelectAddressScreen() {
           title="Continuar"
           onPress={handleContinue}
           fullWidth
+          style={{ borderRadius: BorderRadius.full }}
           disabled={!selectedAddressId}
         />
       </View>
