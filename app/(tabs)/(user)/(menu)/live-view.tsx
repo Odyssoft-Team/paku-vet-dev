@@ -31,7 +31,7 @@ export default function LiveViewScreen() {
 
   const handleExit = () => {
     disconnect();
-    router.back();
+    router.push("/(tabs)/(user)/(menu)/tracking-service");
   };
 
   const handleRetry = () => {

@@ -16,9 +16,12 @@ import { useTheme } from "@/hooks/useTheme";
 import { Spacing, Typography, BorderRadius } from "@/constants/theme";
 import { useGroomerStreaming } from "@/hooks/useGroomerStreaming";
 
-export default function GroomerLiveStreamScreen() {
+function GroomerLiveStreamScreen() {
   const router = useRouter();
-  const { orderId } = useLocalSearchParams<{ orderId: string }>();
+  const { orderId, ts } = useLocalSearchParams<{
+    orderId: string;
+    ts: string;
+  }>();
   const { colors } = useTheme();
 
   const {
@@ -34,9 +37,14 @@ export default function GroomerLiveStreamScreen() {
     flipCamera,
   } = useGroomerStreaming(orderId ?? "");
 
-  // Iniciar preview de cámara al entrar
+  // Montar con key única (ts) garantiza que React destruye y recrea el componente
+  // cada vez que el groomer entra — no hay estado sucio del intento anterior
   useEffect(() => {
     startPreview();
+    return () => {
+      stopStreaming();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleStop = () => {
@@ -50,7 +58,7 @@ export default function GroomerLiveStreamScreen() {
           style: "destructive",
           onPress: () => {
             stopStreaming();
-            router.back();
+            router.push("/(tabs)/(groomer)/appointments");
           },
         },
       ],
@@ -62,7 +70,7 @@ export default function GroomerLiveStreamScreen() {
       handleStop();
     } else {
       stopStreaming();
-      router.back();
+      router.push("/(tabs)/(groomer)/appointments");
     }
   };
 
@@ -392,3 +400,11 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xs,
   },
 });
+
+// Wrapper que fuerza remount completo usando el param ts como key
+// Cada vez que el groomer entra con un ts diferente, React destruye
+// y recrea el componente desde cero — sin estado sucio del intento anterior
+export default function GroomerLiveStreamWrapper() {
+  const { ts } = useLocalSearchParams<{ ts: string }>();
+  return <GroomerLiveStreamScreen key={ts ?? "default"} />;
+}

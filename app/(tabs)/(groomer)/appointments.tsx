@@ -137,7 +137,7 @@ export default function GroomerAppointmentsScreen() {
   const handleOrderPress = (order: Order) => {
     router.push({
       pathname: "/(tabs)/(groomer)/live-stream",
-      params: { orderId: order.id },
+      params: { orderId: order.id, ts: Date.now() }, // ts fuerza remount limpio
     });
   };
 

@@ -59,11 +59,17 @@ export function useGroomerStreaming(
   const sessionRef = useRef<StreamingSession | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const retryCountRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isStoppedRef = useRef(false); // true = groomer detuvo manualmente
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   const closeWsAndPc = useCallback(() => {
+    // Cancelar cualquier reintento pendiente
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
     if (pcRef.current) {
       pcRef.current.close();
       pcRef.current = null;
@@ -71,7 +77,9 @@ export function useGroomerStreaming(
     if (wsRef.current) {
       wsRef.current.onclose = null;
       wsRef.current.onerror = null;
-      wsRef.current.close(1000, "closing"); // cierre limpio code 1000
+      wsRef.current.onmessage = null;
+      wsRef.current.onopen = null;
+      wsRef.current.close(1000, "closing");
       wsRef.current = null;
     }
   }, []);
@@ -85,7 +93,38 @@ export function useGroomerStreaming(
   // ── Obtener stream de cámara ──────────────────────────────────────────────
 
   const startPreview = useCallback(async () => {
+    // Reset SÍNCRONO inmediato — antes de cualquier operación async
+    isStoppedRef.current = false;
+    retryCountRef.current = 0;
+    sessionRef.current = null;
+
+    // Cancelar reintentos pendientes del intento anterior
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+
+    // Cerrar conexiones anteriores si quedaron abiertas
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+    if (wsRef.current) {
+      wsRef.current.onclose = null;
+      wsRef.current.onerror = null;
+      wsRef.current.onopen = null;
+      wsRef.current.onmessage = null;
+      wsRef.current.close(1000, "reset");
+      wsRef.current = null;
+    }
+
+    // Detener stream de cámara anterior
+    localStreamRef.current?.getTracks().forEach((t: any) => t.stop());
+    localStreamRef.current = null;
+
+    setRetryCount(0);
     setStreamState("requesting_perms");
+
     try {
       const stream = await mediaDevices.getUserMedia({
         audio: true,
@@ -95,12 +134,19 @@ export function useGroomerStreaming(
           height: { ideal: 720 },
         },
       });
+
+      if (isStoppedRef.current) {
+        // Si el usuario salió durante el getUserMedia, limpiar y no continuar
+        stream.getTracks().forEach((t: any) => t.stop());
+        return;
+      }
+
       localStreamRef.current = stream;
       setLocalStream(stream);
       setStreamState("preview");
     } catch (err) {
       console.error("[Groomer] Error accediendo a cámara:", err);
-      setStreamState("failed");
+      if (!isStoppedRef.current) setStreamState("failed");
     }
   }, [isFrontCamera]);
 
@@ -350,7 +396,7 @@ export function useGroomerStreaming(
     console.log(
       `[Groomer] Reintento ${retryCountRef.current}/${MAX_RETRIES} en ${delay}ms`,
     );
-    setTimeout(() => {
+    retryTimerRef.current = setTimeout(() => {
       if (!isStoppedRef.current) connectInternal();
     }, delay);
   }, [connectInternal]);
@@ -420,11 +466,13 @@ export function useGroomerStreaming(
     }
   }, [isFrontCamera]);
 
-  // Limpiar al desmontar
+  // Limpiar al desmontar — garantiza que al volver a la vista todo esté fresco
   useEffect(() => {
     return () => {
       isStoppedRef.current = true;
-      closeWsAndPc();
+      retryCountRef.current = 0;
+      sessionRef.current = null;
+      closeWsAndPc(); // cancela retryTimerRef internamente
       stopLocalStream();
     };
   }, [closeWsAndPc, stopLocalStream]);
