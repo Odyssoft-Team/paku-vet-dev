@@ -130,4 +130,12 @@ export const API_ENDPOINTS = {
     CURRENT: (orderId: string) => `/tracking/orders/${orderId}/current`,
     ROUTE: (orderId: string) => `/tracking/orders/${orderId}/route`,
   },
+
+  // Mercado Pago — base: https://stream.dev-qa.site/payment/api
+  PAYMENT: {
+    METHODS_LIST: "/payment-methods",
+    METHODS_SAVE: "/payment-methods",
+    PAY: "/payments/pay",
+    STATUS: (orderId: string) => `/payments/${orderId}/status`,
+  },
 } as const;
