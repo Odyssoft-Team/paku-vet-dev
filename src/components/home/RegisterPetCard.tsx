@@ -1,3 +1,4 @@
+// components/home/RegisterPetCard.tsx
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { Icon } from "@/components/common/Icon";
@@ -15,38 +16,62 @@ export const RegisterPetCard: React.FC<RegisterPetCardProps> = ({
   const { colors } = useTheme();
 
   const styles = StyleSheet.create({
+    container: {
+      backgroundColor: colors.surface,
+      borderRadius: BorderRadius.xl,
+      padding: Spacing.lg,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderStyle: "dashed",
+      ...Shadows.sm,
+    },
     title: {
-      fontSize: Typography.fontSize.md,
-      color: colors.primary,
-      marginBottom: Spacing.sm,
+      fontSize: Typography.fontSize.lg,
+      fontFamily: Typography.fontFamily.bold,
+      color: colors.text,
+      marginBottom: Spacing.xs,
+      textAlign: "center",
+    },
+    description: {
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.regular,
+      color: colors.textSecondary,
+      textAlign: "center",
+      marginBottom: Spacing.lg,
+      lineHeight: 20,
     },
     button: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: colors.secondary + "20",
-      padding: Spacing.md,
-      borderRadius: BorderRadius.lg,
-      borderWidth: 1,
-      borderColor: colors.secondary,
+      backgroundColor: colors.primary,
+      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.lg,
+      borderRadius: BorderRadius.md,
       gap: Spacing.sm,
     },
     buttonText: {
-      fontSize: Typography.fontSize.md,
-      color: colors.primary,
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.semibold,
+      color: "#FFFFFF",
     },
   });
 
   return (
-    <View>
-      <Text variant="bold" style={styles.title}>
-        Empieza registrando a tu mascota
+    <View style={styles.container}>
+      <Text style={styles.title}>¡Bienvenido a PAKU! 🐾</Text>
+      <Text style={styles.description}>
+        Registra a tu mascota para comenzar a disfrutar de nuestros servicios
       </Text>
-      <TouchableOpacity style={styles.button} onPress={onPress}>
-        <Icon name="plus" size={18} color={colors.primary} />
-        <Text variant="semibold" style={styles.buttonText}>
-          Registrar mascota
-        </Text>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={onPress}
+        activeOpacity={0.8}
+      >
+        <Icon name="plus" size={16} color="#FFFFFF" />
+        <Text style={styles.buttonText}>Registrar mi mascota</Text>
       </TouchableOpacity>
     </View>
   );

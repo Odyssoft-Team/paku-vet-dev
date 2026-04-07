@@ -88,11 +88,12 @@ function buildCvvHtml(
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: transparent; font-family: -apple-system, sans-serif; padding: 0; }
-  .field-label { font-size: 12px; font-weight: 600; color: ${textColor}; margin-bottom: 6px; display: block; }
-  .mp-field { height: 48px; border: 1.5px solid ${borderColor}; border-radius: 12px; background: ${bgColor}; padding: 0 14px; margin-bottom: 16px; }
-  #btn-pay { width: 100%; padding: 15px; background: ${primaryColor}; color: #fff; border: none; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; }
-  #btn-pay:disabled { opacity: 0.5; }
+  body { background: transparent; font-family: -apple-system, sans-serif; padding: 14px 14px 16px; }
+  .field-label { font-size: 11px; font-weight: 700; color: ${textColor}; margin-bottom: 7px; display: block; letter-spacing: 0.4px; text-transform: uppercase; opacity: 0.7; }
+  .mp-field { height: 50px; border: 1.5px solid ${borderColor}; border-radius: 12px; background: ${bgColor}; padding: 0 14px; margin-bottom: 14px; transition: border-color 0.2s; }
+  .mp-field.focused { border-color: ${primaryColor}; box-shadow: 0 0 0 3px ${primaryColor}22; }
+  #btn-pay { width: 100%; padding: 14px; background: ${primaryColor}; color: #fff; border: none; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  #btn-pay:disabled { opacity: 0.45; }
   #error-msg { color: #e53e3e; font-size: 12px; margin-top: 10px; text-align: center; display: none; }
 </style>
 </head>
@@ -459,7 +460,7 @@ const CvvModal: React.FC<CvvModalProps> = ({
             {/* WebView con el campo CVV de MP */}
             <View
               style={{
-                height: 130,
+                height: 180,
                 borderRadius: BorderRadius.lg,
                 overflow: "hidden",
                 backgroundColor: colors.surface,
@@ -476,7 +477,7 @@ const CvvModal: React.FC<CvvModalProps> = ({
                 mixedContentMode="always"
                 allowFileAccessFromFileURLs
                 allowUniversalAccessFromFileURLs
-                style={{ backgroundColor: "transparent", height: 130 }}
+                style={{ backgroundColor: "transparent", height: 180 }}
               />
               {!cvvReady && (
                 <View
@@ -516,7 +517,7 @@ const CvvModal: React.FC<CvvModalProps> = ({
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 
-type PaymentMethod = "card" | null;
+type PaymentMethod = "card" | "simulated" | null;
 
 export default function CartScreen() {
   const router = useRouter();
@@ -600,7 +601,50 @@ export default function CartScreen() {
   };
 
   // Paso 1: crear carrito y hacer checkout, luego abrir el modal de CVV
+  // Pago simulado — flujo directo sin Mercado Pago
+  // TODO: eliminar cuando el microservicio de MP esté estable
+  const handleSimulatedPay = async () => {
+    setPaying(true);
+    try {
+      const items: CreateCartItemInput[] = [
+        {
+          kind: "service_base",
+          ref_id: productId!,
+          name: productName!,
+          qty: 1,
+          unit_price: quotedTotal!,
+          meta: {
+            pet_id: petId!,
+            scheduled_date: selectedDate!,
+            scheduled_time: selectedTime ?? "12:00",
+            addon_ids: selectedAddonIds,
+          },
+        },
+      ];
+      const cartResponse = await cartService.createWithItems({ items });
+      const newCartId = cartResponse.cart.id;
+      setCartId(newCartId);
+      await cartService.checkout(newCartId);
+      const newOrder = await orderService.createOrder({
+        cart_id: newCartId,
+        address_id: addressId!,
+      });
+      setOrder(newOrder);
+      setSuccessVisible(true);
+    } catch (error: any) {
+      const message =
+        error.response?.data?.detail || "Ocurrió un error al procesar el pago.";
+      Alert.alert("Error", message);
+    } finally {
+      setPaying(false);
+    }
+  };
+
   const handlePay = async () => {
+    if (paymentMethod === "simulated") {
+      handleSimulatedPay();
+      return;
+    }
     if (!paymentMethod || !selectedCardId) return;
     if (!selectedCard) {
       Alert.alert(
@@ -961,53 +1005,101 @@ export default function CartScreen() {
             Medio de pago
           </Text>
 
-          {/* Selector: solo tarjeta por ahora (Yape se conectará cuando el backend lo soporte) */}
-          <TouchableOpacity
-            style={[
-              styles.payOption,
-              {
-                borderColor:
-                  paymentMethod === "card" ? colors.primary : colors.border,
-                backgroundColor:
-                  paymentMethod === "card"
-                    ? colors.primary + "08"
-                    : colors.background,
-              },
-            ]}
-            onPress={() =>
-              setPaymentMethod(paymentMethod === "card" ? null : "card")
-            }
-            activeOpacity={0.8}
-          >
-            <Icon
-              name="wallet"
-              size={22}
-              color={
-                paymentMethod === "card" ? colors.primary : colors.textSecondary
-              }
-            />
-            <Text
+          {/* Selector de método de pago */}
+          <View style={{ flexDirection: "row", gap: Spacing.sm }}>
+            <TouchableOpacity
               style={[
-                styles.payOptionLabel,
+                styles.payOption,
                 {
-                  color:
+                  flex: 1,
+                  borderColor:
+                    paymentMethod === "card" ? colors.primary : colors.border,
+                  backgroundColor:
                     paymentMethod === "card"
-                      ? colors.primary
-                      : colors.textSecondary,
+                      ? colors.primary + "08"
+                      : colors.background,
                 },
               ]}
+              onPress={() =>
+                setPaymentMethod(paymentMethod === "card" ? null : "card")
+              }
+              activeOpacity={0.8}
             >
-              Tarjeta{"\n"}Débito / Crédito
-            </Text>
-            {paymentMethod === "card" && (
-              <View
-                style={[
-                  styles.payCheckDot,
-                  { backgroundColor: colors.primary },
-                ]}
+              <Icon
+                name="wallet"
+                size={22}
+                color={
+                  paymentMethod === "card"
+                    ? colors.primary
+                    : colors.textSecondary
+                }
               />
-            )}
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.payOptionLabel,
+                  {
+                    color:
+                      paymentMethod === "card"
+                        ? colors.primary
+                        : colors.textSecondary,
+                  },
+                ]}
+              >
+                Tarjeta{"\n"}Débito / Crédito
+              </Text>
+              {paymentMethod === "card" && (
+                <View
+                  style={[
+                    styles.payCheckDot,
+                    { backgroundColor: colors.primary },
+                  ]}
+                />
+              )}
+            </TouchableOpacity>
+
+            {/* TODO: eliminar cuando MP esté estable */}
+            <TouchableOpacity
+              style={[
+                styles.payOption,
+                {
+                  flex: 1,
+                  borderColor:
+                    paymentMethod === "simulated" ? "#F59E0B" : colors.border,
+                  backgroundColor:
+                    paymentMethod === "simulated"
+                      ? "#FEF3C7"
+                      : colors.background,
+                  borderStyle: "dashed",
+                },
+              ]}
+              onPress={() =>
+                setPaymentMethod(
+                  paymentMethod === "simulated" ? null : "simulated",
+                )
+              }
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 20 }}>🧪</Text>
+              <Text
+                style={[
+                  styles.payOptionLabel,
+                  {
+                    color:
+                      paymentMethod === "simulated"
+                        ? "#92400E"
+                        : colors.textSecondary,
+                  },
+                ]}
+              >
+                Pago{"\n"}Simulado
+              </Text>
+              {paymentMethod === "simulated" && (
+                <View
+                  style={[styles.payCheckDot, { backgroundColor: "#F59E0B" }]}
+                />
+              )}
+            </TouchableOpacity>
+          </View>
 
           {/* Lista de tarjetas guardadas */}
           {paymentMethod === "card" && (
@@ -1179,7 +1271,11 @@ export default function CartScreen() {
             (paymentMethod === "card" && !selectedCardId) ||
             paying
           }
-          style={{ borderRadius: BorderRadius.full }}
+          style={{
+            borderRadius: BorderRadius.full,
+            backgroundColor:
+              paymentMethod === "simulated" ? "#F59E0B" : undefined,
+          }}
         />
       </View>
 

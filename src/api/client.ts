@@ -90,8 +90,14 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    console.log("Response error:", error.message); // Log
-    console.log("Error details:", error.response?.data); // Log
+    console.log("=== INTERCEPTOR DEBUG ===");
+    console.log("error.message:", error.message);
+    console.log("error.response?.status:", error.response?.status);
+    console.log("error.response?.data:", JSON.stringify(error.response?.data));
+    console.log("error.config?.url:", error.config?.url);
+    console.log("error.code:", error.code); // ECONNABORTED, ERR_NETWORK, etc
+    console.log("error.response es undefined?", error.response === undefined);
+    console.log("========================");
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };

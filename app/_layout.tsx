@@ -14,6 +14,7 @@ import {
 } from "@expo-google-fonts/poppins";
 import * as SplashScreen from "expo-splash-screen";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { useTokenRefresh } from "@/hooks";
 
 // Prevenir que el splash screen se oculte automáticamente
 SplashScreen.preventAutoHideAsync();
@@ -26,10 +27,17 @@ GoogleSignin.configure({
 });
 
 export default function RootLayout() {
+  useTokenRefresh();
   const router = useRouter();
   const segments = useSegments();
-  const { isAuthenticated, isLoading, loadStoredAuth, user, error } =
-    useAuthStore();
+  const {
+    isAuthenticated,
+    isLoading,
+    loadStoredAuth,
+    user,
+    error,
+    sessionExpired,
+  } = useAuthStore();
   const [appIsReady, setAppIsReady] = useState(false);
 
   const [fontsLoaded] = useFonts({
@@ -57,24 +65,20 @@ export default function RootLayout() {
 
   // Manejar redirecciones
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !appIsReady) return; // ← agregar appIsReady aquí
 
     const inAuthGroup = segments[0] === "(auth)";
-    const inCompleteProfile = (segments as string[])[1] === "complete-profile";
 
-    // NO redirigir si hay un error (el usuario está intentando loguearse)
-    if (error && !inAuthGroup && !isAuthenticated) {
+    if (!isAuthenticated && !inAuthGroup) {
+      router.replace("/(auth)/login"); // ← ahora sí funciona, estamos dentro de React
       return;
     }
 
-    if (!isAuthenticated && !inAuthGroup) {
-      // No autenticado y no está en auth -> ir a login
-      router.replace("/(auth)/login");
-    } else if (isAuthenticated && inAuthGroup && user) {
-      // Si está completando perfil (usuario social nuevo), no interrumpir
+    if (isAuthenticated && inAuthGroup && user) {
+      const inCompleteProfile =
+        (segments as string[])[1] === "complete-profile";
       if (inCompleteProfile) return;
 
-      // Autenticado pero está en auth -> ir a su dashboard según rol
       switch (user.role) {
         case "admin":
           router.replace("/(tabs)/(admin)");
@@ -82,7 +86,6 @@ export default function RootLayout() {
         case "ally":
           router.replace("/(tabs)/(groomer)");
           break;
-        case "user":
         default:
           router.replace("/(tabs)/(user)");
           break;

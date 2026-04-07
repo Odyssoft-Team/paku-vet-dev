@@ -38,6 +38,24 @@ export const OfferCard: React.FC<OfferCardProps> = ({
       padding: Spacing.lg,
       justifyContent: "center",
     },
+    discount: {
+      fontSize: Typography.fontSize.xxl,
+      fontFamily: Typography.fontFamily.bold,
+      color: "#FFD700",
+      // marginBottom: Spacing.xs,
+    },
+    description: {
+      fontSize: Typography.fontSize.lg,
+      fontFamily: Typography.fontFamily.semibold,
+      color: "#FFFFFF",
+    },
+    code: {
+      fontSize: Typography.fontSize.xs,
+      fontFamily: Typography.fontFamily.regular,
+      color: "#FFFFFF",
+      opacity: 0.8,
+      marginTop: Spacing.sm,
+    },
     title: {
       fontSize: Typography.fontSize.xxxl,
       color: "#FFFFFF",
@@ -61,15 +79,9 @@ export const OfferCard: React.FC<OfferCardProps> = ({
         resizeMode="cover"
       >
         <View style={styles.content}>
-          <Text variant="black" style={styles.title}>
-            20% OFF {"\n"}
-            <Text variant="semibold" style={styles.title2}>
-              en tu primer PAKU Spa
-            </Text>
-          </Text>
-          <Text variant="regular" style={styles.subtitle}>
-            Se aplica con el código PAKU-DIC.
-          </Text>
+          <Text style={styles.discount}>{discount}</Text>
+          <Text style={styles.description}>{description}</Text>
+          <Text style={styles.code}>Código: PAKU-DIC</Text>
         </View>
       </ImageBackground>
     </Pressable>

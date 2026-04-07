@@ -26,12 +26,12 @@ export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
 
   const styles = StyleSheet.create({
     card: {
-      width: 130,
-      height: 130,
+      width: 110,
+      height: 110,
       borderRadius: BorderRadius.lg,
       overflow: "hidden",
       marginRight: Spacing.sm,
-      // ...Shadows.md,
+      ...Shadows.md,
     },
     imageBackground: {
       width: "100%",
@@ -49,22 +49,22 @@ export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
     },
     nameContainer: {
       padding: Spacing.sm,
-      zIndex: 1,
+      zIndex: 2,
       justifyContent: "center",
       alignItems: "center",
+      borderBottomLeftRadius: BorderRadius.lg,
+      borderBottomRightRadius: BorderRadius.lg,
     },
     petName: {
-      fontSize: Typography.fontSize.lg,
-      fontFamily: Typography.fontFamily.bold,
+      fontSize: Typography.fontSize.md, // Reducido de lg a md
+      fontFamily: Typography.fontFamily.semibold, // Cambiado de bold a semibold
       color: "#FFFFFF",
-      textShadowColor: "rgba(0, 0, 0, 0.75)",
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 3,
+      textAlign: "center",
     },
     placeholder: {
       width: "100%",
       height: "100%",
-      // backgroundColor: colors.primary,
+      backgroundColor: colors.surface,
       justifyContent: "center",
       alignItems: "center",
     },

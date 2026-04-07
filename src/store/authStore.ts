@@ -16,6 +16,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  sessionExpired: boolean;
 
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
@@ -36,6 +37,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: true,
   error: null,
+  sessionExpired: false,
 
   login: async (credentials: LoginCredentials) => {
     try {
@@ -63,6 +65,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         },
         isAuthenticated: true,
         isLoading: false,
+        sessionExpired: false,
       });
     } catch (error: any) {
       console.log("Login error in store:", error);
@@ -215,6 +218,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: false,
         isLoading: false,
         error: null,
+        sessionExpired: true,
       });
     } catch (error) {
       console.log("Error al cerrar sesión:", error);

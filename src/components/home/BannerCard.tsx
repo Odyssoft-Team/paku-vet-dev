@@ -20,9 +20,9 @@ export const BannerCard: React.FC<BannerCardProps> = ({
 
   const styles = StyleSheet.create({
     container: {
-      height: 350,
-      borderBottomEndRadius: BorderRadius.xxl,
-      borderBottomStartRadius: BorderRadius.xxl,
+      height: 200,
+      borderBottomEndRadius: BorderRadius.xl,
+      borderBottomStartRadius: BorderRadius.xl,
       overflow: "hidden",
       marginBottom: Spacing.lg,
     },
@@ -32,18 +32,20 @@ export const BannerCard: React.FC<BannerCardProps> = ({
       justifyContent: "flex-end",
     },
     title: {
-      fontSize: Typography.fontSize.xxxxl,
-      fontWeight: Typography.fontWeight.bold,
+      fontSize: Typography.fontSize.xxl,
+      fontFamily: Typography.fontFamily.bold,
       color: "#FFFFFF",
       marginBottom: Spacing.xs,
-      lineHeight: 42,
     },
     subtitle: {
-      fontSize: Typography.fontSize.md,
-      fontFamily: Typography.fontFamily.medium,
-      fontWeight: Typography.fontWeight.medium,
+      fontSize: Typography.fontSize.sm,
+      fontFamily: Typography.fontFamily.regular,
       color: "#FFFFFF",
       opacity: 0.9,
+    },
+    emoji: {
+      fontSize: Typography.fontSize.xxl,
+      marginBottom: Spacing.xs,
     },
   });
 
@@ -61,9 +63,12 @@ export const BannerCard: React.FC<BannerCardProps> = ({
           ]}
           style={styles.gradient}
         >
-          <Text variant="black" style={styles.title}>
-            {title}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Text style={styles.emoji}>✨</Text>
+            <Text variant="black" style={styles.title}>
+              {title}
+            </Text>
+          </View>
           <Text variant="regular" style={styles.subtitle}>
             {subtitle}
           </Text>
