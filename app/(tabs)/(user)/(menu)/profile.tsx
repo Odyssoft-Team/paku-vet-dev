@@ -247,6 +247,12 @@ export default function ProfileScreen() {
         <SectionHeader title="Actividad" />
         <View style={styles.section}>
           <MenuItem
+            label="Mis pedidos"
+            icon="services"
+            onPress={() => router.push("/(tabs)/(user)/(menu)/my-orders")}
+          />
+          <View style={[styles.divider, { backgroundColor: colors.shadow }]} />
+          <MenuItem
             label="Pagos y facturación"
             icon="wallet"
             onPress={() => router.push("/(tabs)/(user)/payments")}

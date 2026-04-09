@@ -33,6 +33,9 @@ export default function MenuLayout() {
     "tracking-service",
     "live-view",
     "my-cards",
+    "my-orders",
+    "order-detail",
+    "grooming-detail",
   ];
 
   return (

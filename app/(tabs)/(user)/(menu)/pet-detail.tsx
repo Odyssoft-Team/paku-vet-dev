@@ -28,6 +28,256 @@ import { clinicalHistoryService } from "@/api/services/clinical-history.service"
 import CardHealth from "@/components/pets/CardHealth";
 import { translateBreed } from "@/constants/breed";
 
+// ─── Mock: historial de grooming por mascota ──────────────────────────────────
+// TODO: reemplazar por endpoint real cuando esté disponible
+
+export type GroomingServiceType =
+  | "Baño clásico"
+  | "Baño y corte"
+  | "Deslanado"
+  | "Spa completo";
+
+export interface GroomingRecord {
+  id: string;
+  service: GroomingServiceType;
+  date: string; // ISO
+  groomer: string;
+  address: string;
+  total: number; // en centavos
+  currency: string;
+  status: "done" | "cancelled";
+  duration_min: number;
+  weight_kg: number;
+  observations: string;
+  products_used: string[];
+  next_recommended: string; // ISO
+}
+
+const MOCK_GROOMING_HISTORY: GroomingRecord[] = [
+  {
+    id: "gr-001",
+    service: "Baño y corte",
+    date: "2026-03-24T10:00:00Z",
+    groomer: "Maria López",
+    address: "Av. La Molina 456",
+    total: 8500,
+    currency: "PEN",
+    status: "done",
+    duration_min: 90,
+    weight_kg: 8.2,
+    observations:
+      "Mascota tranquila durante el servicio. Pelaje en buen estado.",
+    products_used: [
+      "Shampoo hipoalergénico",
+      "Acondicionador nutritivo",
+      "Perfume suave",
+    ],
+    next_recommended: "2026-04-21T10:00:00Z",
+  },
+  {
+    id: "gr-002",
+    service: "Baño clásico",
+    date: "2026-02-10T14:30:00Z",
+    groomer: "Carlos Ríos",
+    address: "Av. La Molina 456",
+    total: 6000,
+    currency: "PEN",
+    status: "done",
+    duration_min: 60,
+    weight_kg: 8.0,
+    observations:
+      "Se detectó leve irritación en la piel. Se recomienda shampoo hipoalergénico.",
+    products_used: ["Shampoo hipoalergénico", "Crema hidratante"],
+    next_recommended: "2026-03-10T14:30:00Z",
+  },
+  {
+    id: "gr-003",
+    service: "Spa completo",
+    date: "2026-01-05T11:00:00Z",
+    groomer: "Ana Torres",
+    address: "Av. La Molina 456",
+    total: 12000,
+    currency: "PEN",
+    status: "done",
+    duration_min: 120,
+    weight_kg: 7.9,
+    observations:
+      "Servicio completado sin novedades. Uñas cortadas y orejas limpias.",
+    products_used: [
+      "Shampoo premium",
+      "Mascarilla capilar",
+      "Perfume premium",
+      "Limpiador de orejas",
+    ],
+    next_recommended: "2026-02-05T11:00:00Z",
+  },
+  {
+    id: "gr-004",
+    service: "Deslanado",
+    date: "2025-12-15T09:00:00Z",
+    groomer: "Maria López",
+    address: "Av. La Molina 456",
+    total: 9000,
+    currency: "PEN",
+    status: "cancelled",
+    duration_min: 0,
+    weight_kg: 7.8,
+    observations: "Servicio cancelado por el cliente.",
+    products_used: [],
+    next_recommended: "2026-01-15T09:00:00Z",
+  },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatGroomingDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("es-PE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatPrice(cents: number, currency: string): string {
+  return `${currency} ${(cents / 100).toFixed(2)}`;
+}
+
+// ─── GroomingCard ─────────────────────────────────────────────────────────────
+
+function GroomingCard({
+  record,
+  onPress,
+}: {
+  record: GroomingRecord;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  const isDone = record.status === "done";
+
+  return (
+    <TouchableOpacity
+      style={[groomStyles.card, { backgroundColor: colors.surface }]}
+      onPress={onPress}
+      activeOpacity={0.75}
+    >
+      {/* Header: badge de estado + precio */}
+      <View style={groomStyles.cardHeader}>
+        <View
+          style={[
+            groomStyles.statusBadge,
+            { backgroundColor: isDone ? "#D1FAE5" : "#F3F4F6" },
+          ]}
+        >
+          <Text
+            style={[
+              groomStyles.statusText,
+              { color: isDone ? "#10B981" : "#6B7280" },
+            ]}
+          >
+            {isDone ? "Completado" : "Cancelado"}
+          </Text>
+        </View>
+        <Text style={[groomStyles.price, { color: colors.primary }]}>
+          {formatPrice(record.total, record.currency)}
+        </Text>
+      </View>
+
+      {/* Nombre del servicio + flecha */}
+      <View style={groomStyles.serviceRow}>
+        <Text style={[groomStyles.serviceName, { color: colors.text }]}>
+          {record.service}
+        </Text>
+        <Icon name="arrow-right" size={14} color={colors.textSecondary} />
+      </View>
+
+      {/* Fecha */}
+      <View style={groomStyles.infoRow}>
+        <Icon name="calendar" size={13} color={colors.textSecondary} />
+        <Text style={[groomStyles.infoText, { color: colors.textSecondary }]}>
+          {formatGroomingDate(record.date)}
+        </Text>
+      </View>
+
+      {/* Groomer */}
+      <View style={groomStyles.infoRow}>
+        <Icon name="profile" size={13} color={colors.textSecondary} />
+        <Text style={[groomStyles.infoText, { color: colors.textSecondary }]}>
+          {record.groomer}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const groomStyles = StyleSheet.create({
+  card: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    gap: Spacing.xs,
+    ...Shadows.sm,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 2,
+  },
+  statusBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  statusText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+  },
+  price: {
+    fontSize: Typography.fontSize.md,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  serviceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  serviceName: {
+    fontSize: Typography.fontSize.md,
+    fontFamily: Typography.fontFamily.semibold,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    gap: Spacing.sm,
+  },
+  emptyTitle: {
+    fontSize: Typography.fontSize.md,
+    fontFamily: Typography.fontFamily.bold,
+    textAlign: "center",
+  },
+  emptySubtitle: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    textAlign: "center",
+    maxWidth: 220,
+    lineHeight: 20,
+  },
+});
+
 type TabType = "salud" | "historial" | "citas";
 
 export default function PetDetailScreen() {
@@ -454,13 +704,40 @@ export default function PetDetailScreen() {
 
         {activeTab === "historial" && (
           <FlatList
-            data={historyData.filter((item) => item.type === "checkup")}
+            data={MOCK_GROOMING_HISTORY}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <CardHistory history={item} petId={petId} />
-            )}
-            contentContainerStyle={styles.flatListPadding}
+            contentContainerStyle={[
+              styles.flatListPadding,
+              { paddingBottom: Spacing.xl },
+            ]}
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={groomStyles.emptyContainer}>
+                <Icon name="calendar" size={40} color={colors.textSecondary} />
+                <Text style={[groomStyles.emptyTitle, { color: colors.text }]}>
+                  Sin historial aún
+                </Text>
+                <Text
+                  style={[
+                    groomStyles.emptySubtitle,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  El historial de servicios de grooming aparecerá aquí
+                </Text>
+              </View>
+            }
+            renderItem={({ item }) => (
+              <GroomingCard
+                record={item}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(tabs)/(user)/(menu)/grooming-detail",
+                    params: { data: JSON.stringify(item) },
+                  })
+                }
+              />
+            )}
           />
         )}
       </View>
