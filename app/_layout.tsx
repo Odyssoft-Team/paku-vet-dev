@@ -22,8 +22,7 @@ SplashScreen.preventAutoHideAsync();
 // Configurar Google Sign-In al cargar el módulo (una sola vez)
 GoogleSignin.configure({
   webClientId:
-    "551350554084-tvt4hi0u6k4vu8juhbcqj5pnqu31loh2.apps.googleusercontent.com",
-  // ⚠️ REEMPLAZAR con el webClientId real del proyecto Firebase
+    "288581456018-109m19jccedofh328if0t0l0fo3abnoq.apps.googleusercontent.com",
 });
 
 export default function RootLayout() {
