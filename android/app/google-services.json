@@ -1,49 +1,33 @@
 {
   "project_info": {
-    "project_number": "551350554084",
-    "project_id": "project-e7880754-7083-49ba-b25",
-    "storage_bucket": "project-e7880754-7083-49ba-b25.firebasestorage.app"
+    "project_number": "288581456018",
+    "project_id": "project-bdedbeea-8576-4e9f-bde",
+    "storage_bucket": "project-bdedbeea-8576-4e9f-bde.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:551350554084:android:cd9e2952e4dd07f057cbf1",
+        "mobilesdk_app_id": "1:288581456018:android:902b4b9e4c4e742f62d64b",
         "android_client_info": {
           "package_name": "com.aldoparradev.pakuvet"
         }
       },
       "oauth_client": [
         {
-          "client_id": "551350554084-h5g61a3j58md28ima6gvqbs34p29m2ba.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.aldoparradev.pakuvet",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
-          }
-        },
-        {
-          "client_id": "551350554084-q8kiubd4fuf82p78epic3hh76i7508ho.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.aldoparradev.pakuvet",
-            "certificate_hash": "b9a151a52e8b08a19e082983ef5f30ad9ed7f97c"
-          }
-        },
-        {
-          "client_id": "551350554084-tvt4hi0u6k4vu8juhbcqj5pnqu31loh2.apps.googleusercontent.com",
+          "client_id": "288581456018-109m19jccedofh328if0t0l0fo3abnoq.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDxYmHlCZgxIaAuMkMByjB_-mW-jKeGZ-M"
+          "current_key": "AIzaSyBqqW15phH0plINLHcz7QTO7mxzOd9VBp0"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "551350554084-tvt4hi0u6k4vu8juhbcqj5pnqu31loh2.apps.googleusercontent.com",
+              "client_id": "288581456018-109m19jccedofh328if0t0l0fo3abnoq.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
