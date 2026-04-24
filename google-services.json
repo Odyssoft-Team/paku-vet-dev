@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "288581456018-eehv754tneiiqdea86o00qb3leghh7pk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aldoparradev.pakuvet",
+            "certificate_hash": "cf228528d679d4e3e3bb7d2a68cac9115bf59e26"
+          }
+        },
+        {
           "client_id": "288581456018-109m19jccedofh328if0t0l0fo3abnoq.apps.googleusercontent.com",
           "client_type": 3
         }

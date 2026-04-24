@@ -1,0 +1,4 @@
+C:/FREELOS/paku-vet-dev/android/app/.cxx/Debug/6n3d2g45/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/foo.dir
+C:/FREELOS/paku-vet-dev/android/app/.cxx/Debug/6n3d2g45/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/boo.dir
+C:/FREELOS/paku-vet-dev/android/app/.cxx/Debug/6n3d2g45/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/edit_cache.dir
+C:/FREELOS/paku-vet-dev/android/app/.cxx/Debug/6n3d2g45/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/rebuild_cache.dir
