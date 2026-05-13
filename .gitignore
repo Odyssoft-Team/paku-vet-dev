@@ -1,50 +1,10 @@
 # OSX
 .DS_Store
 
-# Xcode
-build/
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-xcuserdata
-*.xccheckout
-*.moved-aside
-DerivedData
-*.hmap
-*.ipa
-*.xcuserstate
-project.xcworkspace
-
-# Android/IntelliJ
-build/
-.idea
-.gradle
-local.properties
-*.iml
-*.hprof
-
-# Node.js
+# Node
 node_modules/
 npm-debug.log
 yarn-error.log
-android/
-
-# BUCK
-buck-out/
-\.buckd/
-*.keystore
-!debug.keystore
-
-# Bundle artifacts
-*.jsbundle
-
-# CocoaPods
-/ios/Pods/
 
 # Expo
 .expo/
@@ -52,12 +12,19 @@ dist/
 web-build/
 
 # Native
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+android/
+ios/
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Environment
+.env
+.env.local
+.env.*.local
 
 # Metro
 .metro-health-check*
@@ -66,16 +33,14 @@ web-build/
 yarn-debug.log*
 yarn-error.log*
 
-# Environment
-.env
-.env.local
-.env.*.local
-
-# TypeScript
-*.tsbuildinfo
-
-# Temporary files
+# Temporary
 *.swp
 *.swo
 *~
-*.rar
+*.hprof
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
