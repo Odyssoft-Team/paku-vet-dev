@@ -1,59 +1,138 @@
-// ─── Tarjetas guardadas ────────────────────────────────────────────────────────
+/**
+ * payment.types.ts
+ *
+ * Tipos del dominio de pagos — Culqi
+ * Reemplaza la integración anterior de Mercado Pago.
+ */
 
+// ─── Token de Culqi (respuesta de secure.culqi.com/v2/tokens) ────────────────
+
+export interface CulqiToken {
+  id: string; // "tkn_test_xxx" o "tkn_live_xxx" — se envía al backend
+  object: string;
+  email: string;
+  last_four: string;
+  card_brand: string; // "Visa", "Mastercard", "Amex", ...
+}
+
+export interface CulqiTokenError {
+  object: "error";
+  type: string;
+  merchant_message: string;
+  user_message: string;
+  code?: string;
+}
+
+// ─── Datos de tarjeta (solo para tokenización directa con Culqi) ─────────────
+// Estos datos NUNCA llegan al backend propio — van directo a Culqi.
+
+export interface CardData {
+  card_number: string; // Sin espacios ni guiones
+  cvv: string;
+  expiration_month: string; // "01" – "12"
+  expiration_year: string; // "2026", "2027"...
+  email: string;
+}
+
+// ─── Tarjetas guardadas (respuesta del backend) ───────────────────────────────
+
+export interface SavedCard {
+  id: string; // crd_test_xxx — ID de tarjeta en Culqi
+  object: "card";
+  last_four: string;
+  card_brand: string; // "Visa", "Mastercard", "Amex", "Diners", ...
+  card_type: string; // "credito" | "debito"
+  customer_id: string; // cus_test_xxx
+}
+
+// Alias para compatibilidad con los componentes de cart.tsx y useSavedCards.ts
+// Mapea los campos de Culqi a los nombres que usa la UI existente.
 export interface SavedPaymentMethod {
-  id: string; // UUID interno del backend
-  brand: string; // "visa" | "master" | "amex" | ...
-  last4: string;
-  exp_month: number;
-  exp_year: number;
-  // campos extra que mapea el index2.html desde la API
-  mp_card_id?: string;
+  id: string; // = SavedCard.id (crd_test_xxx)
+  brand: string; // = SavedCard.card_brand (normalizado a minúsculas)
+  last4: string; // = SavedCard.last_four
+  exp_month: number; // No disponible en Culqi cards — usar 0 como fallback
+  exp_year: number; // No disponible en Culqi cards — usar 0 como fallback
 }
 
-// ─── Pago ──────────────────────────────────────────────────────────────────────
-
-export type PaymentStatus =
-  | "PENDING"
-  | "PROCESSING"
-  | "PAID"
-  | "FAILED"
-  | "CANCELLED";
-
-export interface PaymentResponse {
-  order_id: string;
-  status: PaymentStatus;
+/** Convierte SavedCard de Culqi al formato interno que usa la UI */
+export function toSavedPaymentMethod(card: SavedCard): SavedPaymentMethod {
+  return {
+    id: card.id,
+    brand: card.card_brand.toLowerCase(),
+    last4: card.last_four,
+    exp_month: 0, // Culqi no retorna fecha de vencimiento en GET /cards
+    exp_year: 0,
+  };
 }
 
-export interface PaymentStatusResponse {
-  order_id: string;
-  status: PaymentStatus;
+// ─── Cliente Culqi (respuesta del backend) ────────────────────────────────────
+
+export interface CulqiCustomer {
+  id: string; // cus_test_xxx — guardar en BD para cobros futuros
+  object: "customer";
+  first_name: string;
+  last_name: string;
+  email: string;
 }
 
-// ─── Inputs al backend ─────────────────────────────────────────────────────────
+// ─── Cargo (respuesta de POST /api/culqi/charges) ─────────────────────────────
 
-export interface SaveCardInput {
-  card_token: string; // token generado por MP SDK
-}
-
-/** Pago con tarjeta nueva (no guardada) */
-export interface PayWithNewCardInput {
-  cart_id: string;
-  amount: number; // en centimos (ej: 1500 = S/15.00)
-  currency: string;
-  card_token: string;
-  payment_method_id: string; // "visa" | "master" | ...
-  installments: number;
-  save_card?: boolean;
-}
-
-/** Pago con tarjeta guardada */
-export interface PayWithSavedCardInput {
-  cart_id: string;
+export interface CulqiCharge {
+  id: string; // chr_test_xxx
+  object: "charge";
   amount: number;
-  currency: string;
-  saved_payment_method_id: string;
-  card_token: string; // sigue siendo necesario (CVV re-tokenizado)
-  installments: number;
+  currency_code: string;
+  email: string;
+  source_id: string;
+  outcome: { type: string; merchant_message: string };
+  duplicated: boolean;
+  culqi_tracking_id?: string;
 }
 
-export type PayInput = PayWithNewCardInput | PayWithSavedCardInput;
+// ─── Payloads hacia el backend ────────────────────────────────────────────────
+
+export interface CreateCustomerPayload {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  address: string;
+  address_city: string;
+  country_code: string;
+}
+
+export interface SaveCardPayload {
+  customer_id: string; // cus_test_xxx del cliente Culqi
+  token_id: string; // tkn_test_xxx generado por createCulqiToken()
+}
+
+export interface CreateChargePayload {
+  amount: number; // En céntimos: 1000 = S/10.00
+  currency_code: "PEN" | "USD";
+  email: string;
+  source_id: string; // tkn_... (nueva) | crd_... (guardada)
+  description?: string;
+  metadata?: Record<string, string>;
+  antifraud_details?: AntifraudDetails;
+}
+
+export interface AntifraudDetails {
+  first_name: string;
+  last_name: string;
+  address: string;
+  address_city: string;
+  country_code: string;
+  phone_number: string;
+}
+
+// ─── Errores de negocio ────────────────────────────────────────────────────────
+
+export type PaymentErrorCode =
+  | "card_declined"
+  | "insufficient_funds"
+  | "expired_card"
+  | "incorrect_cvv"
+  | "processing_error"
+  | "fraud_detected"
+  | "network_error";

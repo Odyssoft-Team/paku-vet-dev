@@ -9,11 +9,19 @@ export const CONFIG = {
     process.env.EXPO_PUBLIC_MEDIA_API_URL ||
     "https://paku.dev-qa.site/paku/api/v1",
 
-  // ⚠️ Public key de Mercado Pago — debe coincidir con las credenciales
-  // del backend (misma cuenta MP). Pedir al dev la key correcta del proyecto.
-  MP_PUBLIC_KEY:
-    process.env.EXPO_PUBLIC_MP_PUBLIC_KEY ||
-    "APP_USR-0953387a-3497-415d-9de7-1c593551ff16",
+  // ── Culqi ─────────────────────────────────────────────────────────────────
+  // Clave pública de Culqi (pk_test_... o pk_live_...)
+  // Se usa SOLO para tokenizar tarjetas directamente con Culqi.
+  // NUNCA usar la secret key aquí.
+  CULQI_PUBLIC_KEY: process.env.EXPO_PUBLIC_CULQI_PUBLIC_KEY || "",
+
+  // URL base del microservicio de pagos (Culqi backend)
+  PAYMENT_API_URL:
+    process.env.EXPO_PUBLIC_PAYMENT_API_URL ||
+    "https://stream.dev-qa.site/payment",
+
+  // API Key del microservicio de pagos (header X-API-Key)
+  PAYMENT_API_KEY: process.env.EXPO_PUBLIC_PAYMENT_API_KEY || "",
 
   API_TIMEOUT: 30000,
 
