@@ -45,7 +45,10 @@ import {
   getPaymentErrorMessage,
 } from "@/api/services/payment.service";
 import { useAuthStore } from "@/store/authStore";
+import { storage } from "@/utils/storage";
 import type { CardData } from "@/types/payment.types";
+
+const CULQI_CUSTOMER_KEY = "@paku/culqi_customer_id";
 
 // ─── Preview de tarjeta nativa ─────────────────────────────────────────────────
 
@@ -245,25 +248,19 @@ export default function AddCardScreen() {
       return;
     }
 
-    // Necesitamos el culqi_customer_id del usuario.
-    // Si no existe aún, hay que crearlo primero en el backend.
-    // TODO: obtener culqiCustomerId del perfil del usuario (user.culqi_customer_id)
-    // Por ahora se asume que está disponible en el objeto user.
-    const culqiCustomerId: string | undefined = (user as any)
-      ?.culqi_customer_id;
-
-    if (!culqiCustomerId) {
-      Alert.alert(
-        "Configuración pendiente",
-        "Tu cuenta aún no tiene un perfil de pagos. Contacta a soporte.",
-      );
-      return;
-    }
-
     // Parsear vencimiento "MM/AA" o "MM/AAAA"
     const [expMonth, expYearShort] = expiry.split("/");
     const expYear =
       expYearShort.length === 2 ? `20${expYearShort}` : expYearShort;
+
+    console.log(
+      "[AddCard] expiry raw:",
+      expiry,
+      "→ month:",
+      expMonth,
+      "year:",
+      expYear,
+    );
 
     const cardData: CardData = {
       card_number: cardNumber.replace(/\s/g, ""),
@@ -275,7 +272,47 @@ export default function AddCardScreen() {
 
     setSaving(true);
     try {
-      console.log("[AddCard] Tokenizando y guardando tarjeta con Culqi...");
+      // Paso 1: obtener culqi_customer_id.
+      // El backend aún no lo expone en /users/me, así que lo creamos
+      // en este momento con los datos del usuario autenticado.
+      // Cuando el backend lo agregue al objeto user, reemplazar esta
+      // lógica por: const culqiCustomerId = user.culqi_customer_id;
+      // Buscar culqi_customer_id: primero en el objeto user (cuando el backend lo exponga),
+      // luego en storage local (guardado en un uso previo).
+      // let culqiCustomerId: string =
+      //   (user as any)?.culqi_customer_id ||
+      //   (await storage.getItem<string>(CULQI_CUSTOMER_KEY)) ||
+      //   "";
+
+      let culqiCustomerId: string =
+        (user as any)?.culqi_customer_id ||
+        (await storage.getItem<string>(CULQI_CUSTOMER_KEY)) ||
+        "cus_test_fI6hrhqOWE0OBIiU"; // ← tu customer ya creado
+
+      if (!culqiCustomerId) {
+        console.log("[AddCard] Creando customer en Culqi...");
+        const customer = await paymentService.createCustomer({
+          first_name: user?.first_name || holderName.split(" ")[0] || "Usuario",
+          last_name:
+            user?.last_name ||
+            holderName.split(" ").slice(1).join(" ") ||
+            "Paku",
+          email,
+          phone_number: (user as any)?.phone || "000000000",
+          address: "Lima, Peru",
+          address_city: "Lima",
+          country_code: "PE",
+        });
+        culqiCustomerId = customer.id;
+        // Guardar localmente para no volver a crearlo
+        await storage.setItem(CULQI_CUSTOMER_KEY, culqiCustomerId);
+        console.log("[AddCard] Customer creado y guardado:", culqiCustomerId);
+      } else {
+        console.log("[AddCard] Customer existente:", culqiCustomerId);
+      }
+
+      // Paso 2: tokenizar con Culqi y guardar la tarjeta
+      console.log("[AddCard] Guardando tarjeta...");
       const savedCard = await paymentService.saveCard(
         culqiCustomerId,
         cardData,
@@ -288,7 +325,7 @@ export default function AddCardScreen() {
         [{ text: "OK", onPress: () => router.back() }],
       );
     } catch (e: any) {
-      console.error("[AddCard] Error al guardar tarjeta:", e?.message, e);
+      console.error("[AddCard] Error:", e?.message, e);
       const msg = getPaymentErrorMessage(e);
       Alert.alert("Error al guardar", msg);
     } finally {

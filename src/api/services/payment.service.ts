@@ -39,6 +39,10 @@ const PAYMENT_BASE = CONFIG.PAYMENT_API_URL; // ej: "https://stream.dev-qa.site/
  */
 export async function createCulqiToken(card: CardData): Promise<CulqiToken> {
   const publicKey = CONFIG.CULQI_PUBLIC_KEY;
+  console.log(
+    "[createCulqiToken] publicKey:",
+    publicKey ? `${publicKey.slice(0, 10)}...` : "VACÍA",
+  );
 
   if (!publicKey) {
     throw new Error("EXPO_PUBLIC_CULQI_PUBLIC_KEY no está configurada.");
@@ -59,7 +63,16 @@ export async function createCulqiToken(card: CardData): Promise<CulqiToken> {
     }),
   });
 
-  const data = await response.json();
+  const rawText = await response.text();
+  console.log("[createCulqiToken] status:", response.status);
+  console.log("[createCulqiToken] body:", rawText);
+
+  let data: any;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(`Respuesta inválida de Culqi: ${rawText.slice(0, 200)}`);
+  }
 
   if (!response.ok) {
     // Culqi devuelve { object: "error", type, merchant_message, user_message }
@@ -70,7 +83,7 @@ export async function createCulqiToken(card: CardData): Promise<CulqiToken> {
   return data as CulqiToken;
 }
 
-// ─── Cliente HTTP para el microservicio de pagos ──────────────────────────────
+// ─── Cliente HTTP para el microservicio de pagos (Culqi) ─────────────────────
 
 async function paymentFetch<T>(
   path: string,
@@ -89,12 +102,27 @@ async function paymentFetch<T>(
     headers["Idempotency-Key"] = idempotencyKey;
   }
 
-  const response = await fetch(`${PAYMENT_BASE}${path}`, {
+  const fullUrl = `${PAYMENT_BASE}${path}`;
+  console.log("[paymentFetch] →", fetchOptions.method || "GET", fullUrl);
+
+  const response = await fetch(fullUrl, {
     ...fetchOptions,
     headers,
   });
 
-  const data = await response.json();
+  console.log("[paymentFetch] ← status:", response.status, response.statusText);
+
+  const rawText = await response.text();
+  console.log("[paymentFetch] ← body:", rawText.slice(0, 500));
+
+  let data: any;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(
+      `Respuesta no válida del servidor (${response.status}): ${rawText.slice(0, 200)}`,
+    );
+  }
 
   if (!response.ok) {
     const detail = data?.detail;
@@ -103,6 +131,56 @@ async function paymentFetch<T>(
       if (typeof detail === "string") message = detail;
       else if (detail.user_message) message = detail.user_message;
       else if (detail.merchant_message) message = detail.merchant_message;
+      else if (detail.message) message = detail.message;
+    }
+    throw new Error(message);
+  }
+
+  return data as T;
+}
+
+// ─── Cliente HTTP para el backend principal de Paku (Bearer token) ────────────
+// Usado para /wallet/cards — requiere el access token del usuario autenticado.
+
+async function pakuFetch<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const { storage } = await import("@/utils/storage");
+  const accessToken = await storage.getItem<string>(
+    CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+  );
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    ...(options.headers as Record<string, string>),
+  };
+
+  const fullUrl = `${CONFIG.API_URL}${path}`;
+  console.log("[pakuFetch] →", options.method || "GET", fullUrl);
+
+  const response = await fetch(fullUrl, { ...options, headers });
+
+  console.log("[pakuFetch] ← status:", response.status);
+
+  const rawText = await response.text();
+  console.log("[pakuFetch] ← body:", rawText.slice(0, 300));
+
+  let data: any;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(
+      `Respuesta no válida del servidor (${response.status}): ${rawText.slice(0, 200)}`,
+    );
+  }
+
+  if (!response.ok) {
+    const detail = data?.detail;
+    let message = `Error ${response.status}`;
+    if (detail) {
+      if (typeof detail === "string") message = detail;
       else if (detail.message) message = detail.message;
     }
     throw new Error(message);
@@ -144,29 +222,55 @@ export const paymentService = {
   },
 
   /**
-   * POST /api/culqi/cards
-   * Guarda una tarjeta tokenizada asociada al cliente Culqi.
-   * Requiere haber creado el cliente previamente.
+   * Flujo completo para guardar una tarjeta:
+   * 1. POST /api/culqi/cards  → tokeniza y guarda en Culqi
+   * 2. POST /wallet/cards     → persiste en paku-backend para el wallet
    *
-   * @param culqiCustomerId  ID del cliente en Culqi (cus_test_xxx)
-   * @param cardData         Datos de tarjeta a tokenizar y guardar
+   * @param culqiCustomerId  ID del cliente Culqi (cus_test_xxx)
+   * @param cardData         Datos de tarjeta a tokenizar
    */
   async saveCard(
     culqiCustomerId: string,
     cardData: CardData,
   ): Promise<SavedCard> {
-    // Primero tokenizar con Culqi directamente
+    // Paso 1: tokenizar con Culqi directamente
     const token = await createCulqiToken(cardData);
 
-    const payload: SaveCardPayload = {
-      customer_id: culqiCustomerId,
-      token_id: token.id,
-    };
-
-    return paymentFetch<SavedCard>("/api/culqi/cards", {
+    // Paso 2: guardar en Culqi via microservicio
+    const culqiCard = await paymentFetch<SavedCard>("/api/culqi/cards", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        customer_id: culqiCustomerId,
+        token_id: token.id,
+      }),
     });
+
+    // Paso 3: persistir en paku-backend para mostrarlo en el wallet
+    // Los datos de la tarjeta vienen en culqiCard.source (respuesta del microservicio)
+    const cardSource = (culqiCard as any).source ?? {};
+    const brand =
+      cardSource.iin?.card_brand ?? culqiCard.card_brand ?? "Unknown";
+    const last4 = cardSource.last_four ?? culqiCard.last_four ?? "";
+
+    await pakuFetch("/wallet/cards", {
+      method: "POST",
+      body: JSON.stringify({
+        provider: "culqi",
+        payment_method_id: culqiCard.id,
+        brand,
+        last4,
+        exp_month: 0, // Culqi no retorna vencimiento en la respuesta de cards
+        exp_year: 0,
+        culqi_customer_id: culqiCustomerId,
+        culqi_card_id: culqiCard.id,
+      }),
+    });
+
+    console.log(
+      "[paymentService] Tarjeta guardada en Culqi y wallet:",
+      culqiCard.id,
+    );
+    return culqiCard;
   },
 
   /**
@@ -175,8 +279,13 @@ export const paymentService = {
    *
    * NOTA: Si el backend no expone este endpoint aún, ajustar la ruta.
    */
+  /**
+   * GET /wallet/cards  (backend principal de Paku)
+   * Lista las tarjetas guardadas del usuario autenticado.
+   * Requiere Bearer token — lo obtiene automáticamente del storage.
+   */
   async listCards(): Promise<SavedCard[]> {
-    return paymentFetch<SavedCard[]>("/api/culqi/cards");
+    return pakuFetch<SavedCard[]>("/wallet/cards");
   },
 
   /**

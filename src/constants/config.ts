@@ -18,7 +18,7 @@ export const CONFIG = {
   // URL base del microservicio de pagos (Culqi backend)
   PAYMENT_API_URL:
     process.env.EXPO_PUBLIC_PAYMENT_API_URL ||
-    "https://stream.dev-qa.site/payment",
+    "https://culqi-backend-288581456018.us-central1.run.app",
 
   // API Key del microservicio de pagos (header X-API-Key)
   PAYMENT_API_KEY: process.env.EXPO_PUBLIC_PAYMENT_API_KEY || "",

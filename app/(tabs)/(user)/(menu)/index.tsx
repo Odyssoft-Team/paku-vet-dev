@@ -26,6 +26,8 @@ export default function UserHomeScreen() {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
 
+  console.log("[DEBUG user]", JSON.stringify(user, null, 2));
+
   // Address store
   const { addresses, isLoading, fetchAddresses, setDefaultAddress } =
     useAddressStore();
