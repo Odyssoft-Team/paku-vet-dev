@@ -298,10 +298,19 @@ export default function PetDetailScreen() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const data = await clinicalHistoryService.getHistoryByPet(petId); // Llamada al servicio
-        setHistoryData(data); // Guardamos la data
-      } catch (error) {
-        console.error("Error al cargar historial:", error);
+        const data = await clinicalHistoryService.getHistoryByPet(petId);
+        setHistoryData(data ?? []);
+      } catch (error: any) {
+        // 404 significa que no hay historial aún — no es un error real
+        const status = error?.response?.status;
+        if (status === 404) {
+          setHistoryData([]);
+        } else {
+          console.error(
+            "[PetDetail] Error al cargar historial:",
+            error?.message,
+          );
+        }
       }
     };
 

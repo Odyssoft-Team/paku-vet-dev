@@ -32,8 +32,7 @@ import {
   ActivityIndicator,
   TextInput,
 } from "react-native";
-import { WebView } from "react-native-webview";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Text } from "@/components/common/Text";
@@ -55,7 +54,6 @@ import {
 import { useStoreProduct } from "@/hooks/useStoreProduct";
 import { useSavedCards } from "@/hooks/useSavedCards";
 import { useAuthStore } from "@/store/authStore";
-import { CONFIG } from "@/constants/config";
 
 const COUPON_DISCOUNT = 20;
 
@@ -253,249 +251,6 @@ const SuccessModal = ({ visible, onGoHome, colors }: any) => (
   </Modal>
 );
 
-// ─── Culqi WebView Modal ───────────────────────────────────────────────────────
-//
-// Monta el Checkout oficial de Culqi dentro de una WebView.
-// El SDK genera el formulario (tarjeta + Yape si está habilitado en el panel).
-// Cuando el usuario completa el pago, Culqi llama a window.culqi() con el token,
-// y lo comunicamos al código nativo vía postMessage.
-
-const CULQI_HTML = (
-  publicKey: string,
-  amount: number,
-  currency: string,
-  email: string,
-  description: string,
-) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #f5f5f5; font-family: sans-serif; }
-    .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
-    button {
-      background: #7C3AED;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      padding: 16px 32px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-      max-width: 320px;
-    }
-    .logo { font-size: 32px; margin-bottom: 16px; }
-    .title { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
-    .amount { font-size: 28px; font-weight: 800; color: #7C3AED; margin-bottom: 24px; }
-    .loading { color: #666; font-size: 14px; margin-top: 12px; }
-    .error { color: #e53e3e; font-size: 13px; margin-top: 12px; text-align: center; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="logo">🐾</div>
-    <div class="title">Paku</div>
-    <div class="amount">${currency} ${(amount / 100).toFixed(2)}</div>
-    <button id="payBtn" onclick="openCulqi()">Pagar ahora</button>
-    <div class="loading" id="loadingMsg">Cargando pasarela segura...</div>
-    <div class="error" id="errorMsg"></div>
-  </div>
-
-  <script src="https://checkout.culqi.com/js/v4"></script>
-  <script>
-    var culqiCheckout;
-    var sdkReady = false;
-
-    function initCulqi() {
-      try {
-        culqiCheckout = new Culqi({
-          publicKey: '${publicKey}',
-          style: {
-            logo: '',
-            maincolor: '#7C3AED',
-            buttontext: '#ffffff',
-            maintext: '#1a1a2e',
-            desctext: '#6b7280'
-          }
-        });
-
-        culqiCheckout.settings({
-          title: 'Paku',
-          currency: '${currency}',
-          amount: ${amount},
-          description: '${description.replace(/'/g, "\\'")}',
-        });
-
-        sdkReady = true;
-        document.getElementById('loadingMsg').style.display = 'none';
-        document.getElementById('payBtn').style.opacity = '1';
-      } catch(e) {
-        document.getElementById('loadingMsg').style.display = 'none';
-        document.getElementById('errorMsg').innerText = 'Error al cargar: ' + e.message;
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CULQI_ERROR', message: e.message }));
-      }
-    }
-
-    function openCulqi() {
-      if (!sdkReady) {
-        document.getElementById('errorMsg').innerText = 'El SDK aún no está listo, espera un momento.';
-        return;
-      }
-      culqiCheckout.open();
-    }
-
-    // Callback que Culqi llama cuando el usuario completa el formulario
-    // IMPORTANTE: debe llamarse "culqi" globalmente — es el nombre reservado del SDK
-    window.culqi = function() {
-      if (culqiCheckout.token) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'CULQI_TOKEN',
-          token: culqiCheckout.token.id,
-          email: culqiCheckout.token.email,
-        }));
-      } else if (culqiCheckout.error) {
-        var err = culqiCheckout.error;
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'CULQI_ERROR',
-          message: err.user_message || err.merchant_message || 'Error en el pago',
-        }));
-      }
-    };
-
-    // Inicializar cuando el SDK cargue
-    window.addEventListener('load', function() {
-      if (typeof Culqi !== 'undefined') {
-        initCulqi();
-      } else {
-        document.getElementById('errorMsg').innerText = 'No se pudo cargar el SDK de Culqi. Verifica tu conexión.';
-        document.getElementById('loadingMsg').style.display = 'none';
-      }
-    });
-  </script>
-</body>
-</html>
-`;
-
-interface CulqiWebViewModalProps {
-  visible: boolean;
-  amount: number; // en céntimos
-  currency: string;
-  email: string;
-  description: string;
-  onToken: (token: string) => void;
-  onClose: () => void;
-  colors: any;
-}
-
-const CulqiWebViewModal: React.FC<CulqiWebViewModalProps> = ({
-  visible,
-  amount,
-  currency,
-  email,
-  description,
-  onToken,
-  onClose,
-  colors,
-}) => {
-  const publicKey = CONFIG.CULQI_PUBLIC_KEY;
-
-  const handleMessage = (event: any) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      console.log("[CulqiWebView] mensaje recibido:", data.type, data);
-      if (data.type === "CULQI_TOKEN" && data.token) {
-        onToken(data.token);
-      } else if (data.type === "CULQI_ERROR") {
-        Alert.alert("Error en el pago", data.message || "Ocurrió un error.");
-        onClose();
-      } else if (data.type === "CULQI_CLOSED") {
-        onClose();
-      }
-    } catch (e) {
-      console.error("[CulqiWebView] Error parseando mensaje:", e);
-    }
-  };
-
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }}>
-        {/* Header con botón cerrar */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "flex-end",
-            paddingTop: 50,
-            paddingHorizontal: Spacing.md,
-            paddingBottom: Spacing.sm,
-          }}
-        >
-          <TouchableOpacity
-            onPress={onClose}
-            style={{
-              backgroundColor: "rgba(255,255,255,0.15)",
-              borderRadius: 20,
-              padding: 8,
-            }}
-          >
-            <Icon name="close" size={20} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* WebView con el checkout de Culqi */}
-        <View
-          style={{
-            flex: 1,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            overflow: "hidden",
-            backgroundColor: colors.surface,
-          }}
-        >
-          <WebView
-            source={{
-              html: CULQI_HTML(publicKey, amount, currency, email, description),
-            }}
-            onMessage={handleMessage}
-            javaScriptEnabled
-            domStorageEnabled
-            startInLoadingState
-            renderLoading={() => (
-              <View
-                style={{
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: colors.surface,
-                }}
-              >
-                <ActivityIndicator color={colors.primary} size="large" />
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    marginTop: Spacing.sm,
-                    fontFamily: Typography.fontFamily.regular,
-                  }}
-                >
-                  Cargando pasarela de pago...
-                </Text>
-              </View>
-            )}
-            style={{ flex: 1, backgroundColor: "transparent" }}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 
 type PaymentMethod = "card" | "culqi" | "simulated" | null;
@@ -559,8 +314,6 @@ export default function CartScreen() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [successVisible, setSuccessVisible] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [culqiModalVisible, setCulqiModalVisible] = useState(false);
-  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const subtotal = useMemo(
     () => (quotedTotal ?? 0) - couponDiscount,
@@ -573,6 +326,21 @@ export default function CartScreen() {
       fetchCards();
     }
   }, [paymentMethod]);
+
+  // Recibir token de culqi-checkout cuando regresa por navigate
+  const params = useLocalSearchParams<{
+    culqiToken?: string;
+    culqiOrderId?: string;
+  }>();
+  useEffect(() => {
+    if (params.culqiToken && params.culqiOrderId) {
+      console.log(
+        "[Cart] Token recibido de culqi-checkout:",
+        params.culqiToken,
+      );
+      handleIncomingCulqiToken(params.culqiToken, params.culqiOrderId);
+    }
+  }, [params.culqiToken, params.culqiOrderId]);
 
   const selectedCard = cards.find((c) => c.id === selectedCardId) ?? null;
 
@@ -686,9 +454,11 @@ export default function CartScreen() {
     }
   };
 
-  // ─── Pago con Culqi Checkout (modal WebView — tarjeta nueva / Yape) ─────────
-  // Paso 1: crear carrito + orden, luego abrir el modal de Culqi
-  const handleCulqiModalOpen = async () => {
+  // ─── Pago con Culqi Checkout (pantalla dedicada — tarjeta nueva / Yape) ──────
+  // Crea el carrito + orden y navega a culqi-checkout con los params necesarios.
+  // Cuando el usuario completa el pago, culqi-checkout navega de vuelta
+  // a este cart con culqiToken + culqiOrderId en los params.
+  const handleCulqiNavigate = async () => {
     const email = user?.email;
     if (!email) {
       Alert.alert("Error", "No se encontró el email del usuario.");
@@ -697,7 +467,7 @@ export default function CartScreen() {
 
     setPaying(true);
     try {
-      console.log("[Cart] Preparando orden para Culqi modal...");
+      console.log("[Cart] Preparando orden para Culqi...");
       const cartResponse = await cartService.createWithItems({
         items: buildCartItems(),
       });
@@ -708,13 +478,22 @@ export default function CartScreen() {
         cart_id: newCartId,
         address_id: addressId!,
       });
-      setPendingOrderId(newOrder.id);
       setOrder(newOrder);
       console.log(
-        "[Cart] Orden lista, abriendo Culqi modal. orderId:",
+        "[Cart] Orden lista, navegando a Culqi checkout. orderId:",
         newOrder.id,
       );
-      setCulqiModalVisible(true);
+
+      router.push({
+        pathname: "/(screens)/culqi-checkout",
+        params: {
+          amount: String(Math.round(subtotal * 100)),
+          currency: (currency as string) || "PEN",
+          email,
+          description: `Paku — ${productName ?? "Servicio"}`,
+          orderId: newOrder.id,
+        },
+      });
     } catch (error: any) {
       console.error("[Cart] Error preparando orden:", error?.message);
       Alert.alert("Error", error?.message || "No se pudo preparar la orden.");
@@ -723,22 +502,15 @@ export default function CartScreen() {
     }
   };
 
-  // Paso 2: Culqi devolvió un token — cobrar y confirmar
-  const handleCulqiToken = async (token: string) => {
-    setCulqiModalVisible(false);
+  // Cuando culqi-checkout regresa con un token, procesamos el cargo aquí
+  const handleIncomingCulqiToken = async (token: string, orderId: string) => {
     const email = user?.email;
-    if (!email || !pendingOrderId) return;
+    if (!email || !token || !orderId) return;
 
     setPaying(true);
     try {
-      console.log(
-        "[Cart] Token Culqi recibido:",
-        token,
-        "orden:",
-        pendingOrderId,
-      );
+      console.log("[Cart] Token Culqi recibido:", token, "orden:", orderId);
 
-      // Cobrar con el token generado por el modal
       const charge = await paymentService.charge({
         amount: Math.round(subtotal * 100),
         currency_code: (currency as "PEN" | "USD") || "PEN",
@@ -748,19 +520,15 @@ export default function CartScreen() {
       });
       console.log("[Cart] Cargo exitoso:", charge.id);
 
-      // Confirmar pago en paku-backend
-      await orderService.confirmPayment(pendingOrderId, charge.id);
-      console.log("[Cart] Pago confirmado en orden:", pendingOrderId);
+      await orderService.confirmPayment(orderId, charge.id);
+      console.log("[Cart] Pago confirmado en orden:", orderId);
 
-      setPendingOrderId(null);
       setSuccessVisible(true);
     } catch (error: any) {
       console.error("[Cart] Error procesando token Culqi:", error?.message);
-      if (pendingOrderId) {
-        try {
-          await orderService.failPayment(pendingOrderId);
-        } catch {}
-      }
+      try {
+        await orderService.failPayment(orderId);
+      } catch {}
       const msg = getPaymentErrorMessage(error);
       Alert.alert("Error al procesar", msg);
     } finally {
@@ -772,7 +540,7 @@ export default function CartScreen() {
   const handlePay = () => {
     if (paymentMethod === "simulated") return handleSimulatedPay();
     if (paymentMethod === "card") return handleSavedCardPay();
-    if (paymentMethod === "culqi") return handleCulqiModalOpen();
+    if (paymentMethod === "culqi") return handleCulqiNavigate();
     Alert.alert("Selecciona un medio de pago", "Elige cómo quieres pagar.");
   };
 
@@ -1320,7 +1088,7 @@ export default function CartScreen() {
           style={{
             borderRadius: BorderRadius.full,
             backgroundColor:
-              paymentMethod === "simulated" ? "#F59E0B" : undefined,
+              paymentMethod === "simulated" ? "#F59E0B" : colors.primary,
           }}
         />
       </View>
@@ -1341,23 +1109,6 @@ export default function CartScreen() {
           setSuccessVisible(false);
           clearBooking();
           router.replace("/(tabs)/(user)/");
-        }}
-        colors={colors}
-      />
-      <CulqiWebViewModal
-        visible={culqiModalVisible}
-        amount={Math.round(subtotal * 100)}
-        currency={(currency as string) || "PEN"}
-        email={user?.email ?? ""}
-        description={`Paku — ${productName ?? "Servicio"}`}
-        onToken={handleCulqiToken}
-        onClose={() => {
-          setCulqiModalVisible(false);
-          // Si el usuario cierra el modal sin pagar, marcar orden como fallida
-          if (pendingOrderId) {
-            orderService.failPayment(pendingOrderId).catch(() => {});
-            setPendingOrderId(null);
-          }
         }}
         colors={colors}
       />
