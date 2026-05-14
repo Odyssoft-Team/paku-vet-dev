@@ -270,60 +270,111 @@ const CULQI_HTML = (
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://checkout.culqi.com/js/v4"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <style>
-    body { margin: 0; padding: 0; background: transparent; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f5f5f5; font-family: sans-serif; }
+    .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    button {
+      background: #7C3AED;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      max-width: 320px;
+    }
+    .logo { font-size: 32px; margin-bottom: 16px; }
+    .title { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+    .amount { font-size: 28px; font-weight: 800; color: #7C3AED; margin-bottom: 24px; }
+    .loading { color: #666; font-size: 14px; margin-top: 12px; }
+    .error { color: #e53e3e; font-size: 13px; margin-top: 12px; text-align: center; }
   </style>
 </head>
 <body>
-<script>
-  var culqi = new Culqi({
-    publicKey: '${publicKey}',
-    style: {
-      logo: '',
-      maincolor: '#7C3AED',
-      buttontext: '#ffffff',
-      maintext: '#1a1a2e',
-      desctext: '#666'
+  <div class="container">
+    <div class="logo">🐾</div>
+    <div class="title">Paku</div>
+    <div class="amount">${currency} ${(amount / 100).toFixed(2)}</div>
+    <button id="payBtn" onclick="openCulqi()">Pagar ahora</button>
+    <div class="loading" id="loadingMsg">Cargando pasarela segura...</div>
+    <div class="error" id="errorMsg"></div>
+  </div>
+
+  <script src="https://checkout.culqi.com/js/v4"></script>
+  <script>
+    var culqiCheckout;
+    var sdkReady = false;
+
+    function initCulqi() {
+      try {
+        culqiCheckout = new Culqi({
+          publicKey: '${publicKey}',
+          style: {
+            logo: '',
+            maincolor: '#7C3AED',
+            buttontext: '#ffffff',
+            maintext: '#1a1a2e',
+            desctext: '#6b7280'
+          }
+        });
+
+        culqiCheckout.settings({
+          title: 'Paku',
+          currency: '${currency}',
+          amount: ${amount},
+          description: '${description.replace(/'/g, "\\'")}',
+        });
+
+        sdkReady = true;
+        document.getElementById('loadingMsg').style.display = 'none';
+        document.getElementById('payBtn').style.opacity = '1';
+      } catch(e) {
+        document.getElementById('loadingMsg').style.display = 'none';
+        document.getElementById('errorMsg').innerText = 'Error al cargar: ' + e.message;
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CULQI_ERROR', message: e.message }));
+      }
     }
-  });
 
-  culqi.settings({
-    title: 'Paku',
-    currency: '${currency}',
-    amount: ${amount},
-    order: '',
-    description: '${description.replace(/'/g, "\\'")}',
-  });
-
-  // Abre el modal de Culqi automáticamente al cargar
-  window.onload = function() {
-    culqi.open();
-  };
-
-  // Culqi llama a esta función cuando el usuario completa el formulario
-  function culqi() {
-    if (culqi.token) {
-      // Éxito — enviamos el token al código nativo
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        type: 'CULQI_TOKEN',
-        token: culqi.token.id,
-        email: culqi.token.email,
-      }));
-    } else if (culqi.order) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        type: 'CULQI_ORDER',
-        order: culqi.order,
-      }));
+    function openCulqi() {
+      if (!sdkReady) {
+        document.getElementById('errorMsg').innerText = 'El SDK aún no está listo, espera un momento.';
+        return;
+      }
+      culqiCheckout.open();
     }
-  }
 
-  // Detectar cierre del modal de Culqi
-  document.addEventListener('culqi_close', function() {
-    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CULQI_CLOSED' }));
-  });
-</script>
+    // Callback que Culqi llama cuando el usuario completa el formulario
+    // IMPORTANTE: debe llamarse "culqi" globalmente — es el nombre reservado del SDK
+    window.culqi = function() {
+      if (culqiCheckout.token) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'CULQI_TOKEN',
+          token: culqiCheckout.token.id,
+          email: culqiCheckout.token.email,
+        }));
+      } else if (culqiCheckout.error) {
+        var err = culqiCheckout.error;
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'CULQI_ERROR',
+          message: err.user_message || err.merchant_message || 'Error en el pago',
+        }));
+      }
+    };
+
+    // Inicializar cuando el SDK cargue
+    window.addEventListener('load', function() {
+      if (typeof Culqi !== 'undefined') {
+        initCulqi();
+      } else {
+        document.getElementById('errorMsg').innerText = 'No se pudo cargar el SDK de Culqi. Verifica tu conexión.';
+        document.getElementById('loadingMsg').style.display = 'none';
+      }
+    });
+  </script>
 </body>
 </html>
 `;
@@ -354,9 +405,12 @@ const CulqiWebViewModal: React.FC<CulqiWebViewModalProps> = ({
   const handleMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      console.log("[CulqiWebView] mensaje recibido:", data.type);
+      console.log("[CulqiWebView] mensaje recibido:", data.type, data);
       if (data.type === "CULQI_TOKEN" && data.token) {
         onToken(data.token);
+      } else if (data.type === "CULQI_ERROR") {
+        Alert.alert("Error en el pago", data.message || "Ocurrió un error.");
+        onClose();
       } else if (data.type === "CULQI_CLOSED") {
         onClose();
       }
