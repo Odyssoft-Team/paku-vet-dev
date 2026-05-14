@@ -26,12 +26,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
+import { WebView } from "react-native-webview";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -54,6 +55,7 @@ import {
 import { useStoreProduct } from "@/hooks/useStoreProduct";
 import { useSavedCards } from "@/hooks/useSavedCards";
 import { useAuthStore } from "@/store/authStore";
+import { CONFIG } from "@/constants/config";
 
 const COUPON_DISCOUNT = 20;
 
@@ -251,35 +253,117 @@ const SuccessModal = ({ visible, onGoHome, colors }: any) => (
   </Modal>
 );
 
-// ─── CVV Modal (nativo — sin WebView) ─────────────────────────────────────────
+// ─── Culqi WebView Modal ───────────────────────────────────────────────────────
 //
-// Culqi NO requiere re-tokenizar el CVV al cobrar con tarjeta guardada.
-// Este modal sirve como paso de confirmación UX antes de procesar el cargo.
+// Monta el Checkout oficial de Culqi dentro de una WebView.
+// El SDK genera el formulario (tarjeta + Yape si está habilitado en el panel).
+// Cuando el usuario completa el pago, Culqi llama a window.culqi() con el token,
+// y lo comunicamos al código nativo vía postMessage.
 
-interface CvvModalProps {
+const CULQI_HTML = (
+  publicKey: string,
+  amount: number,
+  currency: string,
+  email: string,
+  description: string,
+) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://checkout.culqi.com/js/v4"></script>
+  <style>
+    body { margin: 0; padding: 0; background: transparent; }
+  </style>
+</head>
+<body>
+<script>
+  var culqi = new Culqi({
+    publicKey: '${publicKey}',
+    style: {
+      logo: '',
+      maincolor: '#7C3AED',
+      buttontext: '#ffffff',
+      maintext: '#1a1a2e',
+      desctext: '#666'
+    }
+  });
+
+  culqi.settings({
+    title: 'Paku',
+    currency: '${currency}',
+    amount: ${amount},
+    order: '',
+    description: '${description.replace(/'/g, "\\'")}',
+  });
+
+  // Abre el modal de Culqi automáticamente al cargar
+  window.onload = function() {
+    culqi.open();
+  };
+
+  // Culqi llama a esta función cuando el usuario completa el formulario
+  function culqi() {
+    if (culqi.token) {
+      // Éxito — enviamos el token al código nativo
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'CULQI_TOKEN',
+        token: culqi.token.id,
+        email: culqi.token.email,
+      }));
+    } else if (culqi.order) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'CULQI_ORDER',
+        order: culqi.order,
+      }));
+    }
+  }
+
+  // Detectar cierre del modal de Culqi
+  document.addEventListener('culqi_close', function() {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CULQI_CLOSED' }));
+  });
+</script>
+</body>
+</html>
+`;
+
+interface CulqiWebViewModalProps {
   visible: boolean;
-  card: SavedPaymentMethod | null;
+  amount: number; // en céntimos
+  currency: string;
+  email: string;
+  description: string;
+  onToken: (token: string) => void;
   onClose: () => void;
-  onConfirm: () => void; // Solo confirma — el cargo lo hace el padre
   colors: any;
 }
 
-const CvvModal: React.FC<CvvModalProps> = ({
+const CulqiWebViewModal: React.FC<CulqiWebViewModalProps> = ({
   visible,
-  card,
+  amount,
+  currency,
+  email,
+  description,
+  onToken,
   onClose,
-  onConfirm,
   colors,
 }) => {
-  const [cvv, setCvv] = useState("");
+  const publicKey = CONFIG.CULQI_PUBLIC_KEY;
 
-  useEffect(() => {
-    if (!visible) setCvv("");
-  }, [visible]);
-
-  if (!card) return null;
-
-  const isValid = cvv.length >= 3;
+  const handleMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      console.log("[CulqiWebView] mensaje recibido:", data.type);
+      if (data.type === "CULQI_TOKEN" && data.token) {
+        onToken(data.token);
+      } else if (data.type === "CULQI_CLOSED") {
+        onClose();
+      }
+    } catch (e) {
+      console.error("[CulqiWebView] Error parseando mensaje:", e);
+    }
+  };
 
   return (
     <Modal
@@ -288,136 +372,79 @@ const CvvModal: React.FC<CvvModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <TouchableOpacity
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.6)",
-          justifyContent: "flex-end",
-        }}
-        activeOpacity={1}
-        onPress={onClose}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }}>
+        {/* Header con botón cerrar */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "flex-end",
+            paddingTop: 50,
+            paddingHorizontal: Spacing.md,
+            paddingBottom: Spacing.sm,
+          }}
         >
-          <TouchableOpacity activeOpacity={1}>
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                padding: Spacing.lg,
-                paddingBottom: 40,
-              }}
-            >
-              {/* Header */}
+          <TouchableOpacity
+            onPress={onClose}
+            style={{
+              backgroundColor: "rgba(255,255,255,0.15)",
+              borderRadius: 20,
+              padding: 8,
+            }}
+          >
+            <Icon name="close" size={20} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+
+        {/* WebView con el checkout de Culqi */}
+        <View
+          style={{
+            flex: 1,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            overflow: "hidden",
+            backgroundColor: colors.surface,
+          }}
+        >
+          <WebView
+            source={{
+              html: CULQI_HTML(publicKey, amount, currency, email, description),
+            }}
+            onMessage={handleMessage}
+            javaScriptEnabled
+            domStorageEnabled
+            startInLoadingState
+            renderLoading={() => (
               <View
                 style={{
-                  flexDirection: "row",
+                  flex: 1,
                   alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: Spacing.lg,
+                  justifyContent: "center",
+                  backgroundColor: colors.surface,
                 }}
               >
-                <View>
-                  <Text
-                    style={{
-                      fontFamily: Typography.fontFamily.bold,
-                      fontSize: Typography.fontSize.md,
-                      color: colors.text,
-                    }}
-                  >
-                    Confirmar pago
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: Typography.fontFamily.regular,
-                      fontSize: Typography.fontSize.xs,
-                      color: colors.textSecondary,
-                      marginTop: 2,
-                    }}
-                  >
-                    {getBrandLabel(card.brand)} •••• {card.last4}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={onClose}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                <ActivityIndicator color={colors.primary} size="large" />
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    marginTop: Spacing.sm,
+                    fontFamily: Typography.fontFamily.regular,
+                  }}
                 >
-                  <Icon name="close" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
+                  Cargando pasarela de pago...
+                </Text>
               </View>
-
-              {/* Campo CVV nativo */}
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontFamily: Typography.fontFamily.semibold,
-                  color: colors.textSecondary,
-                  marginBottom: 6,
-                  letterSpacing: 0.4,
-                  textTransform: "uppercase",
-                }}
-              >
-                Código de seguridad (CVV)
-              </Text>
-              <TextInput
-                style={{
-                  height: 52,
-                  borderWidth: 1.5,
-                  borderColor: colors.border,
-                  borderRadius: BorderRadius.lg,
-                  backgroundColor: colors.background,
-                  paddingHorizontal: Spacing.md,
-                  fontSize: Typography.fontSize.md,
-                  fontFamily: Typography.fontFamily.regular,
-                  color: colors.text,
-                  marginBottom: Spacing.md,
-                  letterSpacing: 6,
-                }}
-                value={cvv}
-                onChangeText={(v) => setCvv(v.replace(/\D/g, "").slice(0, 4))}
-                placeholder="•••"
-                placeholderTextColor={colors.textSecondary + "88"}
-                keyboardType="number-pad"
-                secureTextEntry
-                autoFocus
-                maxLength={4}
-              />
-
-              {/* Botón confirmar */}
-              <Button
-                title="Confirmar pago"
-                onPress={() => {
-                  if (isValid) onConfirm();
-                }}
-                fullWidth
-                disabled={!isValid}
-                style={{ borderRadius: BorderRadius.full }}
-              />
-
-              <Text
-                style={{
-                  fontSize: Typography.fontSize.xs,
-                  color: colors.textSecondary,
-                  fontFamily: Typography.fontFamily.regular,
-                  textAlign: "center",
-                  marginTop: Spacing.sm,
-                }}
-              >
-                🔒 Pago seguro con Culqi · SSL cifrado
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </KeyboardAvoidingView>
-      </TouchableOpacity>
+            )}
+            style={{ flex: 1, backgroundColor: "transparent" }}
+          />
+        </View>
+      </View>
     </Modal>
   );
 };
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 
-type PaymentMethod = "card" | "simulated" | null;
+type PaymentMethod = "card" | "culqi" | "simulated" | null;
 
 export default function CartScreen() {
   const router = useRouter();
@@ -478,7 +505,8 @@ export default function CartScreen() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [successVisible, setSuccessVisible] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [cvvModalVisible, setCvvModalVisible] = useState(false);
+  const [culqiModalVisible, setCulqiModalVisible] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const subtotal = useMemo(
     () => (quotedTotal ?? 0) - couponDiscount,
@@ -500,27 +528,31 @@ export default function CartScreen() {
     else removeInvoice();
   };
 
-  // Pago simulado — flujo directo sin Culqi
-  // TODO: eliminar cuando el microservicio de Culqi esté estable
+  // ─── Helpers de carrito ────────────────────────────────────────────────────
+
+  const buildCartItems = (): CreateCartItemInput[] => [
+    {
+      kind: "service_base",
+      ref_id: productId!,
+      name: productName!,
+      qty: 1,
+      unit_price: quotedTotal!,
+      meta: {
+        pet_id: petId!,
+        scheduled_date: selectedDate!,
+        scheduled_time: selectedTime ?? "12:00",
+        addon_ids: selectedAddonIds,
+      },
+    },
+  ];
+
+  // ─── Pago simulado ─────────────────────────────────────────────────────────
   const handleSimulatedPay = async () => {
     setPaying(true);
     try {
-      const items: CreateCartItemInput[] = [
-        {
-          kind: "service_base",
-          ref_id: productId!,
-          name: productName!,
-          qty: 1,
-          unit_price: quotedTotal!,
-          meta: {
-            pet_id: petId!,
-            scheduled_date: selectedDate!,
-            scheduled_time: selectedTime ?? "12:00",
-            addon_ids: selectedAddonIds,
-          },
-        },
-      ];
-      const cartResponse = await cartService.createWithItems({ items });
+      const cartResponse = await cartService.createWithItems({
+        items: buildCartItems(),
+      });
       const newCartId = cartResponse.cart.id;
       setCartId(newCartId);
       await cartService.checkout(newCartId);
@@ -539,101 +571,155 @@ export default function CartScreen() {
     }
   };
 
-  // Paso 1: crear carrito y checkout, luego abrir el modal de confirmación CVV
-  const handlePay = async () => {
-    if (paymentMethod === "simulated") {
-      handleSimulatedPay();
-      return;
-    }
-    if (!paymentMethod || !selectedCardId || !selectedCard) {
-      Alert.alert(
-        "Selecciona una tarjeta",
-        "Elige una tarjeta guardada para continuar.",
-      );
+  // ─── Pago con tarjeta guardada (sin CVV) ───────────────────────────────────
+  // Flujo: crear carrito → checkout → crear orden → charge → confirm-payment
+  const handleSavedCardPay = async () => {
+    if (!selectedCardId || !selectedCard) return;
+    const email = user?.email;
+    if (!email) {
+      Alert.alert("Error", "No se encontró el email del usuario.");
       return;
     }
 
-    console.log("[Cart] Iniciando pago — tarjeta:", selectedCardId);
     setPaying(true);
+    let orderId: string | null = null;
+
     try {
-      const items: CreateCartItemInput[] = [
-        {
-          kind: "service_base",
-          ref_id: productId!,
-          name: productName!,
-          qty: 1,
-          unit_price: quotedTotal!,
-          meta: {
-            pet_id: petId!,
-            scheduled_date: selectedDate!,
-            scheduled_time: selectedTime ?? "12:00",
-            addon_ids: selectedAddonIds,
-          },
-        },
-      ];
-      const cartResponse = await cartService.createWithItems({ items });
+      // 1. Carrito + orden
+      console.log("[Cart] Creando carrito...");
+      const cartResponse = await cartService.createWithItems({
+        items: buildCartItems(),
+      });
       const newCartId = cartResponse.cart.id;
       setCartId(newCartId);
       await cartService.checkout(newCartId);
-    } catch (error: any) {
-      const message =
-        error.response?.data?.detail ||
-        "Ocurrió un error al preparar el carrito.";
-      Alert.alert("Error", message);
-      setPaying(false);
-      return;
-    }
-    setPaying(false);
-
-    // Abrir modal de confirmación CVV
-    setCvvModalVisible(true);
-  };
-
-  // Paso 2: el usuario confirmó el CVV — procesar el cargo con Culqi
-  // Con tarjetas guardadas en Culqi, el cargo se hace directamente con el card id.
-  // No se necesita re-tokenizar el CVV (a diferencia de Mercado Pago).
-  const handleCvvConfirm = async () => {
-    setCvvModalVisible(false);
-    setPaying(true);
-
-    try {
-      const { cartId } = useBookingStore.getState();
-      const email = user?.email;
-
-      if (!email) {
-        throw new Error("No se encontró el email del usuario.");
-      }
-
-      console.log("[Cart] Procesando cargo Culqi:", {
-        card_id: selectedCard!.id,
-        amount: Math.round(subtotal * 100),
-      });
-
-      // Cobrar con la tarjeta guardada (source_id = crd_test_xxx)
-      const charge = await paymentService.charge({
-        amount: Math.round(subtotal * 100), // en céntimos
-        currency_code: (currency as "PEN" | "USD") || "PEN",
-        email,
-        source_id: selectedCard!.id, // crd_test_xxx — ID de tarjeta Culqi
-        description: `Paku — ${productName ?? "Servicio"}`,
-      });
-
-      console.log("[Cart] Cargo exitoso:", charge.id, charge.outcome?.type);
-
-      // Crear la orden en el backend principal de Paku
       const newOrder = await orderService.createOrder({
-        cart_id: cartId!,
+        cart_id: newCartId,
         address_id: addressId!,
       });
+      orderId = newOrder.id;
+      console.log("[Cart] Orden creada:", orderId);
+
+      // 2. Cobrar con tarjeta guardada (source_id = crd_test_xxx)
+      console.log("[Cart] Cobrando con tarjeta guardada:", selectedCard.id);
+      const charge = await paymentService.charge({
+        amount: Math.round(subtotal * 100),
+        currency_code: (currency as "PEN" | "USD") || "PEN",
+        email,
+        source_id: selectedCard.id,
+        description: `Paku — ${productName ?? "Servicio"}`,
+      });
+      console.log("[Cart] Cargo exitoso:", charge.id);
+
+      // 3. Confirmar pago en paku-backend
+      await orderService.confirmPayment(orderId, charge.id);
+      console.log("[Cart] Pago confirmado en orden:", orderId);
+
       setOrder(newOrder);
       setSuccessVisible(true);
     } catch (error: any) {
-      console.error("[Cart] Error en cargo Culqi:", error?.message, error);
+      console.error("[Cart] Error en pago:", error?.message);
+      // Si el cargo falló y ya tenemos orden, marcarla como fallida
+      if (orderId) {
+        try {
+          await orderService.failPayment(orderId);
+        } catch {}
+      }
       const msg = getPaymentErrorMessage(error);
       Alert.alert("Error al procesar", msg);
     } finally {
       setPaying(false);
     }
+  };
+
+  // ─── Pago con Culqi Checkout (modal WebView — tarjeta nueva / Yape) ─────────
+  // Paso 1: crear carrito + orden, luego abrir el modal de Culqi
+  const handleCulqiModalOpen = async () => {
+    const email = user?.email;
+    if (!email) {
+      Alert.alert("Error", "No se encontró el email del usuario.");
+      return;
+    }
+
+    setPaying(true);
+    try {
+      console.log("[Cart] Preparando orden para Culqi modal...");
+      const cartResponse = await cartService.createWithItems({
+        items: buildCartItems(),
+      });
+      const newCartId = cartResponse.cart.id;
+      setCartId(newCartId);
+      await cartService.checkout(newCartId);
+      const newOrder = await orderService.createOrder({
+        cart_id: newCartId,
+        address_id: addressId!,
+      });
+      setPendingOrderId(newOrder.id);
+      setOrder(newOrder);
+      console.log(
+        "[Cart] Orden lista, abriendo Culqi modal. orderId:",
+        newOrder.id,
+      );
+      setCulqiModalVisible(true);
+    } catch (error: any) {
+      console.error("[Cart] Error preparando orden:", error?.message);
+      Alert.alert("Error", error?.message || "No se pudo preparar la orden.");
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  // Paso 2: Culqi devolvió un token — cobrar y confirmar
+  const handleCulqiToken = async (token: string) => {
+    setCulqiModalVisible(false);
+    const email = user?.email;
+    if (!email || !pendingOrderId) return;
+
+    setPaying(true);
+    try {
+      console.log(
+        "[Cart] Token Culqi recibido:",
+        token,
+        "orden:",
+        pendingOrderId,
+      );
+
+      // Cobrar con el token generado por el modal
+      const charge = await paymentService.charge({
+        amount: Math.round(subtotal * 100),
+        currency_code: (currency as "PEN" | "USD") || "PEN",
+        email,
+        source_id: token,
+        description: `Paku — ${productName ?? "Servicio"}`,
+      });
+      console.log("[Cart] Cargo exitoso:", charge.id);
+
+      // Confirmar pago en paku-backend
+      await orderService.confirmPayment(pendingOrderId, charge.id);
+      console.log("[Cart] Pago confirmado en orden:", pendingOrderId);
+
+      setPendingOrderId(null);
+      setSuccessVisible(true);
+    } catch (error: any) {
+      console.error("[Cart] Error procesando token Culqi:", error?.message);
+      if (pendingOrderId) {
+        try {
+          await orderService.failPayment(pendingOrderId);
+        } catch {}
+      }
+      const msg = getPaymentErrorMessage(error);
+      Alert.alert("Error al procesar", msg);
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  // ─── Dispatcher principal ──────────────────────────────────────────────────
+  const handlePay = () => {
+    if (paymentMethod === "simulated") return handleSimulatedPay();
+    if (paymentMethod === "card") return handleSavedCardPay();
+    if (paymentMethod === "culqi") return handleCulqiModalOpen();
+    Alert.alert("Selecciona un medio de pago", "Elige cómo quieres pagar.");
   };
 
   return (
@@ -906,7 +992,7 @@ export default function CartScreen() {
                   },
                 ]}
               >
-                Tarjeta{"\n"}Débito / Crédito
+                Tarjeta{"\n"}Guardada
               </Text>
               {paymentMethod === "card" && (
                 <View
@@ -918,7 +1004,50 @@ export default function CartScreen() {
               )}
             </TouchableOpacity>
 
-            {/* TODO: eliminar cuando Culqi esté estable */}
+            {/* Culqi Checkout — tarjeta nueva o Yape */}
+            <TouchableOpacity
+              style={[
+                styles.payOption,
+                {
+                  flex: 1,
+                  borderColor:
+                    paymentMethod === "culqi" ? colors.primary : colors.border,
+                  backgroundColor:
+                    paymentMethod === "culqi"
+                      ? colors.primary + "08"
+                      : colors.background,
+                },
+              ]}
+              onPress={() =>
+                setPaymentMethod(paymentMethod === "culqi" ? null : "culqi")
+              }
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 20 }}>💳</Text>
+              <Text
+                style={[
+                  styles.payOptionLabel,
+                  {
+                    color:
+                      paymentMethod === "culqi"
+                        ? colors.primary
+                        : colors.textSecondary,
+                  },
+                ]}
+              >
+                Tarjeta / Yape
+              </Text>
+              {paymentMethod === "culqi" && (
+                <View
+                  style={[
+                    styles.payCheckDot,
+                    { backgroundColor: colors.primary },
+                  ]}
+                />
+              )}
+            </TouchableOpacity>
+
+            {/* TODO: eliminar cuando Culqi esté completamente estable */}
             <TouchableOpacity
               style={[
                 styles.payOption,
@@ -952,7 +1081,7 @@ export default function CartScreen() {
                   },
                 ]}
               >
-                Pago{"\n"}Simulado
+                Simulado
               </Text>
               {paymentMethod === "simulated" && (
                 <View
@@ -1161,11 +1290,21 @@ export default function CartScreen() {
         }}
         colors={colors}
       />
-      <CvvModal
-        visible={cvvModalVisible}
-        card={selectedCard}
-        onClose={() => setCvvModalVisible(false)}
-        onConfirm={handleCvvConfirm}
+      <CulqiWebViewModal
+        visible={culqiModalVisible}
+        amount={Math.round(subtotal * 100)}
+        currency={(currency as string) || "PEN"}
+        email={user?.email ?? ""}
+        description={`Paku — ${productName ?? "Servicio"}`}
+        onToken={handleCulqiToken}
+        onClose={() => {
+          setCulqiModalVisible(false);
+          // Si el usuario cierra el modal sin pagar, marcar orden como fallida
+          if (pendingOrderId) {
+            orderService.failPayment(pendingOrderId).catch(() => {});
+            setPendingOrderId(null);
+          }
+        }}
         colors={colors}
       />
     </SafeAreaView>

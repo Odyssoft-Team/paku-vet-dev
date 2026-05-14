@@ -90,6 +90,17 @@ export const API_ENDPOINTS = {
     LIST: "/orders",
     BY_ID: (id: string) => `/orders/${id}`,
     CREATE: "/orders",
+    CONFIRM_PAYMENT: (id: string) => `/orders/${id}/confirm-payment`,
+    FAIL_PAYMENT: (id: string) => `/orders/${id}/fail-payment`,
+    RETRY_PAYMENT: (id: string) => `/orders/${id}/retry-payment`,
+  },
+
+  // Wallet de tarjetas (Culqi)
+  WALLET: {
+    CARDS_LIST: "/wallet/cards",
+    CARDS_SAVE: "/wallet/cards",
+    CARD_DELETE: (id: string) => `/wallet/cards/${id}`,
+    CARD_DEFAULT: (id: string) => `/wallet/cards/${id}/default`,
   },
 
   // Administrador
@@ -129,13 +140,5 @@ export const API_ENDPOINTS = {
   TRACKING: {
     CURRENT: (orderId: string) => `/tracking/orders/${orderId}/current`,
     ROUTE: (orderId: string) => `/tracking/orders/${orderId}/route`,
-  },
-
-  // Mercado Pago — base: https://stream.dev-qa.site/payment/api
-  PAYMENT: {
-    METHODS_LIST: "/payment-methods",
-    METHODS_SAVE: "/payment-methods",
-    PAY: "/payments/pay",
-    STATUS: (orderId: string) => `/payments/${orderId}/status`,
   },
 } as const;
