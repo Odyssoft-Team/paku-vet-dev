@@ -3,7 +3,7 @@ import { z } from "zod";
 // Schema para login
 export const loginSchema = z.object({
   email: z.string().min(1, "El email es requerido").email("Email inválido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  password: z.string().min(1, "La contraseña es requerida"),
 });
 
 // Schema para registro básico (por ahora)
@@ -14,10 +14,17 @@ export const registerSchema = z
       .string()
       .min(2, "El apellido debe tener al menos 2 caracteres"),
     email: z.string().min(1, "El email es requerido").email("Email inválido"),
-    phone: z.string().min(9, "El teléfono debe tener al menos 9 dígitos"),
+    phone: z
+      .string()
+      .regex(
+        /^\+?[0-9]{7,15}$/,
+        "Teléfono inválido (ej: 987654321 o +51987654321)",
+      ),
     password: z
       .string()
-      .min(6, "La contraseña debe tener al menos 6 caracteres"),
+      .min(8, "Mínimo 8 caracteres")
+      .regex(/[A-Z]/, "Debe tener al menos una letra mayúscula")
+      .regex(/[0-9]/, "Debe tener al menos un número"),
     confirmPassword: z.string().min(1, "Confirma tu contraseña"),
     sex: z.enum(["male", "female"], {
       errorMap: () => ({ message: "Selecciona un género" }),

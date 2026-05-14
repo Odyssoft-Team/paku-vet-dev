@@ -94,4 +94,25 @@ export const authService = {
     );
     return response.data;
   },
+
+  /**
+   * Solicita email de recuperación de contraseña.
+   * POST /auth/forgot-password
+   * Siempre responde 200 aunque el email no exista (por seguridad).
+   */
+  async forgotPassword(email: string): Promise<void> {
+    await apiClient.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
+  },
+
+  /**
+   * Restablece la contraseña con el token recibido por email.
+   * POST /auth/reset-password
+   * Responde 204 No Content si todo está OK.
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    await apiClient.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, {
+      token,
+      new_password: newPassword,
+    });
+  },
 };

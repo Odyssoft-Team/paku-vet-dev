@@ -1,5 +1,5 @@
 export type UserRole = "admin" | "ally" | "user";
-export type UserSex = "male" | "female" | "other";
+export type UserSex = "male" | "female";
 
 export interface Address {
   district_id: string;

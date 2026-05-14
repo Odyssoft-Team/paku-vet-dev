@@ -30,6 +30,8 @@ export default function LoginFormScreen() {
   const { login, error, clearError } = useAuth();
   const { colors } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [isRateLimited, setIsRateLimited] = useState(false);
 
   const passwordInputRef = useRef<TextInput>(null);
 
@@ -47,19 +49,30 @@ export default function LoginFormScreen() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    if (isRateLimited) return;
     try {
       setIsLoading(true);
       clearError();
-
       await login(data);
-
-      // Login exitoso - el _layout.tsx se encargará de la redirección
+      // Login exitoso — el _layout.tsx se encarga de la redirección
+      setFailedAttempts(0);
     } catch (err: any) {
       console.log("Login error:", err);
-      // El error se muestra automáticamente del store
+      const status = err?.response?.status ?? err?.status;
+      if (status === 429) {
+        setIsRateLimited(true);
+      } else {
+        const newAttempts = failedAttempts + 1;
+        setFailedAttempts(newAttempts);
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleForgotPassword = () => {
+    clearError();
+    router.push("/(auth)/forgot-password");
   };
 
   const handleGoBack = () => {
@@ -184,11 +197,38 @@ export default function LoginFormScreen() {
                 </View>
 
                 <View style={styles.formContainer}>
-                  {error && (
+                  {isRateLimited && (
+                    <Text style={styles.errorText}>
+                      Demasiados intentos fallidos. Espera unos minutos antes de
+                      intentar de nuevo.
+                    </Text>
+                  )}
+
+                  {!isRateLimited && error && (
                     <Text style={styles.errorText}>
                       {error === "Invalid credentials"
                         ? "Correo o contraseña incorrectos"
                         : "Error al iniciar sesión"}
+                    </Text>
+                  )}
+
+                  {!isRateLimited && failedAttempts >= 3 && (
+                    <Text
+                      style={[
+                        styles.errorText,
+                        {
+                          backgroundColor: "rgba(251,191,36,0.2)",
+                          color: "#92400E",
+                        },
+                      ]}
+                    >
+                      ¿Problemas para ingresar?{" "}
+                      <Text
+                        style={{ textDecorationLine: "underline" }}
+                        onPress={handleForgotPassword}
+                      >
+                        Recupera tu contraseña
+                      </Text>
                     </Text>
                   )}
 
@@ -235,10 +275,28 @@ export default function LoginFormScreen() {
                     title="Ingresar"
                     onPress={handleSubmit(onSubmit)}
                     loading={isLoading}
+                    disabled={isRateLimited}
                     style={styles.loginButton}
                     textStyle={styles.loginButtonText}
                     fullWidth
                   />
+
+                  <TouchableOpacity
+                    onPress={handleForgotPassword}
+                    style={{ alignItems: "center", marginTop: Spacing.md }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={{
+                        color: "rgba(255,255,255,0.75)",
+                        fontSize: Typography.fontSize.sm,
+                        fontFamily: Typography.fontFamily.regular,
+                        textDecorationLine: "underline",
+                      }}
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </ScrollView>
             </View>

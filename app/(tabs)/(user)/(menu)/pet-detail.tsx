@@ -22,263 +22,56 @@ import { usePetStore } from "@/store/petStore";
 import { useUploadPhoto } from "@/hooks/useUploadPhoto";
 import { Pet } from "@/types/pet.types";
 import { SALUD_LIST } from "@/constants/appointment";
-import CardHistory from "@/components/pets/CardHistory";
-import type { ClinicalHistory } from "@/types/clinical-history.type";
-import { clinicalHistoryService } from "@/api/services/clinical-history.service";
-import CardHealth from "@/components/pets/CardHealth";
+import PetRecordCard from "@/components/pets/PetRecordCard";
+import type { PetRecordOut } from "@/types/pet-record.types";
+import { GROOMING_TYPES, HEALTH_TYPES } from "@/types/pet-record.types";
+import { petRecordsService } from "@/api/services/pet-records.service";
 import { translateBreed } from "@/constants/breed";
 
-// ─── Mock: historial de grooming por mascota ──────────────────────────────────
-// TODO: reemplazar por endpoint real cuando esté disponible
+type TabType = "salud" | "historial" | "grooming";
 
-export type GroomingServiceType =
-  | "Baño clásico"
-  | "Baño y corte"
-  | "Deslanado"
-  | "Spa completo";
+// ─── EmptyTab ─────────────────────────────────────────────────────────────────
 
-export interface GroomingRecord {
-  id: string;
-  service: GroomingServiceType;
-  date: string; // ISO
-  groomer: string;
-  address: string;
-  total: number; // en centavos
-  currency: string;
-  status: "done" | "cancelled";
-  duration_min: number;
-  weight_kg: number;
-  observations: string;
-  products_used: string[];
-  next_recommended: string; // ISO
-}
-
-const MOCK_GROOMING_HISTORY: GroomingRecord[] = [
-  {
-    id: "gr-001",
-    service: "Baño y corte",
-    date: "2026-03-24T10:00:00Z",
-    groomer: "Maria López",
-    address: "Av. La Molina 456",
-    total: 8500,
-    currency: "PEN",
-    status: "done",
-    duration_min: 90,
-    weight_kg: 8.2,
-    observations:
-      "Mascota tranquila durante el servicio. Pelaje en buen estado.",
-    products_used: [
-      "Shampoo hipoalergénico",
-      "Acondicionador nutritivo",
-      "Perfume suave",
-    ],
-    next_recommended: "2026-04-21T10:00:00Z",
-  },
-  {
-    id: "gr-002",
-    service: "Baño clásico",
-    date: "2026-02-10T14:30:00Z",
-    groomer: "Carlos Ríos",
-    address: "Av. La Molina 456",
-    total: 6000,
-    currency: "PEN",
-    status: "done",
-    duration_min: 60,
-    weight_kg: 8.0,
-    observations:
-      "Se detectó leve irritación en la piel. Se recomienda shampoo hipoalergénico.",
-    products_used: ["Shampoo hipoalergénico", "Crema hidratante"],
-    next_recommended: "2026-03-10T14:30:00Z",
-  },
-  {
-    id: "gr-003",
-    service: "Spa completo",
-    date: "2026-01-05T11:00:00Z",
-    groomer: "Ana Torres",
-    address: "Av. La Molina 456",
-    total: 12000,
-    currency: "PEN",
-    status: "done",
-    duration_min: 120,
-    weight_kg: 7.9,
-    observations:
-      "Servicio completado sin novedades. Uñas cortadas y orejas limpias.",
-    products_used: [
-      "Shampoo premium",
-      "Mascarilla capilar",
-      "Perfume premium",
-      "Limpiador de orejas",
-    ],
-    next_recommended: "2026-02-05T11:00:00Z",
-  },
-  {
-    id: "gr-004",
-    service: "Deslanado",
-    date: "2025-12-15T09:00:00Z",
-    groomer: "Maria López",
-    address: "Av. La Molina 456",
-    total: 9000,
-    currency: "PEN",
-    status: "cancelled",
-    duration_min: 0,
-    weight_kg: 7.8,
-    observations: "Servicio cancelado por el cliente.",
-    products_used: [],
-    next_recommended: "2026-01-15T09:00:00Z",
-  },
-];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatGroomingDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString("es-PE", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatPrice(cents: number, currency: string): string {
-  return `${currency} ${(cents / 100).toFixed(2)}`;
-}
-
-// ─── GroomingCard ─────────────────────────────────────────────────────────────
-
-function GroomingCard({
-  record,
-  onPress,
+function EmptyTab({
+  emoji,
+  title,
+  subtitle,
 }: {
-  record: GroomingRecord;
-  onPress: () => void;
+  emoji: string;
+  title: string;
+  subtitle: string;
 }) {
   const { colors } = useTheme();
-  const isDone = record.status === "done";
-
   return (
-    <TouchableOpacity
-      style={[groomStyles.card, { backgroundColor: colors.surface }]}
-      onPress={onPress}
-      activeOpacity={0.75}
+    <View
+      style={{ alignItems: "center", paddingVertical: 60, gap: Spacing.sm }}
     >
-      {/* Header: badge de estado + precio */}
-      <View style={groomStyles.cardHeader}>
-        <View
-          style={[
-            groomStyles.statusBadge,
-            { backgroundColor: isDone ? "#D1FAE5" : "#F3F4F6" },
-          ]}
-        >
-          <Text
-            style={[
-              groomStyles.statusText,
-              { color: isDone ? "#10B981" : "#6B7280" },
-            ]}
-          >
-            {isDone ? "Completado" : "Cancelado"}
-          </Text>
-        </View>
-        <Text style={[groomStyles.price, { color: colors.primary }]}>
-          {formatPrice(record.total, record.currency)}
-        </Text>
-      </View>
-
-      {/* Nombre del servicio + flecha */}
-      <View style={groomStyles.serviceRow}>
-        <Text style={[groomStyles.serviceName, { color: colors.text }]}>
-          {record.service}
-        </Text>
-        <Icon name="arrow-right" size={14} color={colors.textSecondary} />
-      </View>
-
-      {/* Fecha */}
-      <View style={groomStyles.infoRow}>
-        <Icon name="calendar" size={13} color={colors.textSecondary} />
-        <Text style={[groomStyles.infoText, { color: colors.textSecondary }]}>
-          {formatGroomingDate(record.date)}
-        </Text>
-      </View>
-
-      {/* Groomer */}
-      <View style={groomStyles.infoRow}>
-        <Icon name="profile" size={13} color={colors.textSecondary} />
-        <Text style={[groomStyles.infoText, { color: colors.textSecondary }]}>
-          {record.groomer}
-        </Text>
-      </View>
-    </TouchableOpacity>
+      <Text style={{ fontSize: 40 }}>{emoji}</Text>
+      <Text
+        style={{
+          fontSize: Typography.fontSize.md,
+          fontFamily: Typography.fontFamily.bold,
+          color: colors.text,
+          textAlign: "center",
+        }}
+      >
+        {title}
+      </Text>
+      <Text
+        style={{
+          fontSize: Typography.fontSize.sm,
+          fontFamily: Typography.fontFamily.regular,
+          color: colors.textSecondary,
+          textAlign: "center",
+          maxWidth: 220,
+          lineHeight: 20,
+        }}
+      >
+        {subtitle}
+      </Text>
+    </View>
   );
 }
-
-const groomStyles = StyleSheet.create({
-  card: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    gap: Spacing.xs,
-    ...Shadows.sm,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 2,
-  },
-  statusBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-  },
-  statusText: {
-    fontSize: Typography.fontSize.xs,
-    fontFamily: Typography.fontFamily.semibold,
-  },
-  price: {
-    fontSize: Typography.fontSize.md,
-    fontFamily: Typography.fontFamily.bold,
-  },
-  serviceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  serviceName: {
-    fontSize: Typography.fontSize.md,
-    fontFamily: Typography.fontFamily.semibold,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: Typography.fontSize.xs,
-    fontFamily: Typography.fontFamily.regular,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-    gap: Spacing.sm,
-  },
-  emptyTitle: {
-    fontSize: Typography.fontSize.md,
-    fontFamily: Typography.fontFamily.bold,
-    textAlign: "center",
-  },
-  emptySubtitle: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    textAlign: "center",
-    maxWidth: 220,
-    lineHeight: 20,
-  },
-});
-
-type TabType = "salud" | "historial" | "citas";
 
 export default function PetDetailScreen() {
   const router = useRouter();
@@ -291,31 +84,34 @@ export default function PetDetailScreen() {
   const [activeTab, setActiveTab] = useState<TabType>("salud");
   const [imagePickerVisible, setImagePickerVisible] = useState(false);
 
-  const [historyData, setHistoryData] = useState<ClinicalHistory[]>([]);
+  const [records, setRecords] = useState<PetRecordOut[]>([]);
+  const [recordsLoading, setRecordsLoading] = useState(true);
 
   const petId = params.petId as string;
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const fetchRecords = async () => {
+      if (!petId) return;
+      setRecordsLoading(true);
       try {
-        const data = await clinicalHistoryService.getHistoryByPet(petId);
-        setHistoryData(data ?? []);
+        const data = await petRecordsService.list(petId);
+        setRecords(data ?? []);
       } catch (error: any) {
-        // 404 significa que no hay historial aún — no es un error real
         const status = error?.response?.status;
         if (status === 404) {
-          setHistoryData([]);
+          setRecords([]);
         } else {
           console.error(
-            "[PetDetail] Error al cargar historial:",
+            "[PetDetail] Error al cargar registros:",
             error?.message,
           );
         }
+      } finally {
+        setRecordsLoading(false);
       }
     };
-
-    fetchHistory();
-  }, []);
+    fetchRecords();
+  }, [petId]);
 
   useEffect(() => {
     const foundPet = pets.find((p) => p.id === petId);
@@ -559,6 +355,21 @@ export default function PetDetailScreen() {
     flatListPadding: {
       paddingHorizontal: Spacing.md,
     },
+    fab: {
+      position: "absolute",
+      bottom: 24,
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+      elevation: 6,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+    },
   });
 
   if (!pet) {
@@ -646,13 +457,13 @@ export default function PetDetailScreen() {
       {/* Tabs */}
       <View style={styles.tabsContainer}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === "citas" && styles.tabActive]}
-          onPress={() => setActiveTab("citas")}
+          style={[styles.tab, activeTab === "grooming" && styles.tabActive]}
+          onPress={() => setActiveTab("grooming")}
         >
           <Text
             style={[
               styles.tabText,
-              activeTab === "citas" && styles.tabTextActive,
+              activeTab === "grooming" && styles.tabTextActive,
             ]}
           >
             Grooming
@@ -686,70 +497,100 @@ export default function PetDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* /* --- Estructura Corregida ---  */}
+      {/* Contenido de tabs */}
       <View style={styles.container}>
-        {activeTab === "citas" && (
-          <FlatList
-            data={historyData.filter((item) => item.type === "grooming")}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <CardHistory history={item} petId={petId} />
-            )}
-            contentContainerStyle={styles.flatListPadding}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-        {activeTab === "salud" && (
-          <FlatList
-            data={historyData.filter((item) => item.type === "vaccine")}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <CardHealth appointment={item} petId={petId} />
-            )}
-            contentContainerStyle={styles.flatListPadding}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-
-        {activeTab === "historial" && (
-          <FlatList
-            data={MOCK_GROOMING_HISTORY}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={[
-              styles.flatListPadding,
-              { paddingBottom: Spacing.xl },
-            ]}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={groomStyles.emptyContainer}>
-                <Icon name="calendar" size={40} color={colors.textSecondary} />
-                <Text style={[groomStyles.emptyTitle, { color: colors.text }]}>
-                  Sin historial aún
-                </Text>
-                <Text
-                  style={[
-                    groomStyles.emptySubtitle,
-                    { color: colors.textSecondary },
-                  ]}
-                >
-                  El historial de servicios de grooming aparecerá aquí
-                </Text>
-              </View>
-            }
-            renderItem={({ item }) => (
-              <GroomingCard
-                record={item}
-                onPress={() =>
-                  router.push({
-                    pathname: "/(tabs)/(user)/(menu)/grooming-detail",
-                    params: { data: JSON.stringify(item) },
-                  })
+        {recordsLoading ? (
+          <View
+            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+          >
+            <ActivityIndicator color={colors.primary} size="large" />
+            <Text
+              style={{
+                color: colors.textSecondary,
+                marginTop: Spacing.sm,
+                fontFamily: Typography.fontFamily.regular,
+                fontSize: Typography.fontSize.sm,
+              }}
+            >
+              Cargando registros...
+            </Text>
+          </View>
+        ) : (
+          <>
+            {activeTab === "grooming" && (
+              <FlatList
+                data={records.filter((r) => GROOMING_TYPES.includes(r.type))}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => <PetRecordCard record={item} />}
+                contentContainerStyle={[
+                  styles.flatListPadding,
+                  { paddingBottom: 100 },
+                ]}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                  <EmptyTab
+                    emoji="✂️"
+                    title="Sin registros de grooming"
+                    subtitle="Los baños y peluquerías aparecerán aquí"
+                  />
                 }
               />
             )}
-          />
+            {activeTab === "salud" && (
+              <FlatList
+                data={records.filter((r) => HEALTH_TYPES.includes(r.type))}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => <PetRecordCard record={item} />}
+                contentContainerStyle={[
+                  styles.flatListPadding,
+                  { paddingBottom: 100 },
+                ]}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                  <EmptyTab
+                    emoji="🩺"
+                    title="Sin registros de salud"
+                    subtitle="Vacunas, consultas y medicamentos aparecerán aquí"
+                  />
+                }
+              />
+            )}
+            {activeTab === "historial" && (
+              <FlatList
+                data={records}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => <PetRecordCard record={item} />}
+                contentContainerStyle={[
+                  styles.flatListPadding,
+                  { paddingBottom: 100 },
+                ]}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                  <EmptyTab
+                    emoji="📋"
+                    title="Sin registros aún"
+                    subtitle="Todos los registros de tu mascota aparecerán aquí"
+                  />
+                }
+              />
+            )}
+          </>
         )}
       </View>
+
+      {/* FAB — Agregar registro */}
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: colors.primary }]}
+        onPress={() =>
+          router.push({
+            pathname: "/(screens)/add-pet-record",
+            params: { petId },
+          })
+        }
+        activeOpacity={0.85}
+      >
+        <Icon name="plus" size={24} color="#FFF" />
+      </TouchableOpacity>
 
       {/* Image Picker Modal */}
       <ImagePickerModal

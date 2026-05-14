@@ -33,6 +33,55 @@ import { UserSex } from "@/types/auth.types";
 import { useLocationStore } from "@/store/locationStore";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 
+// ─── Indicador de fortaleza de contraseña ────────────────────────────────────
+
+function PasswordStrengthIndicator({ password }: { password: string }) {
+  const rules = [
+    { label: "Mínimo 8 caracteres", ok: password.length >= 8 },
+    { label: "Al menos una mayúscula", ok: /[A-Z]/.test(password) },
+    { label: "Al menos un número", ok: /[0-9]/.test(password) },
+  ];
+
+  if (!password) return null;
+
+  return (
+    <View style={{ marginTop: -8, marginBottom: 12, gap: 4 }}>
+      {rules.map((rule) => (
+        <View
+          key={rule.label}
+          style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+        >
+          <View
+            style={{
+              width: 14,
+              height: 14,
+              borderRadius: 7,
+              backgroundColor: rule.ok ? "#10B981" : "#D1D5DB",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {rule.ok && (
+              <Text style={{ color: "#FFF", fontSize: 9, fontWeight: "bold" }}>
+                ✓
+              </Text>
+            )}
+          </View>
+          <Text
+            style={{
+              fontSize: 12,
+              color: rule.ok ? "#10B981" : "#9CA3AF",
+              fontFamily: "System",
+            }}
+          >
+            {rule.label}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function RegisterScreen() {
   const router = useRouter();
   const { register, error, clearError } = useAuth();
@@ -45,6 +94,7 @@ export default function RegisterScreen() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [passwordValue, setPasswordValue] = useState("");
 
   const insets = useSafeAreaInsets();
 
@@ -329,17 +379,23 @@ export default function RegisterScreen() {
           control={control}
           name="password"
           render={({ field: { onChange, onBlur, value } }) => (
-            <Input
-              label="Contraseña"
-              type="password"
-              placeholder="Contraseña"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={errors.password?.message}
-              returnKeyType="next"
-              variant="register"
-            />
+            <>
+              <Input
+                label="Contraseña"
+                type="password"
+                placeholder="Contraseña"
+                value={value}
+                onChangeText={(v) => {
+                  onChange(v);
+                  setPasswordValue(v);
+                }}
+                onBlur={onBlur}
+                error={errors.password?.message}
+                returnKeyType="next"
+                variant="register"
+              />
+              <PasswordStrengthIndicator password={value} />
+            </>
           )}
         />
 
