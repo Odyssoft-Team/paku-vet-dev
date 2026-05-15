@@ -29,7 +29,7 @@
         "android.permission.WAKE_LOCK",
         "android.permission.BLUETOOTH"
       ],
-      "package": "com.aldoparradev.pakuvet",
+      "package": "com.paku.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/app/adaptive-icon.png",
@@ -43,7 +43,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.aldoparradev.pakuvet",
+      "bundleIdentifier": "com.paku.app",
       "icon": "./assets/app/icon.png",
       "bitcode": false
     },
