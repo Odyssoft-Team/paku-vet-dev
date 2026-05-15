@@ -1,11 +1,28 @@
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { useTheme } from "@/hooks/useTheme";
 import { Icon } from "@/components/common/Icon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CartDrawer } from "@/components/common/CartDrawer";
 import { Typography } from "@/constants/theme";
+import { useAuthStore } from "@/store/authStore";
+import { useEffect } from "react";
 
 export default function MenuLayout() {
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+
+  // Guardia de rol — solo usuarios con role "user" pueden acceder
+  useEffect(() => {
+    if (!user) return;
+    if (user.role !== "user") {
+      console.warn(
+        `[MenuLayout] Acceso denegado: rol "${user.role}" no puede acceder a esta área.`,
+      );
+      router.replace(
+        user.role === "ally" ? "/(tabs)/(groomer)" : "/(tabs)/(admin)",
+      );
+    }
+  }, [user?.role]);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 

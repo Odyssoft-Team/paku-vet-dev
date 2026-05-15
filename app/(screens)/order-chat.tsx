@@ -1,15 +1,12 @@
 /**
  * order-chat.tsx
  *
- * Pantalla de chat entre el usuario y el ally durante una orden.
+ * Pantalla de chat entre usuario y groomer durante una orden.
  *
- * Acceso:
- *   - Desde tracking-service.tsx cuando status === "on_the_way" o "in_service"
- *   - Desde order-detail.tsx para ver el historial (status done/cancelled)
- *
- * Comportamiento según estado:
- *   on_the_way / in_service → puede leer y enviar mensajes
- *   done / cancelled        → solo lectura, input oculto
+ * Params esperados:
+ *   orderId      — ID de la orden
+ *   orderStatus  — Estado actual (on_the_way | in_service | done | cancelled)
+ *   contactName  — Nombre del contacto del otro lado (opcional, fallback por rol)
  */
 
 import React, { useRef, useState, useEffect } from "react";
@@ -29,170 +26,149 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/common/Text";
 import { Icon } from "@/components/common/Icon";
 import { useTheme } from "@/hooks/useTheme";
-import { Typography, Spacing, BorderRadius } from "@/constants/theme";
+import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useChat } from "@/hooks/useChat";
 import { useAuthStore } from "@/store/authStore";
 import type { ChatMessage } from "@/types/chat.types";
 
-// ─── Tipos de estado que permiten enviar mensajes ─────────────────────────────
-
 const ACTIVE_STATUSES = ["on_the_way", "in_service"];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("es-PE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 // ─── Burbuja de mensaje ───────────────────────────────────────────────────────
 
 interface BubbleProps {
   message: ChatMessage;
   isMe: boolean;
+  contactInitials: string;
   colors: any;
+  isFirst: boolean; // primer mensaje consecutivo del mismo sender
 }
 
-function MessageBubble({ message, isMe, colors }: BubbleProps) {
-  const time = new Date(message.created_at).toLocaleTimeString("es-PE", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
+function MessageBubble({
+  message,
+  isMe,
+  contactInitials,
+  colors,
+  isFirst,
+}: BubbleProps) {
   return (
     <View
       style={[
-        bubbleStyles.wrapper,
-        isMe ? bubbleStyles.wrapperMe : bubbleStyles.wrapperThem,
+        styles.bubbleWrapper,
+        isMe ? styles.bubbleWrapperMe : styles.bubbleWrapperThem,
       ]}
     >
+      {/* Avatar del contacto — solo en el primer mensaje consecutivo */}
       {!isMe && (
-        <View
-          style={[
-            bubbleStyles.avatar,
-            { backgroundColor: colors.primary + "20" },
-          ]}
-        >
-          <Text style={{ fontSize: 14 }}>🐾</Text>
+        <View style={styles.avatarSlot}>
+          {isFirst ? (
+            <View
+              style={[
+                styles.avatar,
+                { backgroundColor: colors.primary + "20" },
+              ]}
+            >
+              <Text style={[styles.avatarText, { color: colors.primary }]}>
+                {contactInitials}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.avatarSpacer} />
+          )}
         </View>
       )}
-      <View style={{ maxWidth: "78%", gap: 2 }}>
+
+      <View style={{ maxWidth: "72%", gap: 2 }}>
         <View
           style={[
-            bubbleStyles.bubble,
+            styles.bubble,
             isMe
-              ? [bubbleStyles.bubbleMe, { backgroundColor: colors.primary }]
+              ? [styles.bubbleMe, { backgroundColor: colors.primary }]
               : [
-                  bubbleStyles.bubbleThem,
+                  styles.bubbleThem,
                   {
                     backgroundColor: colors.surface,
-                    borderColor: colors.border,
+                    borderColor: colors.border + "80",
                   },
                 ],
           ]}
         >
           <Text
-            style={[bubbleStyles.body, { color: isMe ? "#FFF" : colors.text }]}
+            style={[styles.bubbleText, { color: isMe ? "#FFF" : colors.text }]}
           >
             {message.body}
           </Text>
         </View>
-        <Text
+
+        {/* Hora + tick de leído */}
+        <View
           style={[
-            bubbleStyles.time,
-            {
-              color: colors.textSecondary,
-              textAlign: isMe ? "right" : "left",
-            },
+            styles.metaRow,
+            { justifyContent: isMe ? "flex-end" : "flex-start" },
           ]}
         >
-          {time}
+          <Text style={[styles.timeText, { color: colors.textSecondary }]}>
+            {formatTime(message.created_at)}
+          </Text>
           {isMe && (
             <Text
-              style={{
-                color: message.is_read ? colors.primary : colors.textSecondary,
-              }}
+              style={[
+                styles.tickText,
+                {
+                  color: message.is_read
+                    ? colors.primary
+                    : colors.textSecondary,
+                },
+              ]}
             >
-              {" "}
-              {message.is_read ? "✓✓" : "✓"}
+              {message.is_read ? " ✓✓" : " ✓"}
             </Text>
           )}
-        </Text>
+        </View>
       </View>
     </View>
   );
 }
 
-const bubbleStyles = StyleSheet.create({
-  wrapper: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    marginBottom: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.xs,
-  },
-  wrapperMe: { justifyContent: "flex-end" },
-  wrapperThem: { justifyContent: "flex-start" },
-  avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
-  bubble: {
-    borderRadius: 18,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  bubbleMe: {
-    borderBottomRightRadius: 4,
-  },
-  bubbleThem: {
-    borderWidth: 1,
-    borderBottomLeftRadius: 4,
-  },
-  body: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    lineHeight: 20,
-  },
-  time: {
-    fontSize: 11,
-    fontFamily: Typography.fontFamily.regular,
-    paddingHorizontal: 4,
-  },
-});
-
 // ─── Estado vacío ─────────────────────────────────────────────────────────────
 
-function EmptyChat({ colors }: { colors: any }) {
+function EmptyChat({
+  contactName,
+  colors,
+}: {
+  contactName: string;
+  colors: any;
+}) {
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: Spacing.sm,
-        paddingHorizontal: Spacing.xl,
-      }}
-    >
-      <Text style={{ fontSize: 40 }}>💬</Text>
-      <Text
-        style={{
-          fontSize: Typography.fontSize.md,
-          fontFamily: Typography.fontFamily.bold,
-          color: colors.text,
-          textAlign: "center",
-        }}
+    <View style={styles.emptyContainer}>
+      <View
+        style={[styles.emptyIcon, { backgroundColor: colors.primary + "15" }]}
       >
+        <Text style={{ fontSize: 32 }}>💬</Text>
+      </View>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>
         Sin mensajes aún
       </Text>
-      <Text
-        style={{
-          fontSize: Typography.fontSize.sm,
-          fontFamily: Typography.fontFamily.regular,
-          color: colors.textSecondary,
-          textAlign: "center",
-          lineHeight: 20,
-        }}
-      >
-        Puedes escribirle a tu groomer aquí. Recibirás una notificación cuando
-        te responda.
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+        Escríbele a {contactName}.{"\n"}Recibirás una notificación cuando
+        responda.
       </Text>
     </View>
   );
@@ -206,6 +182,7 @@ export default function OrderChatScreen() {
   const params = useLocalSearchParams<{
     orderId: string;
     orderStatus: string;
+    contactName?: string;
   }>();
 
   const orderId = params.orderId ?? "";
@@ -214,6 +191,12 @@ export default function OrderChatScreen() {
 
   const user = useAuthStore((s) => s.user);
   const currentUserId = user?.id ?? "";
+  const isGroomer = user?.role === "ally";
+
+  // Nombre del contacto: usar el param si viene, sino fallback por rol
+  const contactName = params.contactName ?? (isGroomer ? "Usuario" : "Groomer");
+
+  const contactInitials = getInitials(contactName);
 
   const { messages, loading, error, sendMessage } = useChat(orderId);
 
@@ -221,10 +204,9 @@ export default function OrderChatScreen() {
   const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList>(null);
 
-  // Scroll al último mensaje cuando llegan nuevos
   useEffect(() => {
     if (messages.length > 0) {
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 120);
     }
   }, [messages.length]);
 
@@ -235,143 +217,88 @@ export default function OrderChatScreen() {
     setSending(true);
     await sendMessage(text);
     setSending(false);
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 120);
   };
 
-  const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: Spacing.md,
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      backgroundColor: colors.surface,
-      gap: Spacing.md,
-    },
-    headerBack: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    headerAvatar: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.primary + "20",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    headerInfo: { flex: 1 },
-    headerName: {
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.bold,
-      color: colors.text,
-    },
-    headerSub: {
-      fontSize: Typography.fontSize.xs,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.textSecondary,
-    },
-    readonlyBanner: {
-      backgroundColor: colors.border + "60",
-      paddingVertical: Spacing.sm,
-      paddingHorizontal: Spacing.md,
-      alignItems: "center",
-    },
-    readonlyText: {
-      fontSize: Typography.fontSize.xs,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.textSecondary,
-    },
-    list: { flex: 1 },
-    listContent: {
-      paddingVertical: Spacing.md,
-      paddingBottom: Spacing.lg,
-      flexGrow: 1,
-    },
-    inputRow: {
-      flexDirection: "row",
-      alignItems: "flex-end",
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.sm,
-      paddingBottom: Spacing.md,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      backgroundColor: colors.surface,
-      gap: Spacing.sm,
-    },
-    input: {
-      flex: 1,
-      backgroundColor: colors.background,
-      borderRadius: BorderRadius.full,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: Spacing.md,
-      paddingVertical: 10,
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      color: colors.text,
-      maxHeight: 100,
-    },
-    sendBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: colors.primary,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    sendBtnDisabled: {
-      backgroundColor: colors.border,
-    },
-    loadingContainer: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      gap: Spacing.sm,
-    },
-    errorText: {
-      color: colors.error ?? "#EF4444",
-      fontSize: Typography.fontSize.sm,
-      fontFamily: Typography.fontFamily.regular,
-      textAlign: "center",
-      padding: Spacing.lg,
-    },
-  });
+  const handleBack = () => {
+    if (isGroomer) {
+      router.push("/(tabs)/(groomer)/appointments");
+    } else {
+      router.push("/(tabs)/(user)/(menu)/tracking-service");
+    }
+  };
+
+  // ─── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header */}
-      <View style={styles.header}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top"]}
+    >
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border + "60",
+          },
+        ]}
+      >
         <TouchableOpacity
-          style={styles.headerBack}
-          onPress={() => router.push("/(tabs)/(user)/(menu)/tracking-service")}
+          onPress={handleBack}
+          style={styles.backBtn}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Icon name="arrow-back" size={20} color={colors.text} />
+          <Icon name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
 
-        <View style={styles.headerAvatar}>
-          <Text style={{ fontSize: 18 }}>🐾</Text>
+        {/* Avatar del contacto */}
+        <View
+          style={[
+            styles.headerAvatar,
+            { backgroundColor: colors.primary + "20" },
+          ]}
+        >
+          <Text style={[styles.headerAvatarText, { color: colors.primary }]}>
+            {contactInitials}
+          </Text>
         </View>
 
         <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>Groomer asignado</Text>
-          <Text style={styles.headerSub}>
-            {canSend ? "En línea" : "Servicio finalizado"}
+          <Text
+            style={[styles.headerName, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {contactName}
           </Text>
+          <View style={styles.onlineRow}>
+            <View
+              style={[
+                styles.onlineDot,
+                { backgroundColor: canSend ? "#10B981" : "#9CA3AF" },
+              ]}
+            />
+            <Text
+              style={[styles.headerStatus, { color: colors.textSecondary }]}
+            >
+              {canSend ? "En línea" : "Servicio finalizado"}
+            </Text>
+          </View>
         </View>
       </View>
 
-      {/* Banner solo lectura */}
+      {/* ── Banner solo lectura ─────────────────────────────────────────── */}
       {!canSend && (
-        <View style={styles.readonlyBanner}>
-          <Text style={styles.readonlyText}>
-            🔒 El servicio ha finalizado — solo puedes leer el historial
+        <View
+          style={[
+            styles.readonlyBanner,
+            { backgroundColor: colors.border + "40" },
+          ]}
+        >
+          <Icon name="close" size={12} color={colors.textSecondary} />
+          <Text style={[styles.readonlyText, { color: colors.textSecondary }]}>
+            Servicio finalizado — solo puedes leer el historial
           </Text>
         </View>
       )}
@@ -379,44 +306,48 @@ export default function OrderChatScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
-        {/* Lista de mensajes */}
+        {/* ── Lista de mensajes ────────────────────────────────────────── */}
         {loading ? (
-          <View style={styles.loadingContainer}>
+          <View style={styles.centerContainer}>
             <ActivityIndicator color={colors.primary} size="large" />
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontFamily: Typography.fontFamily.regular,
-                fontSize: Typography.fontSize.sm,
-              }}
-            >
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
               Cargando mensajes...
             </Text>
           </View>
         ) : error ? (
-          <Text style={styles.errorText}>
-            No se pudieron cargar los mensajes. Intenta de nuevo.
-          </Text>
+          <View style={styles.centerContainer}>
+            <Text style={{ fontSize: 32 }}>⚠️</Text>
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+              No se pudieron cargar los mensajes.
+            </Text>
+          </View>
         ) : (
           <FlatList
             ref={listRef}
-            style={styles.list}
+            style={{ flex: 1 }}
             contentContainerStyle={[
               styles.listContent,
               messages.length === 0 && { flex: 1 },
             ]}
             data={messages}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <MessageBubble
-                message={item}
-                isMe={item.sender_id === currentUserId}
-                colors={colors}
-              />
-            )}
-            ListEmptyComponent={<EmptyChat colors={colors} />}
+            renderItem={({ item, index }) => {
+              const prevMsg = index > 0 ? messages[index - 1] : null;
+              const isFirst = !prevMsg || prevMsg.sender_id !== item.sender_id;
+              return (
+                <MessageBubble
+                  message={item}
+                  isMe={item.sender_id === currentUserId}
+                  contactInitials={contactInitials}
+                  colors={colors}
+                  isFirst={isFirst}
+                />
+              );
+            }}
+            ListEmptyComponent={
+              <EmptyChat contactName={contactName} colors={colors} />
+            }
             onContentSizeChange={() =>
               listRef.current?.scrollToEnd({ animated: false })
             }
@@ -424,11 +355,26 @@ export default function OrderChatScreen() {
           />
         )}
 
-        {/* Input — solo si puede enviar */}
+        {/* ── Input de mensaje ─────────────────────────────────────────── */}
         {canSend && (
-          <View style={styles.inputRow}>
+          <View
+            style={[
+              styles.inputRow,
+              {
+                backgroundColor: colors.surface,
+                borderTopColor: colors.border + "60",
+              },
+            ]}
+          >
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
               value={input}
               onChangeText={setInput}
               placeholder="Escribe un mensaje..."
@@ -440,7 +386,10 @@ export default function OrderChatScreen() {
             <TouchableOpacity
               style={[
                 styles.sendBtn,
-                (!input.trim() || sending) && styles.sendBtnDisabled,
+                {
+                  backgroundColor:
+                    input.trim() && !sending ? colors.primary : colors.border,
+                },
               ]}
               onPress={handleSend}
               disabled={!input.trim() || sending}
@@ -458,3 +407,200 @@ export default function OrderChatScreen() {
     </SafeAreaView>
   );
 }
+
+// ─── Estilos ──────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+
+  // Header
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    gap: Spacing.sm,
+    ...Shadows.sm,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerAvatarText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  headerInfo: { flex: 1 },
+  headerName: {
+    fontSize: Typography.fontSize.md,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  onlineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 2,
+  },
+  onlineDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  headerStatus: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+  },
+
+  // Banner solo lectura
+  readonlyBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  readonlyText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+  },
+
+  // Lista
+  listContent: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    paddingBottom: Spacing.lg,
+  },
+
+  // Burbujas
+  bubbleWrapper: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginBottom: 4,
+    gap: 6,
+    paddingHorizontal: Spacing.xs,
+  },
+  bubbleWrapperMe: { justifyContent: "flex-end" },
+  bubbleWrapperThem: { justifyContent: "flex-start" },
+  avatarSlot: { width: 30 },
+  avatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarSpacer: { width: 30, height: 30 },
+  avatarText: {
+    fontSize: 11,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  bubble: {
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  bubbleMe: {
+    borderBottomRightRadius: 5,
+  },
+  bubbleThem: {
+    borderBottomLeftRadius: 5,
+  },
+  bubbleText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    lineHeight: 20,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  timeText: {
+    fontSize: 11,
+    fontFamily: Typography.fontFamily.regular,
+  },
+  tickText: {
+    fontSize: 11,
+    fontFamily: Typography.fontFamily.semibold,
+  },
+
+  // Estado vacío
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+  },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    textAlign: "center",
+  },
+  emptySubtitle: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    textAlign: "center",
+    lineHeight: 22,
+  },
+
+  // Input
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    paddingBottom: Spacing.md,
+    borderTopWidth: 1,
+    gap: Spacing.sm,
+  },
+  input: {
+    flex: 1,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1.5,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    maxHeight: 100,
+  },
+  sendBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // Loading / error
+  centerContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+  },
+  loadingText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+  },
+});

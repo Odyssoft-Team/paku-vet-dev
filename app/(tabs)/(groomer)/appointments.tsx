@@ -410,9 +410,15 @@ export default function GroomerAppointmentsScreen() {
   };
 
   const handleChatPress = (order: Order) => {
+    // Navegar al chat dentro del árbol del groomer para mantener
+    // el layout y tab bar correctos
     router.push({
-      pathname: "/(screens)/order-chat",
-      params: { orderId: order.id, orderStatus: order.status },
+      pathname: "/(tabs)/(groomer)/order-chat",
+      params: {
+        orderId: order.id,
+        orderStatus: order.status,
+        contactName: "Usuario",
+      },
     });
   };
 
