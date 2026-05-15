@@ -1,9 +1,26 @@
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
+import { useEffect } from "react";
+import { useAuthStore } from "@/store/authStore";
 import { useTheme } from "@/hooks/useTheme";
 import { Icon } from "@/components/common/Icon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function GroomerLayout() {
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+
+  // Guardia de rol — redirige si el usuario logueado no tiene el rol correcto
+  // Previene que un rol diferente acceda a este árbol de layouts por navegación directa
+  useEffect(() => {
+    if (!user) return;
+    if (user.role !== "ally") {
+      console.warn(
+        `[GroomerLayout] Acceso denegado: rol "${user.role}" no puede acceder a esta área.`,
+      );
+      router.replace("/(tabs)/(user)");
+    }
+  }, [user?.role]);
+
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -58,6 +75,11 @@ export default function GroomerLayout() {
       <Tabs.Screen
         key={"live-stream"}
         name={"live-stream"}
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        key={"order-chat"}
+        name={"order-chat"}
         options={{ href: null }}
       />
     </Tabs>

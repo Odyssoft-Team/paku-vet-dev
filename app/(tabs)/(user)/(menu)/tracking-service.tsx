@@ -9,12 +9,7 @@ import {
   Easing,
 } from "react-native";
 import { Text } from "@/components/common/Text";
-import MapView, {
-  Marker,
-  Polyline,
-  PROVIDER_GOOGLE,
-  Region,
-} from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Button, Icon } from "@/components/common";
@@ -25,43 +20,7 @@ import { useAllyTracking } from "@/hooks/useAllyTracking";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius } from "@/constants/theme";
 import { orderService } from "@/api/services/order.service";
-
-// ─── Decoder de encoded polyline de Google ────────────────────────────────────
-// Implementación nativa del algoritmo — sin dependencia externa.
-// https://developers.google.com/maps/documentation/utilities/polylinealgorithm
-
-function decodePolyline(
-  encoded: string,
-): { latitude: number; longitude: number }[] {
-  const coords: { latitude: number; longitude: number }[] = [];
-  let index = 0;
-  let lat = 0;
-  let lng = 0;
-
-  while (index < encoded.length) {
-    let shift = 0;
-    let result = 0;
-    let byte: number;
-    do {
-      byte = encoded.charCodeAt(index++) - 63;
-      result |= (byte & 0x1f) << shift;
-      shift += 5;
-    } while (byte >= 0x20);
-    lat += result & 1 ? ~(result >> 1) : result >> 1;
-
-    shift = 0;
-    result = 0;
-    do {
-      byte = encoded.charCodeAt(index++) - 63;
-      result |= (byte & 0x1f) << shift;
-      shift += 5;
-    } while (byte >= 0x20);
-    lng += result & 1 ? ~(result >> 1) : result >> 1;
-
-    coords.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
-  }
-  return coords;
-}
+import { useUnreadCount } from "@/hooks/useChat";
 
 const ACTIVE_STATUSES = ["created", "accepted", "on_the_way", "in_service"];
 
@@ -139,7 +98,6 @@ export default function TrackingServiceScreen() {
         lng: order.delivery_address_snapshot.lng,
       }
     : null;
-  // resolvedDestination is computed after useAllyTracking call below
 
   // Cuando el simulador llega al destino, cambiar a in_service visualmente
   const simulatedArrivalRef = useRef(false);
@@ -151,22 +109,18 @@ export default function TrackingServiceScreen() {
     // No llamar setDisplayStatus aquí
   }, []);
 
-  const {
-    allyLocation,
-    etaDisplay,
-    isWaiting,
-    isStale,
-    polyline,
-    destination: trackingDestination,
-  } = useAllyTracking({
+  const unreadCount = useUnreadCount(
+    displayStatus === "on_the_way" || displayStatus === "in_service"
+      ? (order?.id ?? null)
+      : null,
+  );
+
+  const { allyLocation, etaDisplay, isWaiting, isStale } = useAllyTracking({
     orderId: order?.id ?? null,
     orderStatus: displayStatus,
     destination,
     onSimulatedArrival: handleSimulatedArrival,
   });
-
-  // Usar destino del tracking (backend) si está disponible, sino el del snapshot de la orden
-  const resolvedDestination = trackingDestination ?? destination;
 
   // ── Mover la cámara cuando llega una nueva posición del ally ──────────────
   const prevAllyRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -393,6 +347,35 @@ export default function TrackingServiceScreen() {
       color: "#4ADE80",
       marginRight: 4,
     },
+    chatButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: BorderRadius.lg,
+      paddingVertical: 12,
+      marginTop: Spacing.sm,
+      gap: 8,
+    },
+    chatButtonText: {
+      color: "#FFF",
+      fontSize: Typography.fontSize.xs,
+      fontFamily: Typography.fontFamily.bold,
+      letterSpacing: 0.5,
+    },
+    chatBadge: {
+      backgroundColor: "#EF4444",
+      borderRadius: 10,
+      minWidth: 20,
+      height: 20,
+      paddingHorizontal: 5,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    chatBadgeText: {
+      color: "#FFF",
+      fontSize: 11,
+      fontFamily: Typography.fontFamily.bold,
+    },
     liveButton: {
       flexDirection: "row",
       alignItems: "center",
@@ -430,10 +413,10 @@ export default function TrackingServiceScreen() {
   }
 
   // Región inicial del mapa
-  const initialRegion: Region = resolvedDestination
+  const initialRegion: Region = destination
     ? {
-        latitude: resolvedDestination.lat,
-        longitude: resolvedDestination.lng,
+        latitude: destination.lat,
+        longitude: destination.lng,
         latitudeDelta: 0.04,
         longitudeDelta: 0.04,
       }
@@ -469,11 +452,11 @@ export default function TrackingServiceScreen() {
               toolbarEnabled={false}
             >
               {/* Pin del destino (domicilio del usuario) */}
-              {resolvedDestination && (
+              {destination && (
                 <Marker
                   coordinate={{
-                    latitude: resolvedDestination.lat,
-                    longitude: resolvedDestination.lng,
+                    latitude: destination.lat,
+                    longitude: destination.lng,
                   }}
                   title="Tu domicilio"
                   pinColor="#1D2AD8"
@@ -494,16 +477,6 @@ export default function TrackingServiceScreen() {
                 >
                   <PulsingPin />
                 </Marker>
-              )}
-
-              {/* Ruta dibujada — solo cuando hay polyline del backend */}
-              {polyline && decodePolyline(polyline).length > 0 && (
-                <Polyline
-                  coordinates={decodePolyline(polyline)}
-                  strokeColor="#1D2AD8"
-                  strokeWidth={4}
-                  lineDashPattern={[0]}
-                />
               )}
             </MapView>
 
@@ -624,6 +597,32 @@ export default function TrackingServiceScreen() {
           <View style={{ marginBottom: Spacing.sm }}>
             <OrderProgressBar currentStatus={displayStatus} />
           </View>
+        )}
+
+        {/* Botón Chat — disponible en on_the_way e in_service */}
+        {(displayStatus === "on_the_way" || displayStatus === "in_service") && (
+          <TouchableOpacity
+            style={[styles.chatButton, { backgroundColor: colors.primary }]}
+            onPress={() =>
+              router.push({
+                pathname: "/(screens)/order-chat",
+                params: {
+                  orderId: order.id,
+                  orderStatus: displayStatus,
+                  contactName: "Groomer",
+                },
+              })
+            }
+          >
+            <Text style={styles.chatButtonText}>💬 Chat con el groomer</Text>
+            {unreadCount > 0 && (
+              <View style={styles.chatBadge}>
+                <Text style={styles.chatBadgeText}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
         )}
 
         {/* Botón Ver en vivo — solo en in_service */}
