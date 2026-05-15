@@ -17,6 +17,8 @@ import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { useTheme } from "@/hooks/useTheme";
 import { Typography, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { groomerService } from "@/api/services/groomer.service";
+import { useLocationReporter } from "@/hooks/useLocationReporter";
+import { useUnreadCount } from "@/hooks/useChat";
 import { Order, TypeStatus } from "@/types/order.types";
 
 // ─── Configuración de estados ──────────────────────────────────────────────────
@@ -97,6 +99,7 @@ interface OrderCardProps {
   isUpdating: boolean;
   onChangeStatus: (orderId: string, next: TypeStatus) => void;
   onLivePress: () => void;
+  onChatPress: () => void;
 }
 
 const OrderCard: React.FC<OrderCardProps> = ({
@@ -104,6 +107,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   isUpdating,
   onChangeStatus,
   onLivePress,
+  onChatPress,
 }) => {
   const { colors } = useTheme();
   const address = order.delivery_address_snapshot;
@@ -111,6 +115,8 @@ const OrderCard: React.FC<OrderCardProps> = ({
   const cfg = STATUS_CONFIG[status];
   const nextStates = NEXT_STATES[status] ?? [];
   const isTerminal = status === "done" || status === "cancelled";
+  const isChatActive = status === "on_the_way" || status === "in_service";
+  const unreadCount = useUnreadCount(isChatActive ? order.id : null);
 
   const handlePress = (next: TypeStatus) => {
     if (next === "cancelled") {
@@ -186,6 +192,26 @@ const OrderCard: React.FC<OrderCardProps> = ({
       {/* Acciones — solo si la orden no es terminal */}
       {!isTerminal && (
         <View style={styles.actionsRow}>
+          {/* Botón Chat — en on_the_way e in_service */}
+          {isChatActive && (
+            <TouchableOpacity
+              style={[styles.chatBtn, { backgroundColor: colors.primary }]}
+              onPress={onChatPress}
+              disabled={isUpdating}
+              activeOpacity={0.8}
+            >
+              <Icon name="send" size={14} color="#FFF" />
+              <Text style={styles.liveBtnText}>Chat</Text>
+              {unreadCount > 0 && (
+                <View style={styles.chatBadge}>
+                  <Text style={styles.chatBadgeText}>
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+
           {/* Botón "Iniciar live" — SOLO cuando status === "in_service" */}
           {status === "in_service" && (
             <TouchableOpacity
@@ -303,6 +329,15 @@ export default function GroomerAppointmentsScreen() {
   // orderId → true mientras se procesa el cambio de estado
   const [updatingMap, setUpdatingMap] = useState<Record<string, boolean>>({});
 
+  // Orden activa para reportar ubicación (on_the_way o in_service)
+  const activeOrder =
+    orders.find(
+      (o) => o.status === "on_the_way" || o.status === "in_service",
+    ) ?? null;
+
+  // Reporta GPS al backend automáticamente mientras hay orden activa
+  useLocationReporter(activeOrder?.id ?? null, activeOrder?.status ?? "");
+
   const fetchOrders = useCallback(async (filter: FilterTab, silent = false) => {
     if (!silent) setIsLoading(true);
     setError(null);
@@ -371,6 +406,13 @@ export default function GroomerAppointmentsScreen() {
     router.push({
       pathname: "/(tabs)/(groomer)/live-stream",
       params: { orderId: order.id, ts: Date.now() },
+    });
+  };
+
+  const handleChatPress = (order: Order) => {
+    router.push({
+      pathname: "/(screens)/order-chat",
+      params: { orderId: order.id, orderStatus: order.status },
     });
   };
 
@@ -453,6 +495,7 @@ export default function GroomerAppointmentsScreen() {
             isUpdating={!!updatingMap[item.id]}
             onChangeStatus={handleChangeStatus}
             onLivePress={() => handleLivePress(item)}
+            onChatPress={() => handleChatPress(item)}
           />
         )}
       />
@@ -548,6 +591,29 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.semibold,
     color: "#FFF",
+  },
+  chatBtn: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: BorderRadius.lg,
+    gap: 4,
+  },
+  chatBadge: {
+    backgroundColor: "#EF4444",
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  chatBadgeText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontFamily: Typography.fontFamily.bold,
   },
   actionBtn: {
     paddingHorizontal: Spacing.md,

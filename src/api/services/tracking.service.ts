@@ -1,63 +1,54 @@
-import { CONFIG } from "@/constants/config";
-import { storage } from "@/utils/storage";
+/**
+ * tracking.service.ts
+ *
+ * Servicio de tracking del ally (groomer) en tiempo real.
+ * Base URL: EXPO_PUBLIC_API_URL + /tracking/...
+ *
+ * Usa apiClient (axios) con auth interceptor automático —
+ * igual que el resto de servicios de la app.
+ */
+
+import apiClient from "@/api/client";
 import { API_ENDPOINTS } from "../endpoints";
-import { TrackingCurrent, TrackingRoute } from "@/types/tracking.type";
-
-// ── Helper fetch con base URL propia (sin /paku/api/v1) ───────────────────────
-
-async function trackingFetch<T>(path: string): Promise<T> {
-  const token = await storage.getItem<string>(CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
-  // La doc dice base URL sin prefijo — usamos MEDIA_API_URL que ya apunta al dominio raíz
-  // Extraemos el dominio base quitando el prefijo /paku/api/v1
-  const baseUrl = CONFIG.MEDIA_API_URL.replace(/\/paku\/api\/v1$/, "");
-  const url = `${baseUrl}${path}`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw Object.assign(
-      new Error(`Tracking fetch failed: ${response.status}`),
-      {
-        response: { status: response.status, data: err },
-      },
-    );
-  }
-
-  return response.json();
-}
-
-// ── Servicio ─────────────────────────────────────────────────────────────────
+import type { TrackingCurrent, TrackingRoute } from "@/types/tracking.type";
 
 export const trackingService = {
   /**
-   * Última posición conocida del ally para una orden activa.
-   * Disponible cuando status = on_the_way | in_service
+   * GET /tracking/orders/{order_id}/current
+   * Última posición conocida del ally + coordenadas del destino.
+   * Hacer polling cada 10 segundos. Disponible en on_the_way e in_service.
+   *
+   * Si ally_location es null, el ally aún no reportó su primera posición.
+   * staleness_seconds > 30 → mostrar aviso "Actualizando ubicación..."
    */
   async getCurrent(orderId: string): Promise<TrackingCurrent> {
-    return trackingFetch<TrackingCurrent>(
+    const response = await apiClient.get<TrackingCurrent>(
       API_ENDPOINTS.TRACKING.CURRENT(orderId),
     );
+    return response.data;
   },
 
   /**
-   * Ruta y ETA calculados por Google Routes.
-   * Puede devolver 501 si Google Routes no está configurado — tratar como opcional.
+   * GET /tracking/orders/{order_id}/route
+   * Polyline dibujable + ETA calculado por Google Routes API.
+   *
+   * ⚠️ Tiene costo por llamada — usar cada 30s, NO cada 10s.
+   *
+   * Retorna null en estos casos (degradar gracefully):
+   *   - 501: Google Routes API no configurada en el servidor
+   *   - 502: Google Routes falló — mantener polyline anterior
+   *   - ally_location null: no hay origen todavía
    */
   async getRoute(orderId: string): Promise<TrackingRoute | null> {
     try {
-      return await trackingFetch<TrackingRoute>(
+      const response = await apiClient.get<TrackingRoute>(
         API_ENDPOINTS.TRACKING.ROUTE(orderId),
       );
+      return response.data;
     } catch (err: any) {
-      if (err?.response?.status === 501 || err?.response?.status === 502) {
-        return null; // Google Routes no configurado — degradar gracefully
+      const status = err?.response?.status;
+      if (status === 501 || status === 502 || status === 409) {
+        return null; // degradar silenciosamente
       }
       throw err;
     }

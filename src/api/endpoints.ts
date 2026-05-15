@@ -5,8 +5,6 @@ export const API_ENDPOINTS = {
     REGISTER: "/auth/register",
     REFRESH: "/auth/refresh",
     SOCIAL: "/auth/social",
-    FORGOT_PASSWORD: "/auth/forgot-password",
-    RESET_PASSWORD: "/auth/reset-password",
   },
 
   // Autenticación social
@@ -142,5 +140,7 @@ export const API_ENDPOINTS = {
   TRACKING: {
     CURRENT: (orderId: string) => `/tracking/orders/${orderId}/current`,
     ROUTE: (orderId: string) => `/tracking/orders/${orderId}/route`,
+    REPORT_LOCATION: (orderId: string) =>
+      `/tracking/orders/${orderId}/location`,
   },
 } as const;
