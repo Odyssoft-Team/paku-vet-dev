@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:288581456018:android:902b4b9e4c4e742f62d64b",
         "android_client_info": {
-          "package_name": "com.aldoparradev.pakuvet"
+          "package_name": "com.paku.app"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "288581456018-0807hpeml6r1sl9ooos6d5dl9nsqt0es.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.aldoparradev.pakuvet",
+            "package_name": "com.paku.app",
             "certificate_hash": "275cd9bdfeb65e9e7a7f61eba57767e79b43e9d3"
           }
         },
@@ -25,7 +25,7 @@
           "client_id": "288581456018-5jbd3eq1tiorf65i52m1g3ifocjge90s.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.aldoparradev.pakuvet",
+            "package_name": "com.paku.app",
             "certificate_hash": "cf228528d679d4e3e3bb7d2a68cac9115bf59e26"
           }
         },
