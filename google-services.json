@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:288581456018:android:902b4b9e4c4e742f62d64b",
         "android_client_info": {
-          "package_name": "com.paku.app"
+          "package_name": "com.aldoparradev.pakuvet"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "288581456018-0807hpeml6r1sl9ooos6d5dl9nsqt0es.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.paku.app",
+            "package_name": "com.aldoparradev.pakuvet",
             "certificate_hash": "275cd9bdfeb65e9e7a7f61eba57767e79b43e9d3"
           }
         },
@@ -25,8 +25,45 @@
           "client_id": "288581456018-5jbd3eq1tiorf65i52m1g3ifocjge90s.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.paku.app",
+            "package_name": "com.aldoparradev.pakuvet",
             "certificate_hash": "cf228528d679d4e3e3bb7d2a68cac9115bf59e26"
+          }
+        },
+        {
+          "client_id": "288581456018-109m19jccedofh328if0t0l0fo3abnoq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqqW15phH0plINLHcz7QTO7mxzOd9VBp0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "288581456018-109m19jccedofh328if0t0l0fo3abnoq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:288581456018:android:5f5ace4b4543aa9b62d64b",
+        "android_client_info": {
+          "package_name": "com.paku.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "288581456018-m8j3eqcd3q8703pfioq6rgq7nhheor6f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.paku.app",
+            "certificate_hash": "390136e607b59de6d1e47a9f0abbd35c51b7a1ec"
           }
         },
         {
